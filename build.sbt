@@ -1,5 +1,4 @@
-import com.trueaccord.scalapb.{ScalaPbPlugin => Protobuf}
-
+import com.trueaccord.scalapb.{ScalaPbPlugin ⇒ Protobuf}
 import sbtdocker.Instructions._
 
 lazy val buildSettings = Seq(
@@ -101,7 +100,8 @@ lazy val domain = crossProject.in(file("domain"))
     )
   )
   .jvmSettings(libraryDependencies ++= Seq(
-    "io.strongtyped" %% "fun-cqrs-core" % funCQRSVersion
+    "io.strongtyped" %% "fun-cqrs-core" % funCQRSVersion,
+    "com.github.t3hnar" %% "scala-bcrypt" % "2.6"
   ))
   .jvmSettings(testDependencies)
 
@@ -147,7 +147,7 @@ lazy val writeBackend = project.in(file("write-backend"))
       "com.typesafe.akka" %% "akka-cluster-sharding" % akkaVersion,
       "com.typesafe.akka" %% "akka-distributed-data-experimental" % akkaVersion,
       "com.typesafe.akka" %% "akka-persistence-query-experimental" % akkaVersion,
-       "org.postgresql" % "postgresql" % postgreSQLVersion
+      "org.postgresql" % "postgresql" % postgreSQLVersion
     )
   )
   .settings(testDependencies)
