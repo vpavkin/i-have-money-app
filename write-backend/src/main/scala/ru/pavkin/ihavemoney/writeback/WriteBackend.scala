@@ -9,7 +9,10 @@ import io.funcqrs.akka.EventsSourceProvider
 import io.funcqrs.akka.backend.AkkaBackend
 import io.funcqrs.backend.Query
 import io.funcqrs.config.api._
+import ru.pavkin.ihavemoney.domain.fortune.FortuneProtocol.FortuneCommand
 import ru.pavkin.ihavemoney.domain.fortune._
+import ru.pavkin.ihavemoney.domain.user.UserProtocol.UserCommand
+import ru.pavkin.ihavemoney.domain.user.{User, UserId}
 
 import scala.concurrent.duration._
 
@@ -25,17 +28,28 @@ object WriteBackend extends App {
     def sourceProvider(query: Query): EventsSourceProvider = null
   }.configure {
     aggregate[Fortune](Fortune.behavior)
+    aggregate[User](User.behavior)
   }
 
   implicit val timeout: Timeout = new Timeout(30.seconds)
 
   val fortuneRegion = ClusterSharding(system).start(
     typeName = "FortuneShard",
-    entityProps = Props(new FortuneOffice(backend)),
+    entityProps = Props(new AggregateOffice[Fortune, FortuneCommand](backend, FortuneId(_))),
     settings = ClusterShardingSettings(system),
     messageExtractor = new CommandMessageExtractor(config.getInt("app.number-of-nodes"))
   )
 
-  val interface = system.actorOf(Props(new InterfaceActor(fortuneRegion)), "interface")
+  val userRegion = ClusterSharding(system).start(
+    typeName = "UserShard",
+    entityProps = Props(new AggregateOffice[User, UserCommand](backend, UserId)),
+    settings = ClusterShardingSettings(system),
+    messageExtractor = new CommandMessageExtractor(config.getInt("app.number-of-nodes"))
+  )
+
+  val interface = system.actorOf(Props(
+    new WritebackInterfaceActor(fortuneRegion, userRegion)),
+    "interface"
+  )
   ClusterClientReceptionist(system).registerService(interface)
 }
