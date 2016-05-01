@@ -27,8 +27,9 @@ object WriteBackend extends App {
     val actorSystem: ActorSystem = system
     def sourceProvider(query: Query): EventsSourceProvider = null
   }.configure {
-    aggregate[Fortune](Fortune.behavior)
     aggregate[User](User.behavior)
+  }.configure {
+    aggregate[Fortune](Fortune.behavior)
   }
 
   implicit val timeout: Timeout = new Timeout(30.seconds)
