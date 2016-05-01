@@ -26,8 +26,13 @@ object writefront extends SharedProtocol {
   case class ResendConfirmationEmailRequest(email: String) extends WriteFrontRequest
 
   // misc
-  case class RequestResult(commandId: String, success: Boolean, error: Option[String] = None)
+  case class RequestResult[T](commandId: String, success: Boolean, result: Option[T], error: Option[String] = None)
 
+  object RequestResult {
+    def success[T](commandId: String, result: T) = RequestResult(commandId, success = true, Some(result))
+    def justSuccess(commandId: String) = RequestResult[String](commandId, success = true, None)
+    def failure(commandId: String, error: String) = RequestResult[String](commandId, success = false, None, Some(error))
+  }
 
   implicit val riEncoder: Encoder[ReceiveIncomeRequest] = deriveEncoder[ReceiveIncomeRequest]
   implicit val riDecoder: Decoder[ReceiveIncomeRequest] = deriveDecoder[ReceiveIncomeRequest]
@@ -51,7 +56,7 @@ object writefront extends SharedProtocol {
   implicit val reqDecoder: Decoder[WriteFrontRequest] = deriveDecoder[WriteFrontRequest]
 
 
-  implicit val resEncoder: Encoder[RequestResult] = deriveEncoder[RequestResult]
-  implicit val resDecoder: Decoder[RequestResult] = deriveDecoder[RequestResult]
+  implicit def resEncoder[T: Encoder]: Encoder[RequestResult[T]] = deriveEncoder[RequestResult[T]]
+  implicit def resDecoder[T: Decoder]: Decoder[RequestResult[T]] = deriveDecoder[RequestResult[T]]
 
 }

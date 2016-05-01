@@ -6,7 +6,7 @@ import io.funcqrs.AggregateLike
 import io.funcqrs.akka.backend.AkkaBackend
 import ru.pavkin.ihavemoney.domain._
 import ru.pavkin.ihavemoney.domain.errors.DomainError
-import ru.pavkin.ihavemoney.proto.results.{CommandSuccess, InvalidCommand, UnexpectedFailure, UnknownCommand}
+import ru.pavkin.ihavemoney.proto.results.{InvalidCommand, UnexpectedFailure, UnknownCommand}
 
 import scala.concurrent.ExecutionContext
 import scala.reflect.ClassTag
@@ -25,7 +25,7 @@ class AggregateOffice[T <: AggregateLike : ClassTag, C <: T#Protocol#ProtocolCom
         case c: C ⇒
           val aggregate = backend.aggregateRef[T](idFactory(id))
           (aggregate ? c).onComplete {
-            case Success(_) ⇒ origin ! CommandSuccess(c.id.value.toString)
+            case Success(events) ⇒ origin ! events
             case Failure(e: DomainError) ⇒ origin ! InvalidCommand(c.id.value.toString, e.message)
             case Failure(e) ⇒ origin ! UnexpectedFailure(c.id.value.toString, e.getMessage)
           }

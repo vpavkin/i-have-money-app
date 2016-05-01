@@ -13,8 +13,8 @@ import ru.pavkin.ihavemoney.domain.fortune.FortuneProtocol.{ExpenseCategory, Inc
 import ru.pavkin.ihavemoney.protocol.writefront._
 import ch.megard.akka.http.cors.{CorsDirectives, CorsSettings}
 import akka.http.scaladsl.model.StatusCodes._
-import ru.pavkin.ihavemoney.domain.user.UserProtocol.{ConfirmEmail, CreateUser, LoginUser, ResendConfirmationEmail}
-
+import ru.pavkin.ihavemoney.domain.user.UserProtocol._
+import ru.pavkin.ihavemoney.domain.unexpected
 import scala.concurrent.duration._
 
 object WriteFrontend extends App with CirceSupport with CorsDirectives {
@@ -35,7 +35,7 @@ object WriteFrontend extends App with CirceSupport with CorsDirectives {
         pathPrefix("fortune" / Segment) { fortuneId ⇒
           (path("income") & post & entity(as[ReceiveIncomeRequest])) { req ⇒
             complete {
-              writeBack.sendCommand(fortuneId, ReceiveIncome(
+              writeBack.sendCommandAndIgnoreResult(fortuneId, ReceiveIncome(
                 req.amount,
                 req.currency,
                 IncomeCategory(req.category),
@@ -44,7 +44,7 @@ object WriteFrontend extends App with CirceSupport with CorsDirectives {
             }
           } ~ (path("spend") & post & entity(as[SpendRequest])) { req ⇒
             complete {
-              writeBack.sendCommand(fortuneId, Spend(
+              writeBack.sendCommandAndIgnoreResult(fortuneId, Spend(
                 req.amount,
                 req.currency,
                 ExpenseCategory(req.category),
@@ -55,22 +55,26 @@ object WriteFrontend extends App with CirceSupport with CorsDirectives {
         } ~
           (path("signIn") & post & entity(as[CreateUserRequest])) { req ⇒
             complete {
-              writeBack.sendCommand(req.email, CreateUser(req.password, req.displayName))
+              writeBack.sendCommandAndIgnoreResult(req.email, CreateUser(req.password, req.displayName))
             }
           } ~
           (path("logIn") & post & entity(as[LogInRequest])) { req ⇒
             complete {
-              writeBack.sendCommand(req.email, LoginUser(req.password))
+              writeBack.sendCommand(req.email, LoginUser(req.password))((evt: UserEvent) ⇒ evt match {
+                case e: UserLoggedIn ⇒ OK → RequestResult.success("", e.token)
+                case e: UserFailedToLogIn ⇒ Unauthorized → RequestResult.failure("", "Login failed: Invalid password")
+                case _ ⇒ unexpected
+              })
             }
           } ~
           (path("confirmEmail") & post & entity(as[ConfirmEmailRequest])) { req ⇒
             complete {
-              writeBack.sendCommand(req.email, ConfirmEmail(req.confirmationCode))
+              writeBack.sendCommandAndIgnoreResult(req.email, ConfirmEmail(req.confirmationCode))
             }
           } ~
           (path("resendConfirmationEmail") & post & entity(as[ResendConfirmationEmailRequest])) { req ⇒
             complete {
-              writeBack.sendCommand(req.email, ResendConfirmationEmail)
+              writeBack.sendCommandAndIgnoreResult(req.email, ResendConfirmationEmail)
             }
           } ~
           complete(NotFound)
