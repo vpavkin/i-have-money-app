@@ -118,7 +118,8 @@ lazy val serialization = project.in(file("serialization"))
   .settings(
     libraryDependencies ++= Seq(
       "com.typesafe.akka" %% "akka-actor" % akkaVersion,
-      "com.typesafe.akka" %% "akka-persistence" % akkaVersion
+      "com.typesafe.akka" %% "akka-persistence" % akkaVersion,
+      "com.chuusai" %%% "shapeless" % shapelessVersion
     )
   )
   .dependsOn(domainJVM)

@@ -7,6 +7,10 @@ message PBCommandEnvelope {
 	oneof command {
 		PBReceiveIncome command1 = 2;
 		PBSpend command2 = 3;
+		PBCreateUser command3 = 4;
+		PBConfirmEmail command4 = 5;
+		PBLogIn command5 = 6;
+		PBResendConfirmationEmail command6 = 7;
 	}
 }
 
@@ -23,3 +27,18 @@ message PBSpend {
 	string category = 3;
 	string comment = 15;
 }
+
+message PBCreateUser {
+	string password = 1;
+	string displayName = 2;
+}
+
+message PBConfirmEmail {
+	string confirmationCode = 1;
+}
+
+message PBLogIn {
+	string password = 1;
+}
+
+message PBResendConfirmationEmail {}

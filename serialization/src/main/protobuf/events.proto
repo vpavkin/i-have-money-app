@@ -25,3 +25,28 @@ message PBFortuneSpent {
 	PBMetadata metadata = 4;
 	string comment = 15;
 }
+
+message PBUserCreated {
+	string password_hash = 1;
+	string display_name = 2;
+	string confirmation_code = 3;
+	PBMetadata metadata = 4;
+}
+
+message PBUserConfirmed {
+	PBMetadata metadata = 4;
+}
+
+message PBConfirmationEmailSent {
+	PBMetadata metadata = 4;
+}
+
+message PBUserLoggedIn {
+	string token = 1;
+	PBMetadata metadata = 4;
+}
+
+message PBUserFailedToLogIn {
+	string invalid_password = 1;
+	PBMetadata metadata = 4;
+}

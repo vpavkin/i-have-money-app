@@ -66,7 +66,10 @@ case class User(id: UserId,
         UserFailedToLogIn(cmd.password, metadata(cmd))
     }
     .handleEvent {
-      _: UserEvent ⇒ this
+      _: UserLoggedIn ⇒ this
+    }
+    .handleEvent {
+      _: UserFailedToLogIn ⇒ this
     }
 }
 
@@ -96,14 +99,14 @@ object User {
           val code = generateConfirmationCode
           sendConfirmationEmail(md, code)
             .map(_ ⇒ UserCreated(
-              cmd.password,
+              passwords.encrypt(cmd.password),
               cmd.displayName,
               code,
               md
             ))
       }
       .handleEvent {
-        e: UserCreated ⇒ User(id, e.password, e.displayName, e.confirmationCode, isConfirmed = false)
+        e: UserCreated ⇒ User(id, e.passwordHash, e.displayName, e.confirmationCode, isConfirmed = false)
       }
 
   def behavior(fortuneId: UserId): Behavior[User] = {

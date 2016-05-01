@@ -1,6 +1,7 @@
 package ru.pavkin.ihavemoney.serialization
 
 import com.trueaccord.scalapb.{GeneratedMessage, GeneratedMessageCompanion, Message}
+import shapeless.{Generic, HList}
 
 trait ProtobufSuite[M, PB <: GeneratedMessage with Message[PB]] {
   def encode(m: M): PB
@@ -23,4 +24,20 @@ object ProtobufSuite {
       def decode: M = ev.decode(p)
     }
   }
+
+  def auto[M, PB <: GeneratedMessage with Message[PB]] = new Helper[M, PB]
+
+  class Helper[M, PB <: GeneratedMessage with Message[PB]] {
+    def identicallyShaped[MRepr <: HList, PBRepr <: HList](comp: GeneratedMessageCompanion[PB])
+                                                          (implicit L1: Generic.Aux[M, MRepr],
+                                                           L2: Generic.Aux[PB, PBRepr],
+                                                           EQ1: MRepr =:= PBRepr,
+                                                           EQ2: PBRepr =:= MRepr) =
+      new ProtobufSuite[M, PB] {
+        def encode(m: M): PB = L2.from(EQ1(L1.to(m)))
+        def decode(p: PB): M = L1.from(EQ2(L2.to(p)))
+        def companion: GeneratedMessageCompanion[PB] = comp
+      }
+  }
+
 }

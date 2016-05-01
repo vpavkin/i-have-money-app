@@ -22,7 +22,7 @@ object UserProtocol extends ProtocolLike {
   /*-------------------Events---------------------*/
   sealed trait UserEvent extends ProtocolEvent with MetadataFacet[UserMetadata]
 
-  case class UserCreated(password: String,
+  case class UserCreated(passwordHash: String,
                          displayName: String,
                          confirmationCode: String,
                          metadata: UserMetadata) extends UserEvent

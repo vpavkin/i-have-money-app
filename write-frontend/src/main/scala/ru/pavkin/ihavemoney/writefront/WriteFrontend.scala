@@ -13,6 +13,8 @@ import ru.pavkin.ihavemoney.domain.fortune.FortuneProtocol.{ExpenseCategory, Inc
 import ru.pavkin.ihavemoney.protocol.writefront._
 import ch.megard.akka.http.cors.{CorsDirectives, CorsSettings}
 import akka.http.scaladsl.model.StatusCodes._
+import ru.pavkin.ihavemoney.domain.user.UserProtocol.{ConfirmEmail, CreateUser, LoginUser, ResendConfirmationEmail}
+
 import scala.concurrent.duration._
 
 object WriteFrontend extends App with CirceSupport with CorsDirectives {
@@ -50,7 +52,29 @@ object WriteFrontend extends App with CirceSupport with CorsDirectives {
               ))
             }
           }
-        } ~ complete(NotFound)
+        } ~
+          (path("signIn") & post & entity(as[CreateUserRequest])) { req ⇒
+            complete {
+              writeBack.sendCommand(req.email, CreateUser(req.password, req.displayName))
+            }
+          } ~
+          (path("logIn") & post & entity(as[LogInRequest])) { req ⇒
+            complete {
+              writeBack.sendCommand(req.email, LoginUser(req.password))
+            }
+          } ~
+          (path("confirmEmail") & post & entity(as[ConfirmEmailRequest])) { req ⇒
+            complete {
+              writeBack.sendCommand(req.email, ConfirmEmail(req.confirmationCode))
+            }
+          } ~
+          (path("resendConfirmationEmail") & post & entity(as[ResendConfirmationEmailRequest])) { req ⇒
+            complete {
+              writeBack.sendCommand(req.email, ResendConfirmationEmail)
+            }
+          } ~
+          complete(NotFound)
+
       }
     }
 

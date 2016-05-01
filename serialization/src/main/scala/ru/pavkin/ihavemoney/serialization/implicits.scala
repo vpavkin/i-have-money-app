@@ -6,11 +6,12 @@ import com.trueaccord.scalapb.GeneratedMessageCompanion
 import ru.pavkin.ihavemoney.domain.CommandEnvelope
 import ru.pavkin.ihavemoney.domain.fortune.{Currency, FortuneId}
 import ru.pavkin.ihavemoney.domain.fortune.FortuneProtocol._
-import ru.pavkin.ihavemoney.proto.commands.{PBCommandEnvelope, PBReceiveIncome, PBSpend}
+import ru.pavkin.ihavemoney.proto.commands._
 import ru.pavkin.ihavemoney.proto.events.{PBFortuneIncreased, PBFortuneSpent, PBMetadata}
 import ru.pavkin.utils.option._
 import ProtobufSuite.syntax._
-import ru.pavkin.ihavemoney.proto.commands.PBCommandEnvelope.Command.{Command1, Command2, Empty}
+import ru.pavkin.ihavemoney.domain.user.UserProtocol._
+import ru.pavkin.ihavemoney.proto.commands.PBCommandEnvelope.Command._
 
 object implicits {
   def deserializeFortuneMetadata(m: PBMetadata): FortuneMetadata =
@@ -88,14 +89,36 @@ object implicits {
       def companion = PBSpend
     }
 
+  implicit val createUserSuite: ProtobufSuite[CreateUser, PBCreateUser] =
+    ProtobufSuite.auto[CreateUser, PBCreateUser].identicallyShaped(PBCreateUser)
+
+  implicit val confirmEmailSuite: ProtobufSuite[ConfirmEmail, PBConfirmEmail] =
+    ProtobufSuite.auto[ConfirmEmail, PBConfirmEmail].identicallyShaped(PBConfirmEmail)
+
+  implicit val logInSuite: ProtobufSuite[LoginUser, PBLogIn] =
+    ProtobufSuite.auto[LoginUser, PBLogIn].identicallyShaped(PBLogIn)
+
+  implicit val resendConfirmationEmailSuite: ProtobufSuite[ResendConfirmationEmail.type, PBResendConfirmationEmail] =
+    new ProtobufSuite[ResendConfirmationEmail.type, PBResendConfirmationEmail] {
+      def encode(m: ResendConfirmationEmail.type): PBResendConfirmationEmail = PBResendConfirmationEmail()
+      def decode(p: PBResendConfirmationEmail): ResendConfirmationEmail.type = ResendConfirmationEmail
+      def companion: GeneratedMessageCompanion[PBResendConfirmationEmail] = PBResendConfirmationEmail
+    }
+
   implicit val commandEnvelopeSuite: ProtobufSuite[CommandEnvelope, PBCommandEnvelope] =
     new ProtobufSuite[CommandEnvelope, PBCommandEnvelope] {
       def encode(m: CommandEnvelope): PBCommandEnvelope = PBCommandEnvelope(
         m.aggregateId,
         m.command match {
-          case f: FortuneCommand ⇒ f match {
-            case s: ReceiveIncome ⇒ PBCommandEnvelope.Command.Command1(s.encode)
-            case s: Spend ⇒ PBCommandEnvelope.Command.Command2(s.encode)
+          case cmd: FortuneCommand ⇒ cmd match {
+            case s: ReceiveIncome ⇒ Command1(s.encode)
+            case s: Spend ⇒ Command2(s.encode)
+          }
+          case cmd: UserCommand ⇒ cmd match {
+            case c: CreateUser => Command3(c.encode)
+            case c: ConfirmEmail => Command4(c.encode)
+            case c: LoginUser => Command5(c.encode)
+            case ResendConfirmationEmail => Command6(ResendConfirmationEmail.encode)
           }
           case other ⇒ throw new Exception(s"Unknown domain command ${other.getClass.getName}")
         }
@@ -106,6 +129,10 @@ object implicits {
           case Empty => throw new Exception(s"Received empty command envelope")
           case Command1(value) => value.decode
           case Command2(value) => value.decode
+          case Command3(value) => value.decode
+          case Command4(value) => value.decode
+          case Command5(value) => value.decode
+          case Command6(value) => value.decode
         }
       )
       def companion: GeneratedMessageCompanion[PBCommandEnvelope] = PBCommandEnvelope
