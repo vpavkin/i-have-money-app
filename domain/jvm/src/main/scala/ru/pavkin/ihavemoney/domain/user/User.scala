@@ -60,8 +60,7 @@ case class User(id: UserId,
   def login = action[User]
     .handleCommand {
       cmd: LoginUser ⇒ if (passwords.isCorrect(cmd.password, this.passwordHash))
-      //todo: generate token
-        UserLoggedIn("TOKEN", metadata(cmd))
+        UserLoggedIn(metadata(cmd))
       else
         UserFailedToLogIn(cmd.password, metadata(cmd))
     }

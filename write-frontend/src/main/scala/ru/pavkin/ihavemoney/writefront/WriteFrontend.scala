@@ -15,6 +15,8 @@ import ch.megard.akka.http.cors.{CorsDirectives, CorsSettings}
 import akka.http.scaladsl.model.StatusCodes._
 import ru.pavkin.ihavemoney.domain.user.UserProtocol._
 import ru.pavkin.ihavemoney.domain.unexpected
+import ru.pavkin.ihavemoney.writefront.auth.JWTTokenFactory
+
 import scala.concurrent.duration._
 
 object WriteFrontend extends App with CirceSupport with CorsDirectives {
@@ -28,6 +30,8 @@ object WriteFrontend extends App with CirceSupport with CorsDirectives {
   val logger = Logging(system, getClass)
 
   val writeBack = new WriteBackClusterClient(system)
+
+  val tokenFactory: JWTTokenFactory = new JWTTokenFactory(config.getString("app.secret-key"))
 
   val routes: Route =
     cors(CorsSettings.defaultSettings.copy(allowCredentials = false)) {
@@ -60,9 +64,13 @@ object WriteFrontend extends App with CirceSupport with CorsDirectives {
           } ~
           (path("logIn") & post & entity(as[LogInRequest])) { req ⇒
             complete {
-              writeBack.sendCommand(req.email, LoginUser(req.password))((evt: UserEvent) ⇒ evt match {
-                case e: UserLoggedIn ⇒ OK → RequestResult.success("", e.token)
-                case e: UserFailedToLogIn ⇒ Unauthorized → RequestResult.failure("", "Login failed: Invalid password")
+              val command = LoginUser(req.password)
+              writeBack.sendCommand(req.email, command)((evt: UserEvent) ⇒ evt match {
+                case e: UserLoggedIn ⇒ OK → RequestResult.success(command.id.value.toString, tokenFactory.issue(req.email))
+                case e: UserFailedToLogIn ⇒ Unauthorized → RequestResult.failure(
+                  command.id.value.toString,
+                  "Login failed: Invalid password"
+                )
                 case _ ⇒ unexpected
               })
             }

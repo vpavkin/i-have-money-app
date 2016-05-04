@@ -207,7 +207,8 @@ lazy val writeFrontend = project.in(file("write-frontend"))
       "io.circe" %% "circe-core" % circeVersion,
       "io.circe" %% "circe-generic" % circeVersion,
       "io.circe" %% "circe-parser" % circeVersion,
-      "de.heikoseeberger" %% "akka-http-circe" % "1.5.3"
+      "de.heikoseeberger" %% "akka-http-circe" % "1.5.3",
+      "com.pauldijou" %% "jwt-circe" % "0.7.1"
     )
   )
   .settings(testDependencies)
