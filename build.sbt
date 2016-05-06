@@ -236,7 +236,8 @@ lazy val writeFrontend = project.in(file("write-frontend"))
           "ihavemoney_writeback_port" → "9101",
           "ihavemoney_writefront_host" → "127.0.0.1",
           "ihavemoney_writefront_http_port" → "8101",
-          "ihavemoney_writefront_tcp_port" → "10101"
+          "ihavemoney_writefront_tcp_port" → "10101",
+          "ihavemoney_secret_key" → "changeit"
         )
         copy(artifact, artifactTargetPath)
         copy(resources, applicationConf)
