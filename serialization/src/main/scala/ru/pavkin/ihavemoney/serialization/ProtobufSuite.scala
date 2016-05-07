@@ -38,6 +38,17 @@ object ProtobufSuite {
         def decode(p: PB): M = L1.from(EQ2(L2.to(p)))
         def companion: GeneratedMessageCompanion[PB] = comp
       }
+
+    def hlist[MRepr <: HList, PBRepr <: HList](to: MRepr ⇒ PBRepr,
+                                               from: PBRepr ⇒ MRepr,
+                                               comp: GeneratedMessageCompanion[PB])
+                                              (implicit L1: Generic.Aux[M, MRepr],
+                                               L2: Generic.Aux[PB, PBRepr]) =
+      new ProtobufSuite[M, PB] {
+        def encode(m: M): PB = L2.from(to(L1.to(m)))
+        def decode(p: PB): M = L1.from(from(L2.to(p)))
+        def companion: GeneratedMessageCompanion[PB] = comp
+      }
   }
 
 }

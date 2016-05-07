@@ -1,6 +1,7 @@
 package ru.pavkin.ihavemoney.domain.errors
 
-import ru.pavkin.ihavemoney.domain.fortune.Currency
+import ru.pavkin.ihavemoney.domain.fortune.{Currency, FortuneId}
+import ru.pavkin.ihavemoney.domain.user.UserId
 
 sealed trait DomainError extends Throwable {
   def message: String
@@ -20,4 +21,7 @@ case object InvalidConfirmationCode extends DomainError {
 }
 case object EmailAlreadyConfirmed extends DomainError {
   def message = s"Email already confirmed"
+}
+case class InsufficientAccessRights(user: UserId, fortune: FortuneId) extends DomainError {
+  def message = s"User $user is not allowed to perform this command on fortune $fortune"
 }

@@ -85,7 +85,7 @@ lazy val protobufSettings = Protobuf.protobufSettings ++
 
 lazy val iHaveMoney = project.in(file("."))
   .settings(buildSettings)
-  .aggregate(domainJVM, serialization, writeBackend, writeFrontend, readBackend, frontendProtocolJVM, readFrontend, jsApp)
+  .aggregate(domainJVM, serialization, writeBackend, writeFrontend, readBackend, frontendProtocolJVM, readFrontend, jsApp, tests)
 
 lazy val domain = crossProject.in(file("domain"))
   .settings(

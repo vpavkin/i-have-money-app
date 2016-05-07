@@ -11,21 +11,34 @@ message PBCommandEnvelope {
 		PBConfirmEmail command4 = 5;
 		PBLogIn command5 = 6;
 		PBResendConfirmationEmail command6 = 7;
+		PBCreateFortune command7 = 8;
+		PBAddEditor command8 = 9;
 	}
 }
 
 message PBReceiveIncome {
-	string amount = 1;
-	string currency = 2;
-	string category = 3;
+	string userId = 1;
+	string amount = 2;
+	string currency = 3;
+	string category = 4;
 	string comment = 15;
 }
 
 message PBSpend {
-	string amount = 1;
-	string currency = 2;
-	string category = 3;
+	string userId = 1;
+	string amount = 2;
+	string currency = 3;
+	string category = 4;
 	string comment = 15;
+}
+
+message PBCreateFortune {
+	string ownerId = 1;
+}
+
+message PBAddEditor {
+	string userId = 1;
+	string editorId = 2;
 }
 
 message PBCreateUser {

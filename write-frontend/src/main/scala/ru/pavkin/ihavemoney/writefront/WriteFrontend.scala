@@ -82,6 +82,7 @@ object WriteFrontend extends App with CirceSupport with CorsDirectives {
               (path("income") & post & entity(as[ReceiveIncomeRequest])) { req ⇒
                 complete {
                   writeBack.sendCommandAndIgnoreResult(fortuneId, ReceiveIncome(
+                    userId,
                     req.amount,
                     req.currency,
                     IncomeCategory(req.category),
@@ -91,6 +92,7 @@ object WriteFrontend extends App with CirceSupport with CorsDirectives {
               } ~ (path("spend") & post & entity(as[SpendRequest])) { req ⇒
                 complete {
                   writeBack.sendCommandAndIgnoreResult(fortuneId, Spend(
+                    userId,
                     req.amount,
                     req.currency,
                     ExpenseCategory(req.category),
