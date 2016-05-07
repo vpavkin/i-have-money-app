@@ -6,18 +6,20 @@ import io.funcqrs.config.Api._
 import io.funcqrs.test.InMemoryTestSupport
 import io.funcqrs.test.backend.InMemoryBackend
 import org.scalatest.concurrent.ScalaFutures
-import ru.pavkin.ihavemoney.domain.errors.BalanceIsNotEnough
+import ru.pavkin.ihavemoney.domain.errors.{BalanceIsNotEnough, InsufficientAccessRights}
 import ru.pavkin.ihavemoney.domain.fortune.FortuneProtocol._
 import ru.pavkin.ihavemoney.domain.fortune.{Currency, Fortune, FortuneId}
+import ru.pavkin.ihavemoney.domain.user.UserId
 import ru.pavkin.ihavemoney.readback.{MoneyViewProjection, MoneyViewRepository}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class FortuneProtocolSpec extends IHaveMoneySpec with ScalaFutures {
 
-  class FortuneInMemoryTest extends InMemoryTestSupport {
+  class FortuneInMemoryTestBase extends InMemoryTestSupport {
 
     val repo = new InMemoryMoneyViewRepository
+    val owner = UserId("owner@example.org")
     val id = FortuneId.generate()
 
     def configure(backend: InMemoryBackend): Unit =
@@ -35,20 +37,56 @@ class FortuneProtocolSpec extends IHaveMoneySpec with ScalaFutures {
     def ref(id: FortuneId) = aggregateRef[Fortune](id)
   }
 
+  class FortuneInMemoryTest extends FortuneInMemoryTestBase {
+    val fortune = ref(id)
+
+    fortune ! CreateFortune(owner)
+    expectEvent { case FortuneCreated(owner, _) if owner == this.owner ⇒ () }
+  }
+
+  test("Create fortune") {
+    new FortuneInMemoryTest {
+      val view = repo.findAll(id).futureValue
+      view shouldBe Map.empty
+    }
+  }
+
+  test("Fortune can't be changed by somebody who's not the owner or editor") {
+    new FortuneInMemoryTest {
+      val hacker = UserId("hacker@example.com")
+
+      intercept[InsufficientAccessRights] {
+        fortune ? ReceiveIncome(hacker, BigDecimal(123.12), Currency.USD, IncomeCategory("salary"))
+      }.getMessage should include("not allowed to perform this command")
+
+      intercept[InsufficientAccessRights] {
+        fortune ? AddEditor(hacker, hacker)
+      }.getMessage should include("not allowed to perform this command")
+
+      expectNoEvent()
+
+      fortune ! AddEditor(owner, hacker)
+      expectEventType[EditorAdded]
+
+      intercept[InsufficientAccessRights] {
+        fortune ? AddEditor(hacker, hacker)
+      }.getMessage should include("not allowed to perform this command")
+
+      fortune ! ReceiveIncome(hacker, BigDecimal(123.12), Currency.USD, IncomeCategory("salary"))
+      expectEventType[FortuneIncreased]
+    }
+  }
 
   test("Increase fortune") {
 
-
     new FortuneInMemoryTest {
-      val fortune = ref(id)
+      fortune ! ReceiveIncome(owner, BigDecimal(123.12), Currency.USD, IncomeCategory("salary"))
+      fortune ! ReceiveIncome(owner, BigDecimal(20), Currency.EUR, IncomeCategory("salary"))
+      fortune ! ReceiveIncome(owner, BigDecimal(30.5), Currency.EUR, IncomeCategory("salary"))
 
-      fortune ! ReceiveIncome(BigDecimal(123.12), Currency.USD, IncomeCategory("salary"))
-      fortune ! ReceiveIncome(BigDecimal(20), Currency.EUR, IncomeCategory("salary"))
-      fortune ! ReceiveIncome(BigDecimal(30.5), Currency.EUR, IncomeCategory("salary"))
-
-      expectEvent { case FortuneIncreased(amount, Currency.USD, _, _, None) if amount.toDouble == 123.12 => () }
-      expectEvent { case FortuneIncreased(amount, Currency.EUR, _, _, None) if amount.toDouble == 20.0 => () }
-      expectEvent { case FortuneIncreased(amount, Currency.EUR, _, _, None) if amount.toDouble == 30.5 => () }
+      expectEvent { case FortuneIncreased(_, amount, Currency.USD, _, _, None) if amount.toDouble == 123.12 => () }
+      expectEvent { case FortuneIncreased(_, amount, Currency.EUR, _, _, None) if amount.toDouble == 20.0 => () }
+      expectEvent { case FortuneIncreased(_, amount, Currency.EUR, _, _, None) if amount.toDouble == 30.5 => () }
 
       val view = repo.findAll(id).futureValue
       view(Currency.USD) shouldBe BigDecimal(123.12)
@@ -59,38 +97,37 @@ class FortuneProtocolSpec extends IHaveMoneySpec with ScalaFutures {
   test("Increase and decrease fortune") {
 
     new FortuneInMemoryTest {
-      val fortune = ref(id)
+      fortune ! ReceiveIncome(owner, BigDecimal(123.12), Currency.USD, IncomeCategory("salary"))
+      fortune ! Spend(owner, BigDecimal(20), Currency.USD, ExpenseCategory("food"))
 
-      fortune ! ReceiveIncome(BigDecimal(123.12), Currency.USD, IncomeCategory("salary"))
-      fortune ! Spend(BigDecimal(20), Currency.USD, ExpenseCategory("food"))
-
-      expectEvent { case FortuneIncreased(amount, Currency.USD, _, _, None) if amount.toDouble == 123.12 => () }
-      expectEvent { case FortuneSpent(amount, Currency.USD, _, _, None) if amount.toDouble == 20.0 => () }
+      expectEvent { case FortuneIncreased(_, amount, Currency.USD, _, _, None) if amount.toDouble == 123.12 => () }
+      expectEvent { case FortuneSpent(_, amount, Currency.USD, _, _, None) if amount.toDouble == 20.0 => () }
 
       val view = repo.findAll(id).futureValue
       view(Currency.USD) shouldBe BigDecimal(103.12)
     }
   }
 
-  test("Spending of not initialized fortune produces an error") {
+  test("Editing not initialized fortune produces an error") {
 
-    new FortuneInMemoryTest {
+    new FortuneInMemoryTestBase {
       val fortune = ref(id)
       intercept[CommandException] {
-        fortune ? Spend(BigDecimal(20), Currency.USD, ExpenseCategory("food"))
-      }.getMessage should startWith("Invalid command Spend")
+        fortune ? ReceiveIncome(owner, BigDecimal(20), Currency.USD, IncomeCategory("food"))
+      }.getMessage should startWith("Invalid command ReceiveIncome")
     }
   }
 
   test("Spending more than is available is not allowed") {
     new FortuneInMemoryTest {
-      val fortune = ref(id)
 
-      fortune ? ReceiveIncome(BigDecimal(10), Currency.USD, IncomeCategory("salary"))
+      fortune ? ReceiveIncome(owner, BigDecimal(10), Currency.USD, IncomeCategory("salary"))
 
-      intercept[BalanceIsNotEnough] {
-        fortune ? Spend(BigDecimal(20), Currency.USD, ExpenseCategory("food"))
-      }.getMessage shouldBe "Your balance (10 USD) is not enough for this operation"
+      val message = intercept[BalanceIsNotEnough] {
+        fortune ? Spend(owner, BigDecimal(20), Currency.USD, ExpenseCategory("food"))
+      }.getMessage
+      message should startWith("Your balance")
+      message should endWith("is not enough for this operation")
     }
   }
 

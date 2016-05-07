@@ -4,6 +4,7 @@ import org.scalacheck.{Arbitrary, Gen}
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
 import org.scalatest.{FunSuite, Matchers}
 import ru.pavkin.ihavemoney.domain.fortune.{Currency, Fortune, FortuneId, Worth}
+import ru.pavkin.ihavemoney.domain.user.UserId
 
 class IHaveMoneySpec extends FunSuite with Matchers with GeneratorDrivenPropertyChecks {
 
@@ -21,8 +22,9 @@ class IHaveMoneySpec extends FunSuite with Matchers with GeneratorDrivenProperty
 
   val generateFortune: Gen[Fortune] = for {
     id ← Gen.uuid.map(_.toString).map(FortuneId(_))
+    ownerId ← Gen.uuid.map(_.toString).map(UserId(_))
     balances ← Gen.mapOf(generateCurrency.flatMap(c ⇒ Gen.posNum[Double].map(BigDecimal(_)).map(b ⇒ c → b)))
-  } yield Fortune(id, balances)
+  } yield Fortune(id, balances, ownerId, Set.empty)
 
   implicit val arbFortune: Arbitrary[Fortune] = Arbitrary(generateFortune)
 }
