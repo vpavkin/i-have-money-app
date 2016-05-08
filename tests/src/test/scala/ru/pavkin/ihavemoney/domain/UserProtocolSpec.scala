@@ -69,14 +69,14 @@ class UserProtocolSpec extends IHaveMoneySpec with ScalaFutures {
   test("User can resend confirmation email") {
     new UserInMemoryTest {
 
-      user ! ResendConfirmationEmail
+      user ! ResendConfirmationEmail()
       expectEventType[ConfirmationEmailSent]
 
       user ! ConfirmEmail(confirmationCode)
       expectEventType[UserConfirmed]
 
       intercept[EmailAlreadyConfirmed.type] {
-        user ? ResendConfirmationEmail
+        user ? ResendConfirmationEmail()
       }.getMessage should include("Email already confirmed")
       expectNoEvent()
     }

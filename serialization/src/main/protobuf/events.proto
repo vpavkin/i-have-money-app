@@ -54,7 +54,6 @@ message PBConfirmationEmailSent {
 }
 
 message PBUserLoggedIn {
-	string token = 1;
 	PBMetadata metadata = 4;
 }
 
