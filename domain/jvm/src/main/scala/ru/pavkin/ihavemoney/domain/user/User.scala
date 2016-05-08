@@ -4,12 +4,13 @@ import java.util.UUID
 
 import io.funcqrs._
 import io.funcqrs.behavior._
-import ru.pavkin.ihavemoney.domain.errors.{EmailAlreadyConfirmed, InvalidConfirmationCode}
+import ru.pavkin.ihavemoney.domain.errors.{EmailAlreadyConfirmed, EmailIsNotYetConfirmed, InvalidConfirmationCode}
 import ru.pavkin.ihavemoney.domain.passwords
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 
+// todo: inject email service into behaviour
 case class User(id: UserId,
                 passwordHash: String,
                 displayName: String,
@@ -32,6 +33,11 @@ case class User(id: UserId,
         InvalidConfirmationCode
     }
 
+  def cantLogInUnconfirmedUser = action[User]
+    .rejectCommand {
+      case cmd: LoginUser if !this.isConfirmed ⇒
+        EmailIsNotYetConfirmed
+    }
 
   def cantSentConfirmationEmailForConfirmedUser = action[User]
     .rejectCommand {
@@ -115,6 +121,7 @@ object User {
     case Initialized(user) =>
       user.cantConfirmWithInvalidCode ++
         user.cantSentConfirmationEmailForConfirmedUser ++
+        user.cantLogInUnconfirmedUser ++
         user.confirmEmail ++
         user.resendConfirmationEmail ++
         user.login

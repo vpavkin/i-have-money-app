@@ -19,6 +19,9 @@ case object UnsupportedCommand extends DomainError {
 case object InvalidConfirmationCode extends DomainError {
   def message = s"Invalid confirmation code"
 }
+case object EmailIsNotYetConfirmed extends DomainError {
+  def message = s"Email is not yet confirmed"
+}
 case object EmailAlreadyConfirmed extends DomainError {
   def message = s"Email already confirmed"
 }
