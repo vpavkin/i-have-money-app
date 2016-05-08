@@ -1,142 +1,80 @@
 package ru.pavkin.ihavemoney.serialization
 
 import java.time.OffsetDateTime
+import java.util.UUID
 
 import com.trueaccord.scalapb.GeneratedMessageCompanion
+import io.funcqrs.{Tag, Tags}
 import ru.pavkin.ihavemoney.domain.CommandEnvelope
-import ru.pavkin.ihavemoney.domain.fortune.{Currency, FortuneId}
+import ru.pavkin.ihavemoney.domain.fortune.Currency
 import ru.pavkin.ihavemoney.domain.fortune.FortuneProtocol._
-import ru.pavkin.ihavemoney.proto.commands._
-import ru.pavkin.ihavemoney.proto.events.{PBFortuneIncreased, PBFortuneSpent, PBMetadata, PBUserCreated}
-import ru.pavkin.utils.option._
-import ProtobufSuite.syntax._
-import ru.pavkin.ihavemoney.domain.user.UserId
 import ru.pavkin.ihavemoney.domain.user.UserProtocol._
 import ru.pavkin.ihavemoney.proto.commands.PBCommandEnvelope.Command._
-import shapeless.{::, HNil, Poly, Poly1}
-import shapeless.poly._
-
-// todo: generalize conversions
-// todo: add suites for events
+import ru.pavkin.ihavemoney.proto.commands._
+import ru.pavkin.ihavemoney.proto.events._
+import ru.pavkin.ihavemoney.serialization.ProtobufSuite.syntax._
+import ru.pavkin.ihavemoney.serialization.derivation.IsoSerializable
+import ru.pavkin.utils.option._
+import shapeless.{::, Generic, HNil}
 
 object implicits {
-  def deserializeFortuneMetadata(m: PBMetadata): FortuneMetadata =
-    MetadataSerialization.deserialize[FortuneMetadata, FortuneId](FortuneMetadata, FortuneId(_), OffsetDateTime.parse)(m)
 
-  implicit val fortuneIncreasedSuite: ProtobufSuite[FortuneIncreased, PBFortuneIncreased] =
-    new ProtobufSuite[FortuneIncreased, PBFortuneIncreased] {
-      def encode(m: FortuneIncreased): PBFortuneIncreased = PBFortuneIncreased(
-        m.user.value,
-        m.amount.toString,
-        m.currency.code,
-        m.category.name,
-        Some(MetadataSerialization.serialize(m.metadata)),
-        m.comment.getOrElse(""))
-      def decode(p: PBFortuneIncreased): FortuneIncreased = FortuneIncreased(
-        UserId(p.userId),
-        BigDecimal(p.amount),
-        Currency.unsafeFromCode(p.currency),
-        IncomeCategory(p.category),
-        deserializeFortuneMetadata(p.metadata.get),
-        notEmpty(p.comment)
-      )
-      def companion = PBFortuneIncreased
+  implicit def stringIdIS[Id](implicit G: Generic.Aux[Id, String :: HNil]): IsoSerializable[Id, String] = new IsoSerializable[Id, String] {
+    def serialize(t: Id): String = G.to(t).head
+    def deserialize(t: String): Id = G.from(t :: HNil)
+  }
+
+  implicit def uuidIdIS[Id](implicit G: Generic.Aux[Id, UUID :: HNil]): IsoSerializable[Id, String] = new IsoSerializable[Id, String] {
+    def serialize(t: Id): String = G.to(t).head.toString
+    def deserialize(t: String): Id = G.from(UUID.fromString(t) :: HNil)
+  }
+
+  implicit val tagSetIS: IsoSerializable[Set[Tag], Seq[String]] = new IsoSerializable[Set[Tag], Seq[String]] {
+    def serialize(t: Set[Tag]): Seq[String] = t.map(_.value).toSeq
+    def deserialize(t: Seq[String]): Set[Tag] = t.toSet.map(Tags.aggregateTag)
+  }
+
+  implicit val offsetDateTimeIS: IsoSerializable[OffsetDateTime, String] =
+    IsoSerializable.withString(_.toString, OffsetDateTime.parse)
+
+  implicit def unsafeOptionIS[S, R](implicit IS: IsoSerializable[S, R]): IsoSerializable[S, Option[R]] =
+    new IsoSerializable[S, Option[R]] {
+      def serialize(t: S): Option[R] = Some(IS.serialize(t))
+      def deserialize(t: Option[R]): S = IS.deserialize(t.get)
     }
 
-  implicit val fortuneSpentSuite: ProtobufSuite[FortuneSpent, PBFortuneSpent] =
-    new ProtobufSuite[FortuneSpent, PBFortuneSpent] {
-      def encode(m: FortuneSpent): PBFortuneSpent = PBFortuneSpent(
-        m.user.value,
-        m.amount.toString,
-        m.currency.code,
-        m.category.name,
-        Some(MetadataSerialization.serialize(m.metadata)),
-        m.comment.getOrElse(""))
-      def decode(p: PBFortuneSpent): FortuneSpent = FortuneSpent(
-        UserId(p.userId),
-        BigDecimal(p.amount),
-        Currency.unsafeFromCode(p.currency),
-        ExpenseCategory(p.category),
-        deserializeFortuneMetadata(p.metadata.get),
-        notEmpty(p.comment)
-      )
-      def companion = PBFortuneSpent
-    }
+  implicit val optionStringIS: IsoSerializable[Option[String], String] =
+    IsoSerializable.withString(_.getOrElse(""), notEmpty)
 
-  implicit val receiveIncomeSuite: ProtobufSuite[ReceiveIncome, PBReceiveIncome] =
-    new ProtobufSuite[ReceiveIncome, PBReceiveIncome] {
-      def encode(m: ReceiveIncome): PBReceiveIncome = PBReceiveIncome(
-        m.user.value,
-        m.amount.toString,
-        m.currency.code,
-        m.category.name,
-        m.comment.getOrElse("")
-      )
+  implicit val bigDecimalIS: IsoSerializable[BigDecimal, String] =
+    IsoSerializable.withString(_.toString, BigDecimal(_))
 
-      def decode(p: PBReceiveIncome): ReceiveIncome = ReceiveIncome(
-        UserId(p.userId),
-        BigDecimal(p.amount),
-        Currency.unsafeFromCode(p.currency),
-        IncomeCategory(p.category),
-        notEmpty(p.comment)
-      )
-      def companion = PBReceiveIncome
-    }
+  implicit val currencyIS: IsoSerializable[Currency, String] =
+    IsoSerializable.withString(_.code, Currency.unsafeFromCode)
 
-  implicit val spendSuite: ProtobufSuite[Spend, PBSpend] =
-    new ProtobufSuite[Spend, PBSpend] {
-      def encode(m: Spend): PBSpend = PBSpend(
-        m.user.value,
-        m.amount.toString,
-        m.currency.code,
-        m.category.name,
-        m.comment.getOrElse("")
-      )
+  implicit val fortuneIncreasedSuite: ProtobufSuite[FortuneIncreased, PBFortuneIncreased] = ProtobufSuite.iso[FortuneIncreased, PBFortuneIncreased]
+  implicit val fortuneSpentSuite: ProtobufSuite[FortuneSpent, PBFortuneSpent] = ProtobufSuite.iso[FortuneSpent, PBFortuneSpent]
+  implicit val fortuneCreatedSuite: ProtobufSuite[FortuneCreated, PBFortuneCreated] = ProtobufSuite.iso[FortuneCreated, PBFortuneCreated]
+  implicit val userCreatedSuite: ProtobufSuite[UserCreated, PBUserCreated] = ProtobufSuite.iso[UserCreated, PBUserCreated]
+  implicit val editorAddedSuite: ProtobufSuite[EditorAdded, PBEditorAdded] = ProtobufSuite.iso[EditorAdded, PBEditorAdded]
+  implicit val userConfirmedSuite: ProtobufSuite[UserConfirmed, PBUserConfirmed] = ProtobufSuite.iso[UserConfirmed, PBUserConfirmed]
+  implicit val confirmationEmailSentSuite: ProtobufSuite[ConfirmationEmailSent, PBConfirmationEmailSent] = ProtobufSuite.iso[ConfirmationEmailSent, PBConfirmationEmailSent]
+  implicit val userLoggedInSuite: ProtobufSuite[UserLoggedIn, PBUserLoggedIn] = ProtobufSuite.iso[UserLoggedIn, PBUserLoggedIn]
+  implicit val userFailedToLogInSuite: ProtobufSuite[UserFailedToLogIn, PBUserFailedToLogIn] = ProtobufSuite.iso[UserFailedToLogIn, PBUserFailedToLogIn]
 
-      def decode(p: PBSpend): Spend = Spend(
-        UserId(p.userId),
-        BigDecimal(p.amount),
-        Currency.unsafeFromCode(p.currency),
-        ExpenseCategory(p.category),
-        notEmpty(p.comment)
-      )
-      def companion = PBSpend
-    }
-
-  implicit val createUserSuite: ProtobufSuite[CreateUser, PBCreateUser] =
-    ProtobufSuite.auto[CreateUser, PBCreateUser].identicallyShaped(PBCreateUser)
-
-  implicit val confirmEmailSuite: ProtobufSuite[ConfirmEmail, PBConfirmEmail] =
-    ProtobufSuite.auto[ConfirmEmail, PBConfirmEmail].identicallyShaped(PBConfirmEmail)
-
-  implicit val logInSuite: ProtobufSuite[LoginUser, PBLogIn] =
-    ProtobufSuite.auto[LoginUser, PBLogIn].identicallyShaped(PBLogIn)
-
+  implicit val receiveIncomeSuite: ProtobufSuite[ReceiveIncome, PBReceiveIncome] = ProtobufSuite.iso[ReceiveIncome, PBReceiveIncome]
+  implicit val spendSuite: ProtobufSuite[Spend, PBSpend] = ProtobufSuite.iso[Spend, PBSpend]
+  implicit val createUserSuite: ProtobufSuite[CreateUser, PBCreateUser] = ProtobufSuite.iso[CreateUser, PBCreateUser]
+  implicit val confirmEmailSuite: ProtobufSuite[ConfirmEmail, PBConfirmEmail] = ProtobufSuite.iso[ConfirmEmail, PBConfirmEmail]
+  implicit val logInSuite: ProtobufSuite[LoginUser, PBLogIn] = ProtobufSuite.iso[LoginUser, PBLogIn]
   implicit val resendConfirmationEmailSuite: ProtobufSuite[ResendConfirmationEmail.type, PBResendConfirmationEmail] =
     new ProtobufSuite[ResendConfirmationEmail.type, PBResendConfirmationEmail] {
       def encode(m: ResendConfirmationEmail.type): PBResendConfirmationEmail = PBResendConfirmationEmail()
       def decode(p: PBResendConfirmationEmail): ResendConfirmationEmail.type = ResendConfirmationEmail
       def companion: GeneratedMessageCompanion[PBResendConfirmationEmail] = PBResendConfirmationEmail
     }
-
-  implicit val createFortuneSuite: ProtobufSuite[CreateFortune, PBCreateFortune] =
-    ProtobufSuite.auto[CreateFortune, PBCreateFortune].hlist(
-      (m: UserId :: HNil) ⇒ m.head.value :: HNil,
-      (m: String :: HNil) ⇒ UserId(m.head) :: HNil,
-      PBCreateFortune
-    )
-
-  object userIdIsoString extends Poly1 {
-    implicit def caseString = at[String](UserId(_))
-    implicit def caseUserId = at[UserId](_.value)
-  }
-
-  implicit val addEditorSuite: ProtobufSuite[AddEditor, PBAddEditor] =
-    ProtobufSuite.auto[AddEditor, PBAddEditor].hlist(
-      (m: UserId :: UserId :: HNil) ⇒ m.map(userIdIsoString),
-      (m: String :: String :: HNil) ⇒ m.map(userIdIsoString),
-      PBAddEditor
-    )
+  implicit val createFortuneSuite: ProtobufSuite[CreateFortune, PBCreateFortune] = ProtobufSuite.iso[CreateFortune, PBCreateFortune]
+  implicit val addEditorSuite: ProtobufSuite[AddEditor, PBAddEditor] = ProtobufSuite.iso[AddEditor, PBAddEditor]
 
   implicit val commandEnvelopeSuite: ProtobufSuite[CommandEnvelope, PBCommandEnvelope] =
     new ProtobufSuite[CommandEnvelope, PBCommandEnvelope] {
