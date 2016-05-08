@@ -5,4 +5,5 @@ docker run -i --net=host \
 -e ihavemoney_writefront_host=$HOST_IP \
 -e ihavemoney_writefront_http_port=8101 \
 -e ihavemoney_writefront_tcp_port=10101 \
+-e ihavemoney_secret_key=changeit \
 --name writefront -a stdin ihavemoney/write-frontend

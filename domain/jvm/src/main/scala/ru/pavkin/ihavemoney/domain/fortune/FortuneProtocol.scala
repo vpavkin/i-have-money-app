@@ -4,6 +4,7 @@ import java.time.OffsetDateTime
 import java.util.UUID
 
 import io.funcqrs._
+import ru.pavkin.ihavemoney.domain.user.UserId
 
 case class FortuneId(value: String) extends AggregateId
 object FortuneId {
@@ -19,25 +20,42 @@ object FortuneProtocol extends ProtocolLike {
   /*-------------------Commands---------------------*/
   sealed trait FortuneCommand extends ProtocolCommand
 
-  sealed trait FortuneLifecycleCommand extends FortuneCommand
-  case class Spend(amount: BigDecimal,
+  case class CreateFortune(owner: UserId) extends FortuneCommand
+  case class AddEditor(user: UserId, editor: UserId) extends FortuneCommand
+
+  sealed trait FortuneAdjustmentCommand extends FortuneCommand {
+    def user: UserId
+  }
+
+  case class Spend(user: UserId,
+                   amount: BigDecimal,
                    currency: Currency,
                    category: ExpenseCategory,
-                   comment: Option[String] = None) extends FortuneLifecycleCommand
-  case class ReceiveIncome(amount: BigDecimal,
+                   comment: Option[String] = None) extends FortuneAdjustmentCommand
+
+  case class ReceiveIncome(user: UserId,
+                           amount: BigDecimal,
                            currency: Currency,
                            category: IncomeCategory,
-                           comment: Option[String] = None) extends FortuneLifecycleCommand
+                           comment: Option[String] = None) extends FortuneAdjustmentCommand
 
   /*-------------------Events---------------------*/
   sealed trait FortuneEvent extends ProtocolEvent with MetadataFacet[FortuneMetadata]
 
-  case class FortuneIncreased(amount: BigDecimal,
+  case class FortuneCreated(owner: UserId,
+                            metadata: FortuneMetadata) extends FortuneEvent
+
+  case class EditorAdded(editor: UserId,
+                         metadata: FortuneMetadata) extends FortuneEvent
+
+  case class FortuneIncreased(user: UserId,
+                              amount: BigDecimal,
                               currency: Currency,
                               category: IncomeCategory,
                               metadata: FortuneMetadata,
                               comment: Option[String] = None) extends FortuneEvent
-  case class FortuneSpent(amount: BigDecimal,
+  case class FortuneSpent(user: UserId,
+                          amount: BigDecimal,
                           currency: Currency,
                           category: ExpenseCategory,
                           metadata: FortuneMetadata,

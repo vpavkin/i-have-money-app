@@ -2,10 +2,6 @@ syntax = "proto3";
 option java_package = "ru.pavkin.ihavemoney.proto";
 option optimize_for = SPEED;
 
-message CommandSuccess {
-	string id = 1;
-}
-
 message InvalidCommand {
 	string id = 1;
 	string reason = 2;

@@ -1,5 +1,4 @@
-import com.trueaccord.scalapb.{ScalaPbPlugin => Protobuf}
-
+import com.trueaccord.scalapb.{ScalaPbPlugin ⇒ Protobuf}
 import sbtdocker.Instructions._
 
 lazy val buildSettings = Seq(
@@ -86,7 +85,7 @@ lazy val protobufSettings = Protobuf.protobufSettings ++
 
 lazy val iHaveMoney = project.in(file("."))
   .settings(buildSettings)
-  .aggregate(domainJVM, serialization, writeBackend, writeFrontend, readBackend, frontendProtocolJVM, readFrontend, jsApp)
+  .aggregate(domainJVM, serialization, writeBackend, writeFrontend, readBackend, frontendProtocolJVM, readFrontend, jsApp, tests)
 
 lazy val domain = crossProject.in(file("domain"))
   .settings(
@@ -101,7 +100,8 @@ lazy val domain = crossProject.in(file("domain"))
     )
   )
   .jvmSettings(libraryDependencies ++= Seq(
-    "io.strongtyped" %% "fun-cqrs-core" % funCQRSVersion
+    "io.strongtyped" %% "fun-cqrs-core" % funCQRSVersion,
+    "com.github.t3hnar" %% "scala-bcrypt" % "2.6"
   ))
   .jvmSettings(testDependencies)
 
@@ -118,7 +118,8 @@ lazy val serialization = project.in(file("serialization"))
   .settings(
     libraryDependencies ++= Seq(
       "com.typesafe.akka" %% "akka-actor" % akkaVersion,
-      "com.typesafe.akka" %% "akka-persistence" % akkaVersion
+      "com.typesafe.akka" %% "akka-persistence" % akkaVersion,
+      "com.chuusai" %%% "shapeless" % shapelessVersion
     )
   )
   .dependsOn(domainJVM)
@@ -147,7 +148,7 @@ lazy val writeBackend = project.in(file("write-backend"))
       "com.typesafe.akka" %% "akka-cluster-sharding" % akkaVersion,
       "com.typesafe.akka" %% "akka-distributed-data-experimental" % akkaVersion,
       "com.typesafe.akka" %% "akka-persistence-query-experimental" % akkaVersion,
-       "org.postgresql" % "postgresql" % postgreSQLVersion
+      "org.postgresql" % "postgresql" % postgreSQLVersion
     )
   )
   .settings(testDependencies)
@@ -206,7 +207,8 @@ lazy val writeFrontend = project.in(file("write-frontend"))
       "io.circe" %% "circe-core" % circeVersion,
       "io.circe" %% "circe-generic" % circeVersion,
       "io.circe" %% "circe-parser" % circeVersion,
-      "de.heikoseeberger" %% "akka-http-circe" % "1.5.3"
+      "de.heikoseeberger" %% "akka-http-circe" % "1.5.3",
+      "com.pauldijou" %% "jwt-circe" % "0.7.1"
     )
   )
   .settings(testDependencies)
@@ -234,7 +236,8 @@ lazy val writeFrontend = project.in(file("write-frontend"))
           "ihavemoney_writeback_port" → "9101",
           "ihavemoney_writefront_host" → "127.0.0.1",
           "ihavemoney_writefront_http_port" → "8101",
-          "ihavemoney_writefront_tcp_port" → "10101"
+          "ihavemoney_writefront_tcp_port" → "10101",
+          "ihavemoney_secret_key" → "changeit"
         )
         copy(artifact, artifactTargetPath)
         copy(resources, applicationConf)
