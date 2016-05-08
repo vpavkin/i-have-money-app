@@ -74,7 +74,7 @@ object WriteFrontend extends App with CirceSupport with CorsDirectives {
           } ~
           (path("resendConfirmationEmail") & post & entity(as[ResendConfirmationEmailRequest])) { req ⇒
             complete {
-              writeBack.sendCommandAndIgnoreResult(req.email, ResendConfirmationEmail)
+              writeBack.sendCommandAndIgnoreResult(req.email, ResendConfirmationEmail())
             }
           } ~ authenticateOrRejectWithChallenge(authenticator) { userId ⇒
           pathPrefix("fortune" / Segment) {

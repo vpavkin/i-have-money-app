@@ -67,12 +67,7 @@ object implicits {
   implicit val createUserSuite: ProtobufSuite[CreateUser, PBCreateUser] = ProtobufSuite.iso[CreateUser, PBCreateUser]
   implicit val confirmEmailSuite: ProtobufSuite[ConfirmEmail, PBConfirmEmail] = ProtobufSuite.iso[ConfirmEmail, PBConfirmEmail]
   implicit val logInSuite: ProtobufSuite[LoginUser, PBLogIn] = ProtobufSuite.iso[LoginUser, PBLogIn]
-  implicit val resendConfirmationEmailSuite: ProtobufSuite[ResendConfirmationEmail.type, PBResendConfirmationEmail] =
-    new ProtobufSuite[ResendConfirmationEmail.type, PBResendConfirmationEmail] {
-      def encode(m: ResendConfirmationEmail.type): PBResendConfirmationEmail = PBResendConfirmationEmail()
-      def decode(p: PBResendConfirmationEmail): ResendConfirmationEmail.type = ResendConfirmationEmail
-      def companion: GeneratedMessageCompanion[PBResendConfirmationEmail] = PBResendConfirmationEmail
-    }
+  implicit val resendConfirmationEmailSuite: ProtobufSuite[ResendConfirmationEmail, PBResendConfirmationEmail] = ProtobufSuite.iso[ResendConfirmationEmail, PBResendConfirmationEmail]
   implicit val createFortuneSuite: ProtobufSuite[CreateFortune, PBCreateFortune] = ProtobufSuite.iso[CreateFortune, PBCreateFortune]
   implicit val addEditorSuite: ProtobufSuite[AddEditor, PBAddEditor] = ProtobufSuite.iso[AddEditor, PBAddEditor]
 
@@ -91,7 +86,7 @@ object implicits {
             case c: CreateUser => Command3(c.encode)
             case c: ConfirmEmail => Command4(c.encode)
             case c: LoginUser => Command5(c.encode)
-            case ResendConfirmationEmail => Command6(ResendConfirmationEmail.encode)
+            case c: ResendConfirmationEmail => Command6(c.encode)
           }
           case other ⇒ throw new Exception(s"Unknown domain command ${other.getClass.getName}")
         }

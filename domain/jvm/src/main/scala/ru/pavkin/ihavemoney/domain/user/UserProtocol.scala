@@ -17,7 +17,7 @@ object UserProtocol extends ProtocolLike {
   case class ConfirmEmail(confirmationCode: String) extends UserCommand
   case class LoginUser(password: String) extends UserCommand
 
-  case object ResendConfirmationEmail extends UserCommand
+  case class ResendConfirmationEmail() extends UserCommand
 
   /*-------------------Events---------------------*/
   sealed trait UserEvent extends ProtocolEvent with MetadataFacet[UserMetadata]

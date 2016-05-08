@@ -41,7 +41,7 @@ case class User(id: UserId,
 
   def cantSentConfirmationEmailForConfirmedUser = action[User]
     .rejectCommand {
-      case ResendConfirmationEmail if this.isConfirmed =>
+      case cmd: ResendConfirmationEmail if this.isConfirmed =>
         EmailAlreadyConfirmed
       case cmd: ConfirmEmail if this.isConfirmed ⇒
         EmailAlreadyConfirmed
@@ -56,7 +56,7 @@ case class User(id: UserId,
     }
 
   def resendConfirmationEmail = action[User]
-    .handleCommandAsync[ResendConfirmationEmail.type, ConfirmationEmailSent] {
+    .handleCommandAsync[ResendConfirmationEmail, ConfirmationEmailSent] {
     cmd ⇒ User.sendConfirmationEmail(metadata(cmd), this.confirmationCode)
   }
     .handleEvent {
