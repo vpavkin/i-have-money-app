@@ -35,20 +35,22 @@ object api {
                 amount: BigDecimal,
                 currency: Currency,
                 category: String,
+                initializer: Boolean = false,
                 comment: Option[String])
                (implicit ec: ExecutionContext): Future[String Xor Unit] =
     postJSON(routes.addIncome(id).value,
-      ReceiveIncomeRequest(amount, currency, category, comment).asJson.toString())
+      ReceiveIncomeRequest(amount, currency, category, initializer, comment).asJson.toString())
       .map(_.map(_ ⇒ ()))
 
   def addExpense(id: String,
                  amount: BigDecimal,
                  currency: Currency,
                  category: String,
+                 initializer: Boolean = false,
                  comment: Option[String])
                 (implicit ec: ExecutionContext): Future[String Xor Unit] =
     postJSON(routes.addExpense(id).value,
-      ReceiveIncomeRequest(amount, currency, category, comment).asJson.toString())
+      ReceiveIncomeRequest(amount, currency, category, initializer, comment).asJson.toString())
       .map(_.map(_ ⇒ ()))
 
   def getBalances(id: String)(implicit ec: ExecutionContext): Future[String Xor Map[String, BigDecimal]] =

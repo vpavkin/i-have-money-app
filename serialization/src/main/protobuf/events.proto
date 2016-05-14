@@ -10,12 +10,18 @@ message PBMetadata {
 	repeated string tags = 5;
 }
 
+message PBFortuneInitializationFinished {
+	string userId = 1;
+	PBMetadata metadata = 2;
+}
+
 message PBFortuneIncreased {
 	string userId = 1;
 	string amount = 2;
 	string currency = 3;
 	string category = 4;
 	PBMetadata metadata = 5;
+	bool initializer = 6;
 	string comment = 15;
 }
 
@@ -25,6 +31,7 @@ message PBFortuneSpent {
 	string currency = 3;
 	string category = 4;
 	PBMetadata metadata = 5;
+	bool initializer = 6;
 	string comment = 15;
 }
 

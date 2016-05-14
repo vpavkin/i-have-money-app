@@ -2,13 +2,14 @@ package ru.pavkin.ihavemoney.domain.fortune
 
 import io.funcqrs._
 import io.funcqrs.behavior._
-import ru.pavkin.ihavemoney.domain.errors.{BalanceIsNotEnough, InsufficientAccessRights}
+import ru.pavkin.ihavemoney.domain.errors.{BalanceIsNotEnough, FortuneAlreadyInitialized, InsufficientAccessRights}
 import ru.pavkin.ihavemoney.domain.user.UserId
 
 case class Fortune(id: FortuneId,
                    balances: Map[Currency, BigDecimal],
                    owner: UserId,
-                   editors: Set[UserId]) extends AggregateLike {
+                   editors: Set[UserId],
+                   initializationMode: Boolean = true) extends AggregateLike {
 
   type Id = FortuneId
   type Protocol = FortuneProtocol.type
@@ -31,6 +32,12 @@ case class Fortune(id: FortuneId,
 
   def metadata(cmd: FortuneCommand): FortuneMetadata =
     Fortune.metadata(id, cmd)
+
+  def cantSendInitializationCommandsAfterInitializationIsComplete = action[Fortune]
+    .rejectCommand {
+      case cmd: FortuneAdjustmentCommand if cmd.initializer && !initializationMode ⇒
+        FortuneAlreadyInitialized(id)
+    }
 
   def unauthorizedUserCanNotAdjustFortune = action[Fortune]
     .rejectCommand {
@@ -58,6 +65,14 @@ case class Fortune(id: FortuneId,
       evt: EditorAdded ⇒ this.addEditor(evt.editor)
     }
 
+  def editorsCanFinishInitialization = action[Fortune]
+    .handleCommand {
+      cmd: FinishInitialization ⇒ FortuneInitializationFinished(cmd.user, metadata(cmd))
+    }
+    .handleEvent {
+      evt: FortuneInitializationFinished ⇒ copy(initializationMode = false)
+    }
+
   def editorsCanIncreaseFortune = action[Fortune]
     .handleCommand {
       cmd: ReceiveIncome => FortuneIncreased(
@@ -66,6 +81,7 @@ case class Fortune(id: FortuneId,
         cmd.currency,
         cmd.category,
         metadata(cmd),
+        cmd.initializer,
         cmd.comment)
     }
     .handleEvent {
@@ -80,6 +96,7 @@ case class Fortune(id: FortuneId,
         cmd.currency,
         cmd.category,
         metadata(cmd),
+        cmd.initializer,
         cmd.comment)
     }
     .handleEvent {
@@ -113,8 +130,10 @@ object Fortune {
     case Initialized(fortune) =>
       fortune.unauthorizedUserCanNotAdjustFortune ++
         fortune.onlyOwnerCanAddEditors ++
+        fortune.cantSendInitializationCommandsAfterInitializationIsComplete ++
         fortune.cantHaveNegativeBalance ++
         fortune.ownerCanAddEditors ++
+        fortune.editorsCanFinishInitialization ++
         fortune.editorsCanIncreaseFortune ++
         fortune.editorsCanDecreaseFortune
   }

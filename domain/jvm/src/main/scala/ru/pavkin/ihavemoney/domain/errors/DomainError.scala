@@ -28,3 +28,6 @@ case object EmailAlreadyConfirmed extends DomainError {
 case class InsufficientAccessRights(user: UserId, fortune: FortuneId) extends DomainError {
   def message = s"User $user is not allowed to perform this command on fortune $fortune"
 }
+case class FortuneAlreadyInitialized(fortune: FortuneId) extends DomainError {
+  def message = s"Fortune $fortune is already initialized, you can not perform initializer commands."
+}
