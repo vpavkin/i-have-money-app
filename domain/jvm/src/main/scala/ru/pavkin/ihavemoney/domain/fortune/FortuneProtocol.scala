@@ -75,7 +75,7 @@ object FortuneProtocol extends ProtocolLike {
   /* Reevaluate per-stock worth for stocks, whole asset worth otherwise*/
   case class ReevaluateAsset(user: UserId,
                              assetId: AssetId,
-                             newAmount: BigDecimal,
+                             newPrice: BigDecimal,
                              comment: Option[String] = None) extends AssetManipulationCommand
 
   case class TakeOnLiability(user: UserId,

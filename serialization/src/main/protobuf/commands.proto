@@ -1,6 +1,7 @@
 syntax = "proto3";
 option java_package = "ru.pavkin.ihavemoney.proto";
 option optimize_for = SPEED;
+import "common.proto";
 
 message PBCommandEnvelope {
 	string aggregateId = 1;
@@ -36,6 +37,40 @@ message PBSpend {
 	string currency = 3;
 	string category = 4;
 	bool initializer = 5;
+	string comment = 15;
+}
+
+message PBBuyAsset {
+	string userId = 1;
+	PBAsset asset = 2;
+	bool initializer = 3;
+	string comment = 15;
+}
+
+message PBSellAsset {
+	string userId = 1;
+	string assetId = 2;
+	string comment = 15;
+}
+
+message PBReevaluateAsset {
+	string userId = 1;
+	string assetId = 2;
+	string newPrice = 3;
+	string comment = 15;
+}
+
+message PBTakeOnLiability {
+	string userId = 1;
+	PBLiability liability = 2;
+	bool initializer = 3;
+	string comment = 15;
+}
+
+message PBPayLiabilityOff {
+	string userId = 1;
+	string liabilityId = 2;
+	string byAmount = 3;
 	string comment = 15;
 }
 

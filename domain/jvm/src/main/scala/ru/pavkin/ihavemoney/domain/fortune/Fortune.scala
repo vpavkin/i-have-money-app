@@ -168,7 +168,7 @@ case class Fortune(id: FortuneId,
   def editorsCanReevaluateAssets = action[Fortune]
     .handleCommand {
       cmd: ReevaluateAsset =>
-        AssetWorthChanged(cmd.user, cmd.assetId, cmd.newAmount, metadata(cmd), cmd.comment)
+        AssetWorthChanged(cmd.user, cmd.assetId, cmd.newPrice, metadata(cmd), cmd.comment)
     }
     .handleEvent {
       evt: AssetWorthChanged =>

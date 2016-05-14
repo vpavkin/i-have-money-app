@@ -6,14 +6,16 @@ import java.util.UUID
 import com.trueaccord.scalapb.GeneratedMessageCompanion
 import io.funcqrs.{Tag, Tags}
 import ru.pavkin.ihavemoney.domain.CommandEnvelope
-import ru.pavkin.ihavemoney.domain.fortune.Currency
+import ru.pavkin.ihavemoney.domain.fortune._
 import ru.pavkin.ihavemoney.domain.fortune.FortuneProtocol._
 import ru.pavkin.ihavemoney.domain.user.UserProtocol._
 import ru.pavkin.ihavemoney.proto.commands.PBCommandEnvelope.Command._
 import ru.pavkin.ihavemoney.proto.commands._
+import ru.pavkin.ihavemoney.proto.common._
 import ru.pavkin.ihavemoney.proto.events._
 import ru.pavkin.ihavemoney.serialization.ProtobufSuite.syntax._
 import ru.pavkin.ihavemoney.serialization.derivation.IsoSerializable
+import ru.pavkin.ihavemoney.serialization.derivation.IsoSerializable.syntax._
 import ru.pavkin.utils.option._
 import shapeless.{::, Generic, HNil}
 
@@ -52,6 +54,52 @@ object implicits {
   implicit val currencyIS: IsoSerializable[Currency, String] =
     IsoSerializable.withString(_.code, Currency.unsafeFromCode)
 
+  /* Common */
+
+  implicit val assetIS: IsoSerializable[Asset, PBAsset] = new IsoSerializable[Asset, PBAsset] {
+
+    import PBAsset.Asset._
+
+    def serialize(t: Asset): PBAsset = t match {
+      case s: Stocks => PBAsset(Asset1(s.serialize[PBStocks]))
+      case s: RealEstate => PBAsset(Asset2(s.serialize[PBRealEstate]))
+    }
+    def deserialize(t: PBAsset): Asset = t.asset match {
+      case Empty => throw new Exception(s"Received empty asset")
+      case Asset1(value) => value.deserialize[Stocks]
+      case Asset2(value) => value.deserialize[RealEstate]
+    }
+  }
+
+  implicit val liabilityIS: IsoSerializable[Liability, PBLiability] = new IsoSerializable[Liability, PBLiability] {
+
+    import PBLiability.Liability._
+
+    def serialize(t: Liability): PBLiability = t match {
+      case n: NoInterestDebt => PBLiability(Liability1(n.serialize[PBNoInterestDebt]))
+      case n: Loan => PBLiability(Liability2(n.serialize[PBLoan]))
+    }
+
+    def deserialize(t: PBLiability): Liability = t.liability match {
+      case Empty => throw new Exception(s"Received empty liability")
+      case Liability1(value) => value.deserialize[NoInterestDebt]
+      case Liability2(value) => value.deserialize[Loan]
+    }
+  }
+
+  /* Events */
+  /*
+    case class AssetAcquired
+    case class AssetSold
+    case class AssetWorthChanged
+    case class LiabilityTaken
+    case class LiabilityPaidOff
+    */
+  implicit val assetAcquiredSuite: ProtobufSuite[AssetAcquired, PBAssetAcquired] = ProtobufSuite.iso[AssetAcquired, PBAssetAcquired]
+  implicit val assetSoldSuite: ProtobufSuite[AssetSold, PBAssetSold] = ProtobufSuite.iso[AssetSold, PBAssetSold]
+  implicit val assetWorthChangedSuite: ProtobufSuite[AssetWorthChanged, PBAssetWorthChanged] = ProtobufSuite.iso[AssetWorthChanged, PBAssetWorthChanged]
+  implicit val liabilityTakenSuite: ProtobufSuite[LiabilityTaken, PBLiabilityTaken] = ProtobufSuite.iso[LiabilityTaken, PBLiabilityTaken]
+  implicit val liabilityPaidOffSuite: ProtobufSuite[LiabilityPaidOff, PBLiabilityPaidOff] = ProtobufSuite.iso[LiabilityPaidOff, PBLiabilityPaidOff]
   implicit val fortuneInitializationFinishedSuite: ProtobufSuite[FortuneInitializationFinished, PBFortuneInitializationFinished] = ProtobufSuite.iso[FortuneInitializationFinished, PBFortuneInitializationFinished]
   implicit val fortuneIncreasedSuite: ProtobufSuite[FortuneIncreased, PBFortuneIncreased] = ProtobufSuite.iso[FortuneIncreased, PBFortuneIncreased]
   implicit val fortuneSpentSuite: ProtobufSuite[FortuneSpent, PBFortuneSpent] = ProtobufSuite.iso[FortuneSpent, PBFortuneSpent]
@@ -63,6 +111,11 @@ object implicits {
   implicit val userLoggedInSuite: ProtobufSuite[UserLoggedIn, PBUserLoggedIn] = ProtobufSuite.iso[UserLoggedIn, PBUserLoggedIn]
   implicit val userFailedToLogInSuite: ProtobufSuite[UserFailedToLogIn, PBUserFailedToLogIn] = ProtobufSuite.iso[UserFailedToLogIn, PBUserFailedToLogIn]
 
+  implicit val buyAssetSuite: ProtobufSuite[BuyAsset, PBBuyAsset] = ProtobufSuite.iso[BuyAsset, PBBuyAsset]
+  implicit val sellAssetSuite: ProtobufSuite[SellAsset, PBSellAsset] = ProtobufSuite.iso[SellAsset, PBSellAsset]
+  implicit val reevaluateAssetSuite: ProtobufSuite[ReevaluateAsset, PBReevaluateAsset] = ProtobufSuite.iso[ReevaluateAsset, PBReevaluateAsset]
+  implicit val takeOnLiabilitySuite: ProtobufSuite[TakeOnLiability, PBTakeOnLiability] = ProtobufSuite.iso[TakeOnLiability, PBTakeOnLiability]
+  implicit val payLiabilityOffSuite: ProtobufSuite[PayLiabilityOff, PBPayLiabilityOff] = ProtobufSuite.iso[PayLiabilityOff, PBPayLiabilityOff]
   implicit val finishInitializationSuite: ProtobufSuite[FinishInitialization, PBFinishInitialization] = ProtobufSuite.iso[FinishInitialization, PBFinishInitialization]
   implicit val receiveIncomeSuite: ProtobufSuite[ReceiveIncome, PBReceiveIncome] = ProtobufSuite.iso[ReceiveIncome, PBReceiveIncome]
   implicit val spendSuite: ProtobufSuite[Spend, PBSpend] = ProtobufSuite.iso[Spend, PBSpend]

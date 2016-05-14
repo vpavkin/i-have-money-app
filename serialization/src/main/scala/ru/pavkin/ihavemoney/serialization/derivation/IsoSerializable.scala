@@ -10,8 +10,8 @@ trait IsoSerializable[S, R] {
 object IsoSerializable extends IsoSerializableImplicits {
   object syntax {
     implicit class IsoSerializableOps[T](t: T) {
-      def serialize[R](t: T)(implicit IS: IsoSerializable[T, R]): R = IS.serialize(t)
-      def deserialize[S](t: T)(implicit IS: IsoSerializable[S, T]): S = IS.deserialize(t)
+      def serialize[R](implicit IS: IsoSerializable[T, R]): R = IS.serialize(t)
+      def deserialize[S](implicit IS: IsoSerializable[S, T]): S = IS.deserialize(t)
     }
   }
 

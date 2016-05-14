@@ -1,6 +1,7 @@
 syntax = "proto3";
 option java_package = "ru.pavkin.ihavemoney.proto";
 option optimize_for = SPEED;
+import "common.proto";
 
 message PBMetadata {
 	string aggregate_id = 1;
@@ -31,6 +32,48 @@ message PBFortuneSpent {
 	string currency = 3;
 	string category = 4;
 	bool initializer = 5;
+	PBMetadata metadata = 14;
+	string comment = 15;
+}
+
+
+message PBAssetAcquired {
+	string userId = 1;
+	string assetId = 2;
+	PBAsset asset = 3;
+	bool initializer = 4;
+	PBMetadata metadata = 14;
+	string comment = 15;
+}
+
+message PBAssetSold {
+	string userId = 1;
+	string assetId = 2;
+	PBMetadata metadata = 14;
+	string comment = 15;
+}
+
+message PBAssetWorthChanged {
+	string userId = 1;
+	string assetId = 2;
+	string newPrice = 3;
+	PBMetadata metadata = 14;
+	string comment = 15;
+}
+
+message PBLiabilityTaken {
+	string userId = 1;
+	string liabilityId = 2;
+	PBLiability liability = 3;
+	bool initializer = 4;
+	PBMetadata metadata = 14;
+	string comment = 15;
+}
+
+message PBLiabilityPaidOff {
+	string userId = 1;
+	string liabilityId = 2;
+	string byAmount = 3;
 	PBMetadata metadata = 14;
 	string comment = 15;
 }
