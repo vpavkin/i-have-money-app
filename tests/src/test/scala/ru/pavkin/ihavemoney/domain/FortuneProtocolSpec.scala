@@ -168,6 +168,10 @@ class FortuneProtocolSpec extends IHaveMoneySpec with ScalaFutures {
       expectEvent { case FortuneIncreased(_, amount, Currency.USD, _, _, true, _) => () }
       expectEvent { case AssetAcquired(_, _, ass, _, true, _) if ass == asset => () }
 
+      intercept[BalanceIsNotEnough] {
+        fortune ? BuyAsset(owner, asset, initializer = false)
+      }
+
     }
   }
 
@@ -189,6 +193,22 @@ class FortuneProtocolSpec extends IHaveMoneySpec with ScalaFutures {
 
       fortune ! SellAsset(owner, assetId)
       expectEvent { case AssetSold(_, assId, _, _) if assId == assetId => () }
+    }
+  }
+
+  test("Reevaluate Assets") {
+    new FortuneInMemoryTest {
+
+      val asset = RealEstate("House", BigDecimal(100000), Currency.USD)
+      var assetId: AssetId = AssetId.generate
+
+      fortune ! BuyAsset(owner, asset, initializer = true)
+
+      expectEventType[FortuneIncreased]
+      expectEvent { case AssetAcquired(_, assId, ass, _, true, _) if ass == asset => assetId = assId }
+
+      fortune ! ReevaluateAsset(owner, assetId, BigDecimal(50000))
+      expectEvent { case AssetWorthChanged(_, assId, amount, _, _) if amount == BigDecimal(50000) => () }
     }
   }
 }

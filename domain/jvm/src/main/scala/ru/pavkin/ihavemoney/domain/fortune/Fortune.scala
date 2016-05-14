@@ -4,7 +4,6 @@ import io.funcqrs._
 import io.funcqrs.behavior._
 import ru.pavkin.ihavemoney.domain.errors.{AssetNotFound, BalanceIsNotEnough, FortuneAlreadyInitialized, InsufficientAccessRights}
 import ru.pavkin.ihavemoney.domain.user.UserId
-import ru.pavkin.ihavemoney.domain.unexpected
 
 case class Fortune(id: FortuneId,
                    balances: Map[Currency, BigDecimal],
@@ -110,7 +109,7 @@ case class Fortune(id: FortuneId,
     .handleEvent {
       evt: AssetAcquired =>
         addAsset(evt.assetId, evt.asset)
-          .increase(evt.asset.worth)
+          .decrease(evt.asset.worth)
     }
 
   def editorsCanSellAssets = action[Fortune]
@@ -125,6 +124,22 @@ case class Fortune(id: FortuneId,
           .increase(asset.worth)
     }
 
+  def editorsCanReevaluateAssets = action[Fortune]
+    .handleCommand {
+      cmd: ReevaluateAsset =>
+        AssetWorthChanged(cmd.user, cmd.assetId, cmd.newAmount, metadata(cmd), cmd.comment)
+    }
+    .handleEvent {
+      evt: AssetWorthChanged =>
+        copy(assets = assets.updated(evt.assetId,
+          assets(evt.assetId) match {
+            case s: Stocks =>
+              s.copy(stockPrice = evt.newAmount)
+            case r: RealEstate =>
+              r.copy(price = evt.newAmount)
+          }
+        ))
+    }
 
   def editorsCanIncreaseFortune = action[Fortune]
     .handleCommand {
@@ -191,6 +206,7 @@ object Fortune {
         fortune.editorsCanFinishInitialization ++
         fortune.editorsCanBuyAssets ++
         fortune.editorsCanSellAssets ++
+        fortune.editorsCanReevaluateAssets ++
         fortune.editorsCanIncreaseFortune ++
         fortune.editorsCanDecreaseFortune
   }

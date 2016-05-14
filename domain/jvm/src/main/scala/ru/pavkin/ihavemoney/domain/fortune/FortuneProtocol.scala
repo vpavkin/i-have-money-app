@@ -61,16 +61,16 @@ object FortuneProtocol extends ProtocolLike {
   case class SellAsset(user: UserId,
                        assetId: AssetId,
                        comment: Option[String] = None) extends AssetManipulationCommand
-
-  case class BuyMoreStocks(user: UserId,
-                           assetId: AssetId,
-                           count: BigDecimal,
-                           comment: Option[String] = None) extends AssetManipulationCommand
-
-  case class SellSomeStocks(user: UserId,
-                            assetId: AssetId,
-                            count: BigDecimal,
-                            comment: Option[String] = None) extends AssetManipulationCommand
+  // todo: implememt later
+  //  case class BuyMoreStocks(user: UserId,
+  //                           assetId: AssetId,
+  //                           count: BigDecimal,
+  //                           comment: Option[String] = None) extends AssetManipulationCommand
+  //
+  //  case class SellSomeStocks(user: UserId,
+  //                            assetId: AssetId,
+  //                            count: BigDecimal,
+  //                            comment: Option[String] = None) extends AssetManipulationCommand
 
   /* Reevaluate per-stock worth for stocks, whole asset worth otherwise*/
   case class ReevaluateAsset(user: UserId,
@@ -127,24 +127,25 @@ object FortuneProtocol extends ProtocolLike {
                        metadata: FortuneMetadata,
                        comment: Option[String] = None) extends FortuneEvent
 
-  case class AdditionalStocksAcquired(user: UserId,
-                                      assetId: AssetId,
-                                      count: BigDecimal,
-                                      metadata: FortuneMetadata,
-                                      comment: Option[String] = None) extends FortuneEvent
-
-  case class StocksPartiallySold(user: UserId,
-                                 assetId: AssetId,
-                                 count: BigDecimal,
-                                 metadata: FortuneMetadata,
-                                 comment: Option[String] = None) extends FortuneEvent
+  // todo: implement later
+  //  case class AdditionalStocksAcquired(user: UserId,
+  //                                      assetId: AssetId,
+  //                                      count: BigDecimal,
+  //                                      metadata: FortuneMetadata,
+  //                                      comment: Option[String] = None) extends FortuneEvent
+  //
+  //  case class StocksPartiallySold(user: UserId,
+  //                                 assetId: AssetId,
+  //                                 count: BigDecimal,
+  //                                 metadata: FortuneMetadata,
+  //                                 comment: Option[String] = None) extends FortuneEvent
 
   /* Reevaluate per-stock worth for stocks, whole asset worth otherwise*/
-  case class AssetReevaluated(user: UserId,
-                              assetId: AssetId,
-                              newAmount: BigDecimal,
-                              metadata: FortuneMetadata,
-                              comment: Option[String] = None) extends FortuneEvent
+  case class AssetWorthChanged(user: UserId,
+                               assetId: AssetId,
+                               newAmount: BigDecimal,
+                               metadata: FortuneMetadata,
+                               comment: Option[String] = None) extends FortuneEvent
 
   case class LiabilityTaken(user: UserId,
                             liabilityId: LiabilityId,
