@@ -41,6 +41,7 @@ object AddTransactionsComponent {
           BigDecimal(state.amount),
           Currency.unsafeFromCode(state.currency),
           state.category,
+          false,
           notEmpty(state.comment)
         ).map {
           case Xor.Left(error) ⇒ Callback.alert(s"Error: $error").runNow()
@@ -57,6 +58,7 @@ object AddTransactionsComponent {
           BigDecimal(state.amount),
           Currency.unsafeFromCode(state.currency),
           state.category,
+          false,
           notEmpty(state.comment)
         ).map {
           case Xor.Left(error) ⇒ Callback.alert(s"Error: $error").runNow()

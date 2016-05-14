@@ -15,3 +15,4 @@ class CreateUserSerializer extends ProtobufSerializer[CreateUser, PBCreateUser](
 class LoginUserSerializer extends ProtobufSerializer[LoginUser, PBLogIn](106)
 class ConfirmEmailSerializer extends ProtobufSerializer[ConfirmEmail, PBConfirmEmail](107)
 class ResendConfirmationEmailSerializer extends ProtobufSerializer[ResendConfirmationEmail, PBResendConfirmationEmail](108)
+class FinishInitializationSerializer extends ProtobufSerializer[FinishInitialization, PBFinishInitialization](109)

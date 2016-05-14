@@ -6,7 +6,7 @@ import io.funcqrs.config.Api._
 import io.funcqrs.test.InMemoryTestSupport
 import io.funcqrs.test.backend.InMemoryBackend
 import org.scalatest.concurrent.ScalaFutures
-import ru.pavkin.ihavemoney.domain.errors.{BalanceIsNotEnough, InsufficientAccessRights}
+import ru.pavkin.ihavemoney.domain.errors.{BalanceIsNotEnough, FortuneAlreadyInitialized, InsufficientAccessRights}
 import ru.pavkin.ihavemoney.domain.fortune.FortuneProtocol._
 import ru.pavkin.ihavemoney.domain.fortune.{Currency, Fortune, FortuneId}
 import ru.pavkin.ihavemoney.domain.user.UserId
@@ -84,9 +84,9 @@ class FortuneProtocolSpec extends IHaveMoneySpec with ScalaFutures {
       fortune ! ReceiveIncome(owner, BigDecimal(20), Currency.EUR, IncomeCategory("salary"))
       fortune ! ReceiveIncome(owner, BigDecimal(30.5), Currency.EUR, IncomeCategory("salary"))
 
-      expectEvent { case FortuneIncreased(_, amount, Currency.USD, _, _, None) if amount.toDouble == 123.12 => () }
-      expectEvent { case FortuneIncreased(_, amount, Currency.EUR, _, _, None) if amount.toDouble == 20.0 => () }
-      expectEvent { case FortuneIncreased(_, amount, Currency.EUR, _, _, None) if amount.toDouble == 30.5 => () }
+      expectEvent { case FortuneIncreased(_, amount, Currency.USD, _, _, _, None) if amount.toDouble == 123.12 => () }
+      expectEvent { case FortuneIncreased(_, amount, Currency.EUR, _, _, _, None) if amount.toDouble == 20.0 => () }
+      expectEvent { case FortuneIncreased(_, amount, Currency.EUR, _, _, _, None) if amount.toDouble == 30.5 => () }
 
       val view = repo.findAll(id).futureValue
       view(Currency.USD) shouldBe BigDecimal(123.12)
@@ -100,8 +100,8 @@ class FortuneProtocolSpec extends IHaveMoneySpec with ScalaFutures {
       fortune ! ReceiveIncome(owner, BigDecimal(123.12), Currency.USD, IncomeCategory("salary"))
       fortune ! Spend(owner, BigDecimal(20), Currency.USD, ExpenseCategory("food"))
 
-      expectEvent { case FortuneIncreased(_, amount, Currency.USD, _, _, None) if amount.toDouble == 123.12 => () }
-      expectEvent { case FortuneSpent(_, amount, Currency.USD, _, _, None) if amount.toDouble == 20.0 => () }
+      expectEvent { case FortuneIncreased(_, amount, Currency.USD, _, _, _, None) if amount.toDouble == 123.12 => () }
+      expectEvent { case FortuneSpent(_, amount, Currency.USD, _, _, _, None) if amount.toDouble == 20.0 => () }
 
       val view = repo.findAll(id).futureValue
       view(Currency.USD) shouldBe BigDecimal(103.12)
@@ -131,4 +131,30 @@ class FortuneProtocolSpec extends IHaveMoneySpec with ScalaFutures {
     }
   }
 
+  test("Initialization Mode") {
+    new FortuneInMemoryTest {
+
+      fortune ! ReceiveIncome(owner, BigDecimal(10), Currency.USD, IncomeCategory("salary"), true)
+      fortune ! ReceiveIncome(owner, BigDecimal(10), Currency.USD, IncomeCategory("salary"), false)
+
+      expectEvent { case FortuneIncreased(_, amount, Currency.USD, _, _, true, None) => () }
+      expectEvent { case FortuneIncreased(_, amount, Currency.USD, _, _, false, None) => () }
+
+      fortune ? FinishInitialization(owner)
+      expectEventType[FortuneInitializationFinished]
+
+      fortune ! ReceiveIncome(owner, BigDecimal(10), Currency.USD, IncomeCategory("salary"), false)
+      expectEventType[FortuneIncreased]
+
+      val message = intercept[FortuneAlreadyInitialized] {
+        fortune ? ReceiveIncome(owner, BigDecimal(10), Currency.USD, IncomeCategory("salary"), initializer = true)
+      }.getMessage
+
+      message should include("already initialized")
+
+      intercept[FortuneAlreadyInitialized] {
+        fortune ? FinishInitialization(owner)
+      }
+    }
+  }
 }

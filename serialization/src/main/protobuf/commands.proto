@@ -13,7 +13,12 @@ message PBCommandEnvelope {
 		PBResendConfirmationEmail command6 = 7;
 		PBCreateFortune command7 = 8;
 		PBAddEditor command8 = 9;
+		PBFinishInitialization command9 = 10;
 	}
+}
+
+message PBFinishInitialization {
+	string userId = 1;
 }
 
 message PBReceiveIncome {
@@ -21,6 +26,7 @@ message PBReceiveIncome {
 	string amount = 2;
 	string currency = 3;
 	string category = 4;
+	bool initializer = 5;
 	string comment = 15;
 }
 
@@ -29,6 +35,7 @@ message PBSpend {
 	string amount = 2;
 	string currency = 3;
 	string category = 4;
+	bool initializer = 5;
 	string comment = 15;
 }
 

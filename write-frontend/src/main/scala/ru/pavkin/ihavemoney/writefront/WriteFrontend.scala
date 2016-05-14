@@ -12,7 +12,7 @@ import akka.util.Timeout
 import ch.megard.akka.http.cors.{CorsDirectives, CorsSettings}
 import com.typesafe.config.ConfigFactory
 import de.heikoseeberger.akkahttpcirce.CirceSupport
-import ru.pavkin.ihavemoney.domain.fortune.FortuneProtocol.{ExpenseCategory, IncomeCategory, ReceiveIncome, Spend}
+import ru.pavkin.ihavemoney.domain.fortune.FortuneProtocol._
 import ru.pavkin.ihavemoney.domain.unexpected
 import ru.pavkin.ihavemoney.domain.user.UserId
 import ru.pavkin.ihavemoney.domain.user.UserProtocol._
@@ -79,23 +79,35 @@ object WriteFrontend extends App with CirceSupport with CorsDirectives {
           } ~ authenticateOrRejectWithChallenge(authenticator) { userId ⇒
           pathPrefix("fortune" / Segment) {
             fortuneId ⇒
-              (path("income") & post & entity(as[ReceiveIncomeRequest])) { req ⇒
+              (path("create") & post) {
                 complete {
-                  writeBack.sendCommandAndIgnoreResult(fortuneId, ReceiveIncome(
-                    userId,
-                    req.amount,
-                    req.currency,
-                    IncomeCategory(req.category),
-                    req.comment
-                  ))
+                  writeBack.sendCommandAndIgnoreResult(fortuneId, CreateFortune(userId))
                 }
-              } ~ (path("spend") & post & entity(as[SpendRequest])) { req ⇒
+              } ~
+                (path("finish-initialization") & post) {
+                  complete {
+                    writeBack.sendCommandAndIgnoreResult(fortuneId, FinishInitialization(userId))
+                  }
+                } ~
+                (path("income") & post & entity(as[ReceiveIncomeRequest])) { req ⇒
+                  complete {
+                    writeBack.sendCommandAndIgnoreResult(fortuneId, ReceiveIncome(
+                      userId,
+                      req.amount,
+                      req.currency,
+                      IncomeCategory(req.category),
+                      req.initializer,
+                      req.comment
+                    ))
+                  }
+                } ~ (path("spend") & post & entity(as[SpendRequest])) { req ⇒
                 complete {
                   writeBack.sendCommandAndIgnoreResult(fortuneId, Spend(
                     userId,
                     req.amount,
                     req.currency,
                     ExpenseCategory(req.category),
+                    req.initializer,
                     req.comment
                   ))
                 }

@@ -12,10 +12,12 @@ object writefront extends SharedProtocol {
   case class ReceiveIncomeRequest(amount: BigDecimal,
                                   currency: Currency,
                                   category: String,
+                                  initializer: Boolean = false,
                                   comment: Option[String] = None) extends WriteFrontRequest
   case class SpendRequest(amount: BigDecimal,
                           currency: Currency,
                           category: String,
+                          initializer: Boolean = false,
                           comment: Option[String] = None) extends WriteFrontRequest
 
   // User commands

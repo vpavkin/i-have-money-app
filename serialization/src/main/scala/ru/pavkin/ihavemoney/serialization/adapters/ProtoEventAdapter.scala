@@ -16,6 +16,7 @@ class ProtoEventAdapter extends EventAdapter with DomainEventTagAdapter {
       case m: EditorAdded => tag(m.encode, m.metadata)
       case m: FortuneIncreased => tag(m.encode, m.metadata)
       case m: FortuneSpent => tag(m.encode, m.metadata)
+      case m: FortuneInitializationFinished => tag(m.encode, m.metadata)
     }
     case e: UserEvent ⇒ e match {
       case m: UserCreated => tag(m.encode, m.metadata)
@@ -30,6 +31,7 @@ class ProtoEventAdapter extends EventAdapter with DomainEventTagAdapter {
   override def fromJournal(event: Any, manifest: String): EventSeq = event match {
     case p: PBFortuneCreated => EventSeq.single(p.decode)
     case p: PBEditorAdded => EventSeq.single(p.decode)
+    case p: PBFortuneInitializationFinished => EventSeq.single(p.decode)
     case p: PBFortuneIncreased => EventSeq.single(p.decode)
     case p: PBFortuneSpent => EventSeq.single(p.decode)
     case p: PBUserCreated => EventSeq.single(p.decode)

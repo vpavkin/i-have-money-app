@@ -52,6 +52,7 @@ object implicits {
   implicit val currencyIS: IsoSerializable[Currency, String] =
     IsoSerializable.withString(_.code, Currency.unsafeFromCode)
 
+  implicit val fortuneInitializationFinishedSuite: ProtobufSuite[FortuneInitializationFinished, PBFortuneInitializationFinished] = ProtobufSuite.iso[FortuneInitializationFinished, PBFortuneInitializationFinished]
   implicit val fortuneIncreasedSuite: ProtobufSuite[FortuneIncreased, PBFortuneIncreased] = ProtobufSuite.iso[FortuneIncreased, PBFortuneIncreased]
   implicit val fortuneSpentSuite: ProtobufSuite[FortuneSpent, PBFortuneSpent] = ProtobufSuite.iso[FortuneSpent, PBFortuneSpent]
   implicit val fortuneCreatedSuite: ProtobufSuite[FortuneCreated, PBFortuneCreated] = ProtobufSuite.iso[FortuneCreated, PBFortuneCreated]
@@ -62,6 +63,7 @@ object implicits {
   implicit val userLoggedInSuite: ProtobufSuite[UserLoggedIn, PBUserLoggedIn] = ProtobufSuite.iso[UserLoggedIn, PBUserLoggedIn]
   implicit val userFailedToLogInSuite: ProtobufSuite[UserFailedToLogIn, PBUserFailedToLogIn] = ProtobufSuite.iso[UserFailedToLogIn, PBUserFailedToLogIn]
 
+  implicit val finishInitializationSuite: ProtobufSuite[FinishInitialization, PBFinishInitialization] = ProtobufSuite.iso[FinishInitialization, PBFinishInitialization]
   implicit val receiveIncomeSuite: ProtobufSuite[ReceiveIncome, PBReceiveIncome] = ProtobufSuite.iso[ReceiveIncome, PBReceiveIncome]
   implicit val spendSuite: ProtobufSuite[Spend, PBSpend] = ProtobufSuite.iso[Spend, PBSpend]
   implicit val createUserSuite: ProtobufSuite[CreateUser, PBCreateUser] = ProtobufSuite.iso[CreateUser, PBCreateUser]
@@ -81,6 +83,7 @@ object implicits {
             case c: Spend ⇒ Command2(c.encode)
             case c: CreateFortune => Command7(c.encode)
             case c: AddEditor => Command8(c.encode)
+            case c: FinishInitialization ⇒ Command9(c.encode)
           }
           case cmd: UserCommand ⇒ cmd match {
             case c: CreateUser => Command3(c.encode)
@@ -103,6 +106,7 @@ object implicits {
           case Command6(value) => value.decode
           case Command7(value) => value.decode
           case Command8(value) => value.decode
+          case Command9(value) => value.decode
         }
       )
       def companion: GeneratedMessageCompanion[PBCommandEnvelope] = PBCommandEnvelope
