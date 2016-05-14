@@ -12,7 +12,7 @@ message PBMetadata {
 
 message PBFortuneInitializationFinished {
 	string userId = 1;
-	PBMetadata metadata = 2;
+	PBMetadata metadata = 14;
 }
 
 message PBFortuneIncreased {
@@ -20,8 +20,8 @@ message PBFortuneIncreased {
 	string amount = 2;
 	string currency = 3;
 	string category = 4;
-	PBMetadata metadata = 5;
-	bool initializer = 6;
+	bool initializer = 5;
+	PBMetadata metadata = 14;
 	string comment = 15;
 }
 
@@ -30,41 +30,41 @@ message PBFortuneSpent {
 	string amount = 2;
 	string currency = 3;
 	string category = 4;
-	PBMetadata metadata = 5;
-	bool initializer = 6;
+	bool initializer = 5;
+	PBMetadata metadata = 14;
 	string comment = 15;
 }
 
 message PBFortuneCreated {
 	string ownerId = 1;
-	PBMetadata metadata = 2;
+	PBMetadata metadata = 14;
 }
 
 message PBEditorAdded {
 	string editorId = 1;
-	PBMetadata metadata = 2;
+	PBMetadata metadata = 14;
 }
 
 message PBUserCreated {
 	string password_hash = 1;
 	string display_name = 2;
 	string confirmation_code = 3;
-	PBMetadata metadata = 4;
+	PBMetadata metadata = 14;
 }
 
 message PBUserConfirmed {
-	PBMetadata metadata = 4;
+	PBMetadata metadata = 14;
 }
 
 message PBConfirmationEmailSent {
-	PBMetadata metadata = 4;
+	PBMetadata metadata = 14;
 }
 
 message PBUserLoggedIn {
-	PBMetadata metadata = 4;
+	PBMetadata metadata = 14;
 }
 
 message PBUserFailedToLogIn {
 	string invalid_password = 1;
-	PBMetadata metadata = 4;
+	PBMetadata metadata = 14;
 }

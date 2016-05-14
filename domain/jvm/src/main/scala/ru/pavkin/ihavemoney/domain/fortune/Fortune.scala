@@ -125,9 +125,21 @@ case class Fortune(id: FortuneId,
   def editorsCanBuyAssets = action[Fortune]
     .handleCommand.manyEvents[BuyAsset, FortuneEvent] {
     cmd: BuyAsset =>
-      val assetAcquired = AssetAcquired(cmd.user, AssetId.generate, cmd.asset, metadata(cmd), cmd.initializer, cmd.comment)
+      val assetAcquired = AssetAcquired(
+        cmd.user,
+        AssetId.generate,
+        cmd.asset,
+        cmd.initializer,
+        metadata(cmd),
+        cmd.comment)
       if (cmd.initializer) List(
-        FortuneIncreased(cmd.user, cmd.asset.price, cmd.asset.currency, IncomeCategory("Auto"), metadata(cmd), initializer = true),
+        FortuneIncreased(
+          cmd.user,
+          cmd.asset.price,
+          cmd.asset.currency,
+          IncomeCategory("auto_generated_income"),
+          initializer = true,
+          metadata(cmd)),
         assetAcquired
       )
       else List(assetAcquired)
@@ -199,8 +211,8 @@ case class Fortune(id: FortuneId,
         cmd.amount,
         cmd.currency,
         cmd.category,
-        metadata(cmd),
         cmd.initializer,
+        metadata(cmd),
         cmd.comment)
     }
     .handleEvent {
@@ -214,8 +226,8 @@ case class Fortune(id: FortuneId,
         cmd.amount,
         cmd.currency,
         cmd.category,
-        metadata(cmd),
         cmd.initializer,
+        metadata(cmd),
         cmd.comment)
     }
     .handleEvent {

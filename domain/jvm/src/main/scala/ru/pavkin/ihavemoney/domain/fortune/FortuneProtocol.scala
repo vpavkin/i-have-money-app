@@ -105,15 +105,15 @@ object FortuneProtocol extends ProtocolLike {
                               amount: BigDecimal,
                               currency: Currency,
                               category: IncomeCategory,
-                              metadata: FortuneMetadata,
                               initializer: Boolean = false,
+                              metadata: FortuneMetadata,
                               comment: Option[String] = None) extends FortuneEvent
   case class FortuneSpent(user: UserId,
                           amount: BigDecimal,
                           currency: Currency,
                           category: ExpenseCategory,
-                          metadata: FortuneMetadata,
                           initializer: Boolean = false,
+                          metadata: FortuneMetadata,
                           comment: Option[String] = None) extends FortuneEvent
 
   case class FortuneInitializationFinished(user: UserId,
@@ -122,8 +122,8 @@ object FortuneProtocol extends ProtocolLike {
   case class AssetAcquired(user: UserId,
                            assetId: AssetId,
                            asset: Asset,
-                           metadata: FortuneMetadata,
                            initializer: Boolean = false,
+                           metadata: FortuneMetadata,
                            comment: Option[String] = None) extends FortuneEvent
 
   case class AssetSold(user: UserId,
