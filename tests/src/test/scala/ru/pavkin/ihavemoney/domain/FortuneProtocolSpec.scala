@@ -6,9 +6,9 @@ import io.funcqrs.config.Api._
 import io.funcqrs.test.InMemoryTestSupport
 import io.funcqrs.test.backend.InMemoryBackend
 import org.scalatest.concurrent.ScalaFutures
-import ru.pavkin.ihavemoney.domain.errors.{BalanceIsNotEnough, FortuneAlreadyInitialized, InsufficientAccessRights}
+import ru.pavkin.ihavemoney.domain.errors.{AssetNotFound, BalanceIsNotEnough, FortuneAlreadyInitialized, InsufficientAccessRights}
 import ru.pavkin.ihavemoney.domain.fortune.FortuneProtocol._
-import ru.pavkin.ihavemoney.domain.fortune.{Currency, Fortune, FortuneId, RealEstate}
+import ru.pavkin.ihavemoney.domain.fortune._
 import ru.pavkin.ihavemoney.domain.user.UserId
 import ru.pavkin.ihavemoney.readback.{MoneyViewProjection, MoneyViewRepository}
 
@@ -163,11 +163,32 @@ class FortuneProtocolSpec extends IHaveMoneySpec with ScalaFutures {
 
       val asset = RealEstate("House", BigDecimal(100000), Currency.USD)
 
-      fortune ! BuyAsset(owner, RealEstate("House", BigDecimal(100000), Currency.USD), initializer = true)
+      fortune ! BuyAsset(owner, asset, initializer = true)
 
       expectEvent { case FortuneIncreased(_, amount, Currency.USD, _, _, true, _) => () }
-      expectEvent { case AssetAcquired(_, amount, ass, _, true, _) if ass == asset => () }
+      expectEvent { case AssetAcquired(_, _, ass, _, true, _) if ass == asset => () }
 
+    }
+  }
+
+  test("Sell Assets") {
+    new FortuneInMemoryTest {
+
+      val asset = RealEstate("House", BigDecimal(100000), Currency.USD)
+      var assetId: AssetId = AssetId.generate
+
+      fortune ! BuyAsset(owner, asset, initializer = true)
+
+      expectEvent { case FortuneIncreased(_, amount, Currency.USD, _, _, true, _) => () }
+      expectEvent { case AssetAcquired(_, assId, ass, _, true, _) if ass == asset => assetId = assId }
+
+      val message = intercept[AssetNotFound] {
+        fortune ? SellAsset(owner, AssetId.generate)
+      }.getMessage
+      message should include("not found")
+
+      fortune ! SellAsset(owner, assetId)
+      expectEvent { case AssetSold(_, assId, _, _) if assId == assetId => () }
     }
   }
 }

@@ -116,7 +116,7 @@ case class Fortune(id: FortuneId,
   def editorsCanSellAssets = action[Fortune]
     .handleCommand {
       cmd: SellAsset =>
-        AssetSold(cmd.user, AssetId.generate, metadata(cmd), cmd.comment)
+        AssetSold(cmd.user, cmd.assetId, metadata(cmd), cmd.comment)
     }
     .handleEvent {
       evt: AssetSold =>
