@@ -2,7 +2,7 @@ package ru.pavkin.ihavemoney.domain.fortune
 
 import io.funcqrs._
 import io.funcqrs.behavior._
-import ru.pavkin.ihavemoney.domain.errors.{AssetNotFound, BalanceIsNotEnough, FortuneAlreadyInitialized, InsufficientAccessRights}
+import ru.pavkin.ihavemoney.domain.errors._
 import ru.pavkin.ihavemoney.domain.user.UserId
 
 case class Fortune(id: FortuneId,
@@ -26,6 +26,29 @@ case class Fortune(id: FortuneId,
 
   def removeAsset(id: AssetId): Fortune =
     copy(assets = assets - id)
+
+  def changeAssetWorth(id: AssetId, newPrice: BigDecimal): Fortune =
+    copy(assets = assets.updated(id,
+      assets(id) match {
+        case s: Stocks =>
+          s.copy(stockPrice = newPrice)
+        case r: RealEstate =>
+          r.copy(price = newPrice)
+      }
+    ))
+
+  def addLiability(id: LiabilityId, liability: Liability): Fortune =
+    copy(liabilities = liabilities + (id → liability))
+
+  def payLiabilityOff(id: LiabilityId, byAmount: BigDecimal): Fortune = {
+    val liab = liabilities(id)
+    if (liab.amount <= byAmount)
+      copy(liabilities = liabilities - id)
+    else
+      copy(liabilities = liabilities.updated(
+        id, liab.payOff(byAmount)
+      ))
+  }
 
   def decrease(by: Worth): Fortune =
     copy(balances = balances + (by.currency -> (amount(by.currency) - by.amount)))
@@ -75,6 +98,12 @@ case class Fortune(id: FortuneId,
     .rejectCommand {
       case cmd: AssetManipulationCommand if !this.assets.contains(cmd.assetId) ⇒
         AssetNotFound(cmd.assetId)
+    }
+
+  def cantManipulateLiabilityThatDoesNotExist = action[Fortune]
+    .rejectCommand {
+      case cmd: LiabilityManipulationCommand if !this.liabilities.contains(cmd.liabilityId) ⇒
+        LiabilityNotFound(cmd.liabilityId)
     }
 
   def ownerCanAddEditors = action[Fortune]
@@ -131,14 +160,36 @@ case class Fortune(id: FortuneId,
     }
     .handleEvent {
       evt: AssetWorthChanged =>
-        copy(assets = assets.updated(evt.assetId,
-          assets(evt.assetId) match {
-            case s: Stocks =>
-              s.copy(stockPrice = evt.newAmount)
-            case r: RealEstate =>
-              r.copy(price = evt.newAmount)
-          }
-        ))
+        changeAssetWorth(evt.assetId, evt.newAmount)
+    }
+
+  def editorsCanTakeOnLiabilities = action[Fortune]
+    .handleCommand {
+      cmd: TakeOnLiability ⇒ LiabilityTaken(
+        cmd.user,
+        LiabilityId.generate,
+        cmd.liability,
+        cmd.initializer,
+        metadata(cmd),
+        cmd.comment
+      )
+    }
+    .handleEvent {
+      evt: LiabilityTaken ⇒ addLiability(evt.liabilityId, evt.liability)
+    }
+
+  def editorsCanPayOffLiabilities = action[Fortune]
+    .handleCommand {
+      cmd: PayLiabilityOff ⇒ LiabilityPaidOff(
+        cmd.user,
+        cmd.liabilityId,
+        cmd.byAmount,
+        metadata(cmd),
+        cmd.comment
+      )
+    }
+    .handleEvent {
+      evt: LiabilityPaidOff ⇒ payLiabilityOff(evt.liabilityId, evt.amount)
     }
 
   def editorsCanIncreaseFortune = action[Fortune]
@@ -201,11 +252,14 @@ object Fortune {
         fortune.cantSendInitializationCommandsAfterInitializationIsComplete ++
         fortune.cantAcquireAssetWithNotEnoughMoney ++
         fortune.cantManipulateAssetThatDoesNotExist ++
+        fortune.cantManipulateLiabilityThatDoesNotExist ++
         fortune.cantHaveNegativeBalance ++
         fortune.ownerCanAddEditors ++
         fortune.editorsCanFinishInitialization ++
         fortune.editorsCanBuyAssets ++
         fortune.editorsCanSellAssets ++
+        fortune.editorsCanTakeOnLiabilities ++
+        fortune.editorsCanPayOffLiabilities ++
         fortune.editorsCanReevaluateAssets ++
         fortune.editorsCanIncreaseFortune ++
         fortune.editorsCanDecreaseFortune

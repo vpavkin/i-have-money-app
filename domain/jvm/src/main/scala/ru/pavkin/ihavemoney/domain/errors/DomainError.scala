@@ -1,6 +1,6 @@
 package ru.pavkin.ihavemoney.domain.errors
 
-import ru.pavkin.ihavemoney.domain.fortune.{AssetId, Currency, FortuneId}
+import ru.pavkin.ihavemoney.domain.fortune.{AssetId, Currency, FortuneId, LiabilityId}
 import ru.pavkin.ihavemoney.domain.user.UserId
 
 sealed trait DomainError extends Throwable {
@@ -33,4 +33,7 @@ case class FortuneAlreadyInitialized(fortune: FortuneId) extends DomainError {
 }
 case class AssetNotFound(assetId: AssetId) extends DomainError {
   def message = s"Asset $assetId not found"
+}
+case class LiabilityNotFound(liabilityId: LiabilityId) extends DomainError {
+  def message = s"Liability $liabilityId not found"
 }

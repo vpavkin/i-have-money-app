@@ -61,7 +61,7 @@ object FortuneProtocol extends ProtocolLike {
   case class SellAsset(user: UserId,
                        assetId: AssetId,
                        comment: Option[String] = None) extends AssetManipulationCommand
-  // todo: implememt later
+  // todo: implement later
   //  case class BuyMoreStocks(user: UserId,
   //                           assetId: AssetId,
   //                           count: BigDecimal,
@@ -83,10 +83,14 @@ object FortuneProtocol extends ProtocolLike {
                              initializer: Boolean = false,
                              comment: Option[String] = None) extends FortuneAdjustmentCommand
 
+  sealed trait LiabilityManipulationCommand extends InitializedFortuneAdjustmentCommand {
+    def liabilityId: LiabilityId
+  }
+
   case class PayLiabilityOff(user: UserId,
                              liabilityId: LiabilityId,
-                             amount: BigDecimal,
-                             comment: Option[String] = None) extends InitializedFortuneAdjustmentCommand
+                             byAmount: BigDecimal,
+                             comment: Option[String] = None) extends LiabilityManipulationCommand
 
   /*-------------------Events---------------------*/
   sealed trait FortuneEvent extends ProtocolEvent with MetadataFacet[FortuneMetadata]

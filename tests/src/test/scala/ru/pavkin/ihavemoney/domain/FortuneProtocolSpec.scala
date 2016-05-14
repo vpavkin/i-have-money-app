@@ -6,7 +6,7 @@ import io.funcqrs.config.Api._
 import io.funcqrs.test.InMemoryTestSupport
 import io.funcqrs.test.backend.InMemoryBackend
 import org.scalatest.concurrent.ScalaFutures
-import ru.pavkin.ihavemoney.domain.errors.{AssetNotFound, BalanceIsNotEnough, FortuneAlreadyInitialized, InsufficientAccessRights}
+import ru.pavkin.ihavemoney.domain.errors._
 import ru.pavkin.ihavemoney.domain.fortune.FortuneProtocol._
 import ru.pavkin.ihavemoney.domain.fortune._
 import ru.pavkin.ihavemoney.domain.user.UserId
@@ -209,6 +209,29 @@ class FortuneProtocolSpec extends IHaveMoneySpec with ScalaFutures {
 
       fortune ! ReevaluateAsset(owner, assetId, BigDecimal(50000))
       expectEvent { case AssetWorthChanged(_, assId, amount, _, _) if amount == BigDecimal(50000) => () }
+    }
+  }
+
+  test("Liabilities") {
+    new FortuneInMemoryTest {
+
+      val liability = NoInterestDebt("House", BigDecimal(1000), Currency.USD)
+      var liabilityId: LiabilityId = LiabilityId.generate
+
+      fortune ! TakeOnLiability(owner, liability)
+
+      expectEvent { case LiabilityTaken(_, liabId, liab, false, _, _) if liab == liability => liabilityId = liabId }
+
+      fortune ! PayLiabilityOff(owner, liabilityId, BigDecimal(400))
+      expectEvent { case LiabilityPaidOff(_, assId, amount, _, _) if amount == BigDecimal(400) => () }
+
+      fortune ! PayLiabilityOff(owner, liabilityId, BigDecimal(600))
+      expectEventType[LiabilityPaidOff]
+
+      val message = intercept[LiabilityNotFound] {
+        fortune ? PayLiabilityOff(owner, liabilityId, BigDecimal(10))
+      }.getMessage
+      message should include("not found")
     }
   }
 }
