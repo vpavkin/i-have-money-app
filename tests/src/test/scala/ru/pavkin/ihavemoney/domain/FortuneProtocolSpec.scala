@@ -8,7 +8,7 @@ import io.funcqrs.test.backend.InMemoryBackend
 import org.scalatest.concurrent.ScalaFutures
 import ru.pavkin.ihavemoney.domain.errors.{BalanceIsNotEnough, FortuneAlreadyInitialized, InsufficientAccessRights}
 import ru.pavkin.ihavemoney.domain.fortune.FortuneProtocol._
-import ru.pavkin.ihavemoney.domain.fortune.{Currency, Fortune, FortuneId}
+import ru.pavkin.ihavemoney.domain.fortune.{Currency, Fortune, FortuneId, RealEstate}
 import ru.pavkin.ihavemoney.domain.user.UserId
 import ru.pavkin.ihavemoney.readback.{MoneyViewProjection, MoneyViewRepository}
 
@@ -155,6 +155,19 @@ class FortuneProtocolSpec extends IHaveMoneySpec with ScalaFutures {
       intercept[FortuneAlreadyInitialized] {
         fortune ? FinishInitialization(owner)
       }
+    }
+  }
+
+  test("Buy Assets") {
+    new FortuneInMemoryTest {
+
+      val asset = RealEstate("House", BigDecimal(100000), Currency.USD)
+
+      fortune ! BuyAsset(owner, RealEstate("House", BigDecimal(100000), Currency.USD), initializer = true)
+
+      expectEvent { case FortuneIncreased(_, amount, Currency.USD, _, _, true, _) => () }
+      expectEvent { case AssetAcquired(_, amount, ass, _, true, _) if ass == asset => () }
+
     }
   }
 }

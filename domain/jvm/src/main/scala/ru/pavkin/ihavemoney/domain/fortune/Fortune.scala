@@ -68,7 +68,7 @@ case class Fortune(id: FortuneId,
 
   def cantAcquireAssetWithNotEnoughMoney = action[Fortune]
     .rejectCommand {
-      case cmd: BuyAsset if this.amount(cmd.asset.currency) < cmd.asset.price ⇒
+      case cmd: BuyAsset if !cmd.initializer && this.amount(cmd.asset.currency) < cmd.asset.price ⇒
         BalanceIsNotEnough(this.amount(cmd.asset.currency), cmd.asset.currency)
     }
 
@@ -95,7 +95,7 @@ case class Fortune(id: FortuneId,
     }
 
   def editorsCanBuyAssets = action[Fortune]
-    .handleCommand.manyEvents {
+    .handleCommand.manyEvents[BuyAsset, FortuneEvent] {
     cmd: BuyAsset =>
       val assetAcquired = AssetAcquired(cmd.user, AssetId.generate, cmd.asset, metadata(cmd), cmd.initializer, cmd.comment)
       if (cmd.initializer) List(
@@ -104,13 +104,13 @@ case class Fortune(id: FortuneId,
       )
       else List(assetAcquired)
   }
-    .handleEvent { e: FortuneEvent ⇒ e match {
-      case evt: FortuneIncreased => this.increase(Worth(evt.amount, evt.currency))
-      case evt: AssetAcquired =>
+    .handleEvent {
+      evt: FortuneIncreased => this.increase(Worth(evt.amount, evt.currency))
+    }
+    .handleEvent {
+      evt: AssetAcquired =>
         addAsset(evt.assetId, evt.asset)
           .increase(evt.asset.worth)
-      case _ ⇒ unexpected
-    }
     }
 
   def editorsCanSellAssets = action[Fortune]
