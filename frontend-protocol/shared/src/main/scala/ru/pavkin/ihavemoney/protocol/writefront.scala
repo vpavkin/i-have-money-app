@@ -26,20 +26,17 @@ object writefront extends SharedProtocol {
                              initializer: Boolean = false,
                              comment: Option[String] = None) extends WriteFrontRequest
 
-  case class SellAssetRequest(assetId: UUID,
-                              comment: Option[String] = None) extends WriteFrontRequest
+  case class SellAssetRequest(comment: Option[String] = None) extends WriteFrontRequest
 
   /* Reevaluate per-stock worth for stocks, whole asset worth otherwise*/
-  case class ReevaluateAssetRequest(assetId: UUID,
-                                    newPrice: BigDecimal,
+  case class ReevaluateAssetRequest(newPrice: BigDecimal,
                                     comment: Option[String] = None) extends WriteFrontRequest
 
   case class TakeOnLiabilityRequest(liability: Liability,
                                     initializer: Boolean = false,
                                     comment: Option[String] = None) extends WriteFrontRequest
 
-  case class PayLiabilityOffRequest(liabilityId: UUID,
-                                    byAmount: BigDecimal,
+  case class PayLiabilityOffRequest(byAmount: BigDecimal,
                                     comment: Option[String] = None) extends WriteFrontRequest
 
   // User commands

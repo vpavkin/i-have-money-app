@@ -125,9 +125,11 @@ case class Fortune(id: FortuneId,
   def editorsCanBuyAssets = action[Fortune]
     .handleCommand.manyEvents[BuyAsset, FortuneEvent] {
     cmd: BuyAsset =>
+      val assetId = AssetId.generate
+      println(s"Creating new asset with id $assetId")
       val assetAcquired = AssetAcquired(
         cmd.user,
-        AssetId.generate,
+        assetId,
         cmd.asset,
         cmd.initializer,
         metadata(cmd),
@@ -177,14 +179,17 @@ case class Fortune(id: FortuneId,
 
   def editorsCanTakeOnLiabilities = action[Fortune]
     .handleCommand {
-      cmd: TakeOnLiability ⇒ LiabilityTaken(
-        cmd.user,
-        LiabilityId.generate,
-        cmd.liability,
-        cmd.initializer,
-        metadata(cmd),
-        cmd.comment
-      )
+      cmd: TakeOnLiability ⇒
+        val liabilityId = LiabilityId.generate
+        println(s"Creating new liability with id $liabilityId")
+        LiabilityTaken(
+          cmd.user,
+          liabilityId,
+          cmd.liability,
+          cmd.initializer,
+          metadata(cmd),
+          cmd.comment
+        )
     }
     .handleEvent {
       evt: LiabilityTaken ⇒ addLiability(evt.liabilityId, evt.liability)

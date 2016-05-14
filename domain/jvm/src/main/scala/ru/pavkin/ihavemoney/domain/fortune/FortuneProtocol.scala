@@ -9,7 +9,7 @@ import ru.pavkin.ihavemoney.domain.user.UserId
 case class FortuneId(value: String) extends AggregateId
 object FortuneId {
   def fromString(aggregateId: String): FortuneId = FortuneId(aggregateId)
-  def generate(): FortuneId = FortuneId(UUID.randomUUID().toString)
+  def generate: FortuneId = FortuneId(UUID.randomUUID().toString)
 }
 
 object FortuneProtocol extends ProtocolLike {

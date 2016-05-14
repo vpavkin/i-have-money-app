@@ -16,9 +16,9 @@ trait SharedProtocol {
   implicit val encodeCurrency: Encoder[Currency] =
     Encoder.instance(c ⇒ Json.string(c.code))
 
-  implicit val assetEncoder: Encoder[Asset] = Encoder[Asset]
-  implicit val assetDecoder: Decoder[Asset] = Decoder[Asset]
+  implicit val assetEncoder = Encoder[Asset]
+  implicit val assetDecoder = Decoder[Asset]
 
-  implicit val liabilityEncoder: Encoder[Liability] = Encoder[Liability]
-  implicit val liabilityDecoder: Decoder[Liability] = Decoder[Liability]
+  implicit val liabilityEncoder = Encoder[Liability]
+  implicit val liabilityDecoder = Decoder[Liability]
 }
