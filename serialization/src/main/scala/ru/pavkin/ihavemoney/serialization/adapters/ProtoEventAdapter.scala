@@ -17,6 +17,11 @@ class ProtoEventAdapter extends EventAdapter with DomainEventTagAdapter {
       case m: FortuneIncreased => tag(m.encode, m.metadata)
       case m: FortuneSpent => tag(m.encode, m.metadata)
       case m: FortuneInitializationFinished => tag(m.encode, m.metadata)
+      case m: AssetAcquired ⇒ tag(m.encode, m.metadata)
+      case m: AssetSold ⇒ tag(m.encode, m.metadata)
+      case m: AssetWorthChanged ⇒ tag(m.encode, m.metadata)
+      case m: LiabilityTaken ⇒ tag(m.encode, m.metadata)
+      case m: LiabilityPaidOff ⇒ tag(m.encode, m.metadata)
     }
     case e: UserEvent ⇒ e match {
       case m: UserCreated => tag(m.encode, m.metadata)
@@ -39,6 +44,11 @@ class ProtoEventAdapter extends EventAdapter with DomainEventTagAdapter {
     case p: PBConfirmationEmailSent => EventSeq.single(p.decode)
     case p: PBUserLoggedIn => EventSeq.single(p.decode)
     case p: PBUserFailedToLogIn => EventSeq.single(p.decode)
+    case p: PBAssetAcquired ⇒ EventSeq.single(p.decode)
+    case p: PBAssetSold ⇒ EventSeq.single(p.decode)
+    case p: PBAssetWorthChanged ⇒ EventSeq.single(p.decode)
+    case p: PBLiabilityTaken ⇒ EventSeq.single(p.decode)
+    case p: PBLiabilityPaidOff ⇒ EventSeq.single(p.decode)
     case _ ⇒ EventSeq.single(event)
   }
 }

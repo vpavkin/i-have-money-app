@@ -15,6 +15,11 @@ message PBCommandEnvelope {
 		PBCreateFortune command7 = 8;
 		PBAddEditor command8 = 9;
 		PBFinishInitialization command9 = 10;
+		PBBuyAsset command10 = 11;
+		PBSellAsset command11 = 12;
+		PBReevaluateAsset command12 = 13;
+		PBTakeOnLiability command13 = 14;
+		PBPayLiabilityOff command14 = 15;
 	}
 }
 

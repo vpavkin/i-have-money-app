@@ -137,6 +137,11 @@ object implicits {
             case c: CreateFortune => Command7(c.encode)
             case c: AddEditor => Command8(c.encode)
             case c: FinishInitialization ⇒ Command9(c.encode)
+            case c: BuyAsset ⇒ Command10(c.encode)
+            case c: SellAsset ⇒ Command11(c.encode)
+            case c: ReevaluateAsset ⇒ Command12(c.encode)
+            case c: TakeOnLiability ⇒ Command13(c.encode)
+            case c: PayLiabilityOff ⇒ Command14(c.encode)
           }
           case cmd: UserCommand ⇒ cmd match {
             case c: CreateUser => Command3(c.encode)
@@ -160,6 +165,11 @@ object implicits {
           case Command7(value) => value.decode
           case Command8(value) => value.decode
           case Command9(value) => value.decode
+          case Command10(value) => value.decode
+          case Command11(value) => value.decode
+          case Command12(value) => value.decode
+          case Command13(value) => value.decode
+          case Command14(value) => value.decode
         }
       )
       def companion: GeneratedMessageCompanion[PBCommandEnvelope] = PBCommandEnvelope
