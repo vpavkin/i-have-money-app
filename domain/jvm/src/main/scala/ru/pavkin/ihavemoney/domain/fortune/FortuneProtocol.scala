@@ -32,6 +32,10 @@ object FortuneProtocol extends ProtocolLike {
     def initializer = true
   }
 
+  sealed trait InitializedFortuneAdjustmentCommand extends FortuneAdjustmentCommand {
+    def initializer = false
+  }
+
   case class Spend(user: UserId,
                    amount: BigDecimal,
                    currency: Currency,
@@ -45,6 +49,41 @@ object FortuneProtocol extends ProtocolLike {
                            category: IncomeCategory,
                            initializer: Boolean = false,
                            comment: Option[String] = None) extends FortuneAdjustmentCommand
+
+  case class BuyAsset(user: UserId,
+                      asset: Asset,
+                      initializer: Boolean = false,
+                      comment: Option[String] = None) extends FortuneAdjustmentCommand
+
+  case class SellAsset(user: UserId,
+                       assetId: AssetId,
+                       comment: Option[String] = None) extends InitializedFortuneAdjustmentCommand
+
+  case class BuyMoreStocks(user: UserId,
+                           assetId: AssetId,
+                           count: BigDecimal,
+                           comment: Option[String] = None) extends InitializedFortuneAdjustmentCommand
+
+  case class SellSomeStocks(user: UserId,
+                            assetId: AssetId,
+                            count: BigDecimal,
+                            comment: Option[String] = None) extends InitializedFortuneAdjustmentCommand
+
+  /* Reevaluate per-stock worth for stocks, whole asset worth otherwise*/
+  case class ReevaluateAsset(user: UserId,
+                             assetId: AssetId,
+                             newAmount: BigDecimal,
+                             comment: Option[String] = None) extends InitializedFortuneAdjustmentCommand
+
+  case class TakeOnLiability(user: UserId,
+                             liability: Liability,
+                             initializer: Boolean = false,
+                             comment: Option[String] = None) extends FortuneAdjustmentCommand
+
+  case class PayLiabilityOff(user: UserId,
+                             liabilityId: LiabilityId,
+                             amount: BigDecimal,
+                             comment: Option[String] = None) extends InitializedFortuneAdjustmentCommand
 
   /*-------------------Events---------------------*/
   sealed trait FortuneEvent extends ProtocolEvent with MetadataFacet[FortuneMetadata]
@@ -72,6 +111,50 @@ object FortuneProtocol extends ProtocolLike {
 
   case class FortuneInitializationFinished(user: UserId,
                                            metadata: FortuneMetadata) extends FortuneEvent
+
+  case class AssetAcquired(user: UserId,
+                           assetId: AssetId,
+                           asset: Asset,
+                           metadata: FortuneMetadata,
+                           initializer: Boolean = false,
+                           comment: Option[String] = None) extends FortuneEvent
+
+  case class AssetSold(user: UserId,
+                       assetId: AssetId,
+                       metadata: FortuneMetadata,
+                       comment: Option[String] = None) extends FortuneEvent
+
+  case class AdditionalStocksAcquired(user: UserId,
+                                      assetId: AssetId,
+                                      count: BigDecimal,
+                                      metadata: FortuneMetadata,
+                                      comment: Option[String] = None) extends FortuneEvent
+
+  case class StocksPartiallySold(user: UserId,
+                                 assetId: AssetId,
+                                 count: BigDecimal,
+                                 metadata: FortuneMetadata,
+                                 comment: Option[String] = None) extends FortuneEvent
+
+  /* Reevaluate per-stock worth for stocks, whole asset worth otherwise*/
+  case class AssetReevaluated(user: UserId,
+                              assetId: AssetId,
+                              newAmount: BigDecimal,
+                              metadata: FortuneMetadata,
+                              comment: Option[String] = None) extends FortuneEvent
+
+  case class LiabilityTaken(user: UserId,
+                            liabilityId: LiabilityId,
+                            liability: Liability,
+                            initializer: Boolean = false,
+                            metadata: FortuneMetadata,
+                            comment: Option[String] = None) extends FortuneEvent
+
+  case class LiabilityPaidOff(user: UserId,
+                              liabilityId: LiabilityId,
+                              amount: BigDecimal,
+                              metadata: FortuneMetadata,
+                              comment: Option[String] = None) extends FortuneEvent
 
   /*-------------------Metadata---------------------*/
   case class FortuneMetadata(aggregateId: FortuneId,

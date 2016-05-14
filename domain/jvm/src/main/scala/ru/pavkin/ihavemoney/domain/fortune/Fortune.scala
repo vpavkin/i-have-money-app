@@ -4,9 +4,12 @@ import io.funcqrs._
 import io.funcqrs.behavior._
 import ru.pavkin.ihavemoney.domain.errors.{BalanceIsNotEnough, FortuneAlreadyInitialized, InsufficientAccessRights}
 import ru.pavkin.ihavemoney.domain.user.UserId
+import ru.pavkin.ihavemoney.domain.unexpected
 
 case class Fortune(id: FortuneId,
                    balances: Map[Currency, BigDecimal],
+                   assets: Map[AssetId, Asset],
+                   liabilities: Map[LiabilityId, Liability],
                    owner: UserId,
                    editors: Set[UserId],
                    initializationMode: Boolean = true) extends AggregateLike {
@@ -18,6 +21,9 @@ case class Fortune(id: FortuneId,
 
   def increase(worth: Worth): Fortune =
     copy(balances = balances + (worth.currency -> (amount(worth.currency) + worth.amount)))
+
+  def addAsset(id: AssetId, asset: Asset): Fortune =
+    copy(assets = assets + (id → asset))
 
   def decrease(by: Worth): Fortune =
     copy(balances = balances + (by.currency -> (amount(by.currency) - by.amount)))
@@ -57,6 +63,12 @@ case class Fortune(id: FortuneId,
         BalanceIsNotEnough(this.amount(cmd.currency), cmd.currency)
     }
 
+  def cantAcquireAssetWithNotEnoughMoney = action[Fortune]
+    .rejectCommand {
+      case cmd: BuyAsset if this.amount(cmd.asset.currency) < cmd.asset.price ⇒
+        BalanceIsNotEnough(this.amount(cmd.asset.currency), cmd.asset.currency)
+    }
+
   def ownerCanAddEditors = action[Fortune]
     .handleCommand {
       cmd: AddEditor ⇒ EditorAdded(cmd.editor, metadata(cmd))
@@ -71,6 +83,23 @@ case class Fortune(id: FortuneId,
     }
     .handleEvent {
       evt: FortuneInitializationFinished ⇒ copy(initializationMode = false)
+    }
+
+  def editorsCanBuyAssets = action[Fortune]
+    .handleCommand.manyEvents {
+    cmd: BuyAsset =>
+      val assetAcquired = AssetAcquired(cmd.user, AssetId.generate, cmd.asset, metadata(cmd), cmd.initializer, cmd.comment)
+      if (cmd.initializer) List(
+        FortuneIncreased(cmd.user, cmd.asset.price, cmd.asset.currency, IncomeCategory("Auto"), metadata(cmd), initializer = true),
+        assetAcquired
+      )
+      else List(assetAcquired)
+  }
+    .handleEvent { e: FortuneEvent ⇒ e match {
+      case evt: FortuneIncreased => this.increase(Worth(evt.amount, evt.currency))
+      case evt: AssetAcquired => this.addAsset(evt.assetId, evt.asset)
+      case _ ⇒ unexpected
+    }
     }
 
   def editorsCanIncreaseFortune = action[Fortune]
@@ -120,7 +149,7 @@ object Fortune {
         cmd: CreateFortune => FortuneCreated(cmd.owner, metadata(fortuneId, cmd))
       }
       .handleEvent {
-        evt: FortuneCreated => Fortune(id = fortuneId, balances = Map.empty, evt.owner, Set.empty)
+        evt: FortuneCreated => Fortune(fortuneId, Map.empty, Map.empty, Map.empty, evt.owner, Set.empty)
       }
 
   def behavior(fortuneId: FortuneId): Behavior[Fortune] = {
@@ -131,9 +160,11 @@ object Fortune {
       fortune.unauthorizedUserCanNotAdjustFortune ++
         fortune.onlyOwnerCanAddEditors ++
         fortune.cantSendInitializationCommandsAfterInitializationIsComplete ++
+        fortune.cantAcquireAssetWithNotEnoughMoney ++
         fortune.cantHaveNegativeBalance ++
         fortune.ownerCanAddEditors ++
         fortune.editorsCanFinishInitialization ++
+        fortune.editorsCanBuyAssets ++
         fortune.editorsCanIncreaseFortune ++
         fortune.editorsCanDecreaseFortune
   }
