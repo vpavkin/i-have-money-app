@@ -88,13 +88,6 @@ object implicits {
   }
 
   /* Events */
-  /*
-    case class AssetAcquired
-    case class AssetSold
-    case class AssetWorthChanged
-    case class LiabilityTaken
-    case class LiabilityPaidOff
-    */
   implicit val assetAcquiredSuite: ProtobufSuite[AssetAcquired, PBAssetAcquired] = ProtobufSuite.iso[AssetAcquired, PBAssetAcquired]
   implicit val assetSoldSuite: ProtobufSuite[AssetSold, PBAssetSold] = ProtobufSuite.iso[AssetSold, PBAssetSold]
   implicit val assetWorthChangedSuite: ProtobufSuite[AssetWorthChanged, PBAssetWorthChanged] = ProtobufSuite.iso[AssetWorthChanged, PBAssetWorthChanged]
@@ -111,6 +104,7 @@ object implicits {
   implicit val userLoggedInSuite: ProtobufSuite[UserLoggedIn, PBUserLoggedIn] = ProtobufSuite.iso[UserLoggedIn, PBUserLoggedIn]
   implicit val userFailedToLogInSuite: ProtobufSuite[UserFailedToLogIn, PBUserFailedToLogIn] = ProtobufSuite.iso[UserFailedToLogIn, PBUserFailedToLogIn]
 
+  /* Commands */
   implicit val buyAssetSuite: ProtobufSuite[BuyAsset, PBBuyAsset] = ProtobufSuite.iso[BuyAsset, PBBuyAsset]
   implicit val sellAssetSuite: ProtobufSuite[SellAsset, PBSellAsset] = ProtobufSuite.iso[SellAsset, PBSellAsset]
   implicit val reevaluateAssetSuite: ProtobufSuite[ReevaluateAsset, PBReevaluateAsset] = ProtobufSuite.iso[ReevaluateAsset, PBReevaluateAsset]
