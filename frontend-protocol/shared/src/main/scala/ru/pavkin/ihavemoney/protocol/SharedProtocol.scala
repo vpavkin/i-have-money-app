@@ -2,7 +2,8 @@ package ru.pavkin.ihavemoney.protocol
 
 import cats.data.Xor
 import io.circe.{Decoder, Encoder, Json}
-import ru.pavkin.ihavemoney.domain.fortune.Currency
+import io.circe.generic.auto._
+import ru.pavkin.ihavemoney.domain.fortune.{Asset, Currency, Liability}
 
 trait SharedProtocol {
 
@@ -15,4 +16,9 @@ trait SharedProtocol {
   implicit val encodeCurrency: Encoder[Currency] =
     Encoder.instance(c ⇒ Json.string(c.code))
 
+  implicit val assetEncoder: Encoder[Asset] = Encoder[Asset]
+  implicit val assetDecoder: Decoder[Asset] = Decoder[Asset]
+
+  implicit val liabilityEncoder: Encoder[Liability] = Encoder[Liability]
+  implicit val liabilityDecoder: Decoder[Liability] = Decoder[Liability]
 }

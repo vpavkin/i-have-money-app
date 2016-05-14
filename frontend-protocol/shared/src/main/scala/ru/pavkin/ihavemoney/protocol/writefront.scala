@@ -1,8 +1,10 @@
 package ru.pavkin.ihavemoney.protocol
 
+import java.util.UUID
+
 import io.circe._
 import io.circe.generic.semiauto._
-import ru.pavkin.ihavemoney.domain.fortune.Currency
+import ru.pavkin.ihavemoney.domain.fortune.{Asset, Currency, Liability}
 
 object writefront extends SharedProtocol {
 
@@ -19,6 +21,26 @@ object writefront extends SharedProtocol {
                           category: String,
                           initializer: Boolean = false,
                           comment: Option[String] = None) extends WriteFrontRequest
+
+  case class BuyAssetRequest(asset: Asset,
+                             initializer: Boolean = false,
+                             comment: Option[String] = None) extends WriteFrontRequest
+
+  case class SellAssetRequest(assetId: UUID,
+                              comment: Option[String] = None) extends WriteFrontRequest
+
+  /* Reevaluate per-stock worth for stocks, whole asset worth otherwise*/
+  case class ReevaluateAssetRequest(assetId: UUID,
+                                    newPrice: BigDecimal,
+                                    comment: Option[String] = None) extends WriteFrontRequest
+
+  case class TakeOnLiabilityRequest(liability: Liability,
+                                    initializer: Boolean = false,
+                                    comment: Option[String] = None) extends WriteFrontRequest
+
+  case class PayLiabilityOffRequest(liabilityId: UUID,
+                                    byAmount: BigDecimal,
+                                    comment: Option[String] = None) extends WriteFrontRequest
 
   // User commands
 
@@ -41,6 +63,21 @@ object writefront extends SharedProtocol {
 
   implicit val sEncoder: Encoder[SpendRequest] = deriveEncoder[SpendRequest]
   implicit val sDecoder: Decoder[SpendRequest] = deriveDecoder[SpendRequest]
+
+  implicit val buyAssetRequestEncoder: Encoder[BuyAssetRequest] = deriveEncoder[BuyAssetRequest]
+  implicit val buyAssetRequestDecoder: Decoder[BuyAssetRequest] = deriveDecoder[BuyAssetRequest]
+
+  implicit val sellAssetRequestEncoder: Encoder[SellAssetRequest] = deriveEncoder[SellAssetRequest]
+  implicit val sellAssetRequestDecoder: Decoder[SellAssetRequest] = deriveDecoder[SellAssetRequest]
+
+  implicit val reevaluateAssetRequestEncoder: Encoder[ReevaluateAssetRequest] = deriveEncoder[ReevaluateAssetRequest]
+  implicit val reevaluateAssetRequestDecoder: Decoder[ReevaluateAssetRequest] = deriveDecoder[ReevaluateAssetRequest]
+
+  implicit val takeOnLiabilityRequestEncoder: Encoder[TakeOnLiabilityRequest] = deriveEncoder[TakeOnLiabilityRequest]
+  implicit val takeOnLiabilityRequestDecoder: Decoder[TakeOnLiabilityRequest] = deriveDecoder[TakeOnLiabilityRequest]
+
+  implicit val payLiabilityOffRequestEncoder: Encoder[PayLiabilityOffRequest] = deriveEncoder[PayLiabilityOffRequest]
+  implicit val payLiabilityOffRequestDecoder: Decoder[PayLiabilityOffRequest] = deriveDecoder[PayLiabilityOffRequest]
 
   implicit val createUserEncoder: Encoder[CreateUserRequest] = deriveEncoder[CreateUserRequest]
   implicit val createUserDecoder: Decoder[CreateUserRequest] = deriveDecoder[CreateUserRequest]
