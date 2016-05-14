@@ -55,25 +55,28 @@ object FortuneProtocol extends ProtocolLike {
                       initializer: Boolean = false,
                       comment: Option[String] = None) extends FortuneAdjustmentCommand
 
+  sealed trait AssetManipulationCommand extends InitializedFortuneAdjustmentCommand {
+    def assetId: AssetId
+  }
   case class SellAsset(user: UserId,
                        assetId: AssetId,
-                       comment: Option[String] = None) extends InitializedFortuneAdjustmentCommand
+                       comment: Option[String] = None) extends AssetManipulationCommand
 
   case class BuyMoreStocks(user: UserId,
                            assetId: AssetId,
                            count: BigDecimal,
-                           comment: Option[String] = None) extends InitializedFortuneAdjustmentCommand
+                           comment: Option[String] = None) extends AssetManipulationCommand
 
   case class SellSomeStocks(user: UserId,
                             assetId: AssetId,
                             count: BigDecimal,
-                            comment: Option[String] = None) extends InitializedFortuneAdjustmentCommand
+                            comment: Option[String] = None) extends AssetManipulationCommand
 
   /* Reevaluate per-stock worth for stocks, whole asset worth otherwise*/
   case class ReevaluateAsset(user: UserId,
                              assetId: AssetId,
                              newAmount: BigDecimal,
-                             comment: Option[String] = None) extends InitializedFortuneAdjustmentCommand
+                             comment: Option[String] = None) extends AssetManipulationCommand
 
   case class TakeOnLiability(user: UserId,
                              liability: Liability,

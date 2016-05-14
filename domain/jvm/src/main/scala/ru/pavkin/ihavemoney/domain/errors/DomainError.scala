@@ -1,6 +1,6 @@
 package ru.pavkin.ihavemoney.domain.errors
 
-import ru.pavkin.ihavemoney.domain.fortune.{Currency, FortuneId}
+import ru.pavkin.ihavemoney.domain.fortune.{AssetId, Currency, FortuneId}
 import ru.pavkin.ihavemoney.domain.user.UserId
 
 sealed trait DomainError extends Throwable {
@@ -30,4 +30,7 @@ case class InsufficientAccessRights(user: UserId, fortune: FortuneId) extends Do
 }
 case class FortuneAlreadyInitialized(fortune: FortuneId) extends DomainError {
   def message = s"Fortune $fortune is already initialized, you can not perform initializer commands."
+}
+case class AssetNotFound(assetId: AssetId) extends DomainError {
+  def message = s"Asset $assetId not found"
 }

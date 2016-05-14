@@ -2,7 +2,7 @@ package ru.pavkin.ihavemoney.domain.fortune
 
 import io.funcqrs._
 import io.funcqrs.behavior._
-import ru.pavkin.ihavemoney.domain.errors.{BalanceIsNotEnough, FortuneAlreadyInitialized, InsufficientAccessRights}
+import ru.pavkin.ihavemoney.domain.errors.{AssetNotFound, BalanceIsNotEnough, FortuneAlreadyInitialized, InsufficientAccessRights}
 import ru.pavkin.ihavemoney.domain.user.UserId
 import ru.pavkin.ihavemoney.domain.unexpected
 
@@ -24,6 +24,9 @@ case class Fortune(id: FortuneId,
 
   def addAsset(id: AssetId, asset: Asset): Fortune =
     copy(assets = assets + (id → asset))
+
+  def removeAsset(id: AssetId): Fortune =
+    copy(assets = assets - id)
 
   def decrease(by: Worth): Fortune =
     copy(balances = balances + (by.currency -> (amount(by.currency) - by.amount)))
@@ -69,6 +72,12 @@ case class Fortune(id: FortuneId,
         BalanceIsNotEnough(this.amount(cmd.asset.currency), cmd.asset.currency)
     }
 
+  def cantManipulateAssetThatDoesNotExist = action[Fortune]
+    .rejectCommand {
+      case cmd: AssetManipulationCommand if !this.assets.contains(cmd.assetId) ⇒
+        AssetNotFound(cmd.assetId)
+    }
+
   def ownerCanAddEditors = action[Fortune]
     .handleCommand {
       cmd: AddEditor ⇒ EditorAdded(cmd.editor, metadata(cmd))
@@ -97,10 +106,25 @@ case class Fortune(id: FortuneId,
   }
     .handleEvent { e: FortuneEvent ⇒ e match {
       case evt: FortuneIncreased => this.increase(Worth(evt.amount, evt.currency))
-      case evt: AssetAcquired => this.addAsset(evt.assetId, evt.asset)
+      case evt: AssetAcquired =>
+        addAsset(evt.assetId, evt.asset)
+          .increase(evt.asset.worth)
       case _ ⇒ unexpected
     }
     }
+
+  def editorsCanSellAssets = action[Fortune]
+    .handleCommand {
+      cmd: SellAsset =>
+        AssetSold(cmd.user, AssetId.generate, metadata(cmd), cmd.comment)
+    }
+    .handleEvent {
+      evt: AssetSold =>
+        val asset = assets(evt.assetId)
+        removeAsset(evt.assetId)
+          .increase(asset.worth)
+    }
+
 
   def editorsCanIncreaseFortune = action[Fortune]
     .handleCommand {
@@ -161,10 +185,12 @@ object Fortune {
         fortune.onlyOwnerCanAddEditors ++
         fortune.cantSendInitializationCommandsAfterInitializationIsComplete ++
         fortune.cantAcquireAssetWithNotEnoughMoney ++
+        fortune.cantManipulateAssetThatDoesNotExist ++
         fortune.cantHaveNegativeBalance ++
         fortune.ownerCanAddEditors ++
         fortune.editorsCanFinishInitialization ++
         fortune.editorsCanBuyAssets ++
+        fortune.editorsCanSellAssets ++
         fortune.editorsCanIncreaseFortune ++
         fortune.editorsCanDecreaseFortune
   }
