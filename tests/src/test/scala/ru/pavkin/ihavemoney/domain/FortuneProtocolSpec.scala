@@ -6,9 +6,9 @@ import io.funcqrs.config.Api._
 import io.funcqrs.test.InMemoryTestSupport
 import io.funcqrs.test.backend.InMemoryBackend
 import org.scalatest.concurrent.ScalaFutures
-import ru.pavkin.ihavemoney.domain.errors.{BalanceIsNotEnough, FortuneAlreadyInitialized, InsufficientAccessRights}
+import ru.pavkin.ihavemoney.domain.errors._
 import ru.pavkin.ihavemoney.domain.fortune.FortuneProtocol._
-import ru.pavkin.ihavemoney.domain.fortune.{Currency, Fortune, FortuneId}
+import ru.pavkin.ihavemoney.domain.fortune._
 import ru.pavkin.ihavemoney.domain.user.UserId
 import ru.pavkin.ihavemoney.readback.{MoneyViewProjection, MoneyViewRepository}
 
@@ -137,8 +137,8 @@ class FortuneProtocolSpec extends IHaveMoneySpec with ScalaFutures {
       fortune ! ReceiveIncome(owner, BigDecimal(10), Currency.USD, IncomeCategory("salary"), true)
       fortune ! ReceiveIncome(owner, BigDecimal(10), Currency.USD, IncomeCategory("salary"), false)
 
-      expectEvent { case FortuneIncreased(_, amount, Currency.USD, _, _, true, None) => () }
-      expectEvent { case FortuneIncreased(_, amount, Currency.USD, _, _, false, None) => () }
+      expectEvent { case FortuneIncreased(_, amount, Currency.USD, _, true, _, None) => () }
+      expectEvent { case FortuneIncreased(_, amount, Currency.USD, _, false, _, None) => () }
 
       fortune ? FinishInitialization(owner)
       expectEventType[FortuneInitializationFinished]
@@ -155,6 +155,83 @@ class FortuneProtocolSpec extends IHaveMoneySpec with ScalaFutures {
       intercept[FortuneAlreadyInitialized] {
         fortune ? FinishInitialization(owner)
       }
+    }
+  }
+
+  test("Buy Assets") {
+    new FortuneInMemoryTest {
+
+      val asset = RealEstate("House", BigDecimal(100000), Currency.USD)
+
+      fortune ! BuyAsset(owner, asset, initializer = true)
+
+      expectEvent { case FortuneIncreased(_, amount, Currency.USD, _, true, _, _) => () }
+      expectEvent { case AssetAcquired(_, _, ass, true, _, _) if ass == asset => () }
+
+      intercept[BalanceIsNotEnough] {
+        fortune ? BuyAsset(owner, asset, initializer = false)
+      }
+
+    }
+  }
+
+  test("Sell Assets") {
+    new FortuneInMemoryTest {
+
+      val asset = RealEstate("House", BigDecimal(100000), Currency.USD)
+      var assetId: AssetId = AssetId.generate
+
+      fortune ! BuyAsset(owner, asset, initializer = true)
+
+      expectEvent { case FortuneIncreased(_, amount, Currency.USD, _, true, _, _) => () }
+      expectEvent { case AssetAcquired(_, assId, ass, true, _, _) if ass == asset => assetId = assId }
+
+      val message = intercept[AssetNotFound] {
+        fortune ? SellAsset(owner, AssetId.generate)
+      }.getMessage
+      message should include("not found")
+
+      fortune ! SellAsset(owner, assetId)
+      expectEvent { case AssetSold(_, assId, _, _) if assId == assetId => () }
+    }
+  }
+
+  test("Reevaluate Assets") {
+    new FortuneInMemoryTest {
+
+      val asset = RealEstate("House", BigDecimal(100000), Currency.USD)
+      var assetId: AssetId = AssetId.generate
+
+      fortune ! BuyAsset(owner, asset, initializer = true)
+
+      expectEventType[FortuneIncreased]
+      expectEvent { case AssetAcquired(_, assId, ass, true, _, _) if ass == asset => assetId = assId }
+
+      fortune ! ReevaluateAsset(owner, assetId, BigDecimal(50000))
+      expectEvent { case AssetWorthChanged(_, assId, amount, _, _) if amount == BigDecimal(50000) => () }
+    }
+  }
+
+  test("Liabilities") {
+    new FortuneInMemoryTest {
+
+      val liability = NoInterestDebt("House", BigDecimal(1000), Currency.USD)
+      var liabilityId: LiabilityId = LiabilityId.generate
+
+      fortune ! TakeOnLiability(owner, liability)
+
+      expectEvent { case LiabilityTaken(_, liabId, liab, false, _, _) if liab == liability => liabilityId = liabId }
+
+      fortune ! PayLiabilityOff(owner, liabilityId, BigDecimal(400))
+      expectEvent { case LiabilityPaidOff(_, assId, amount, _, _) if amount == BigDecimal(400) => () }
+
+      fortune ! PayLiabilityOff(owner, liabilityId, BigDecimal(600))
+      expectEventType[LiabilityPaidOff]
+
+      val message = intercept[LiabilityNotFound] {
+        fortune ? PayLiabilityOff(owner, liabilityId, BigDecimal(10))
+      }.getMessage
+      message should include("not found")
     }
   }
 }

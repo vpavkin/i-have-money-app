@@ -2,7 +2,6 @@ package ru.pavkin.ihavemoney.domain.fortune
 
 import cats.Eq
 import cats.data.Xor
-import ru.pavkin.ihavemoney.domain.errors.NegativeWorth
 
 case class Worth(amount: BigDecimal, currency: Currency) {
   def +(other: Worth): Worth = {
@@ -11,14 +10,6 @@ case class Worth(amount: BigDecimal, currency: Currency) {
   }
   def *(by: BigDecimal): Worth =
     copy(amount = amount * by)
-
-  def -(other: Worth): Xor[NegativeWorth.type, Worth] = {
-    require(other.currency == currency, "Can't combine different currencies")
-    if (amount < other.amount)
-      Xor.left(NegativeWorth)
-    else
-      Xor.right(copy(amount - other.amount))
-  }
 
   override def toString: String = f"$amount%1.2f ${currency.code}"
 }
