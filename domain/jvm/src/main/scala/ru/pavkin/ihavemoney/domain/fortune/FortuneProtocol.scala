@@ -50,6 +50,20 @@ object FortuneProtocol extends ProtocolLike {
                            initializer: Boolean = false,
                            comment: Option[String] = None) extends FortuneAdjustmentCommand
 
+  case class ExchangeCurrency(user: UserId,
+                              fromAmount: BigDecimal,
+                              fromCurrency: Currency,
+                              toAmount: BigDecimal,
+                              toCurrency: Currency,
+                              comment: Option[String] = None) extends InitializedFortuneAdjustmentCommand {
+    require(fromCurrency != toCurrency)
+  }
+
+  // issues correction events with a special category
+  case class CorrectBalances(user: UserId,
+                             realBalances: Map[Currency, BigDecimal],
+                             comment: Option[String] = None) extends InitializedFortuneAdjustmentCommand
+
   case class BuyAsset(user: UserId,
                       asset: Asset,
                       initializer: Boolean = false,
@@ -115,6 +129,16 @@ object FortuneProtocol extends ProtocolLike {
                           initializer: Boolean = false,
                           metadata: FortuneMetadata,
                           comment: Option[String] = None) extends FortuneEvent
+
+  case class CurrencyExchanged(user: UserId,
+                               fromAmount: BigDecimal,
+                               fromCurrency: Currency,
+                               toAmount: BigDecimal,
+                               toCurrency: Currency,
+                               metadata: FortuneMetadata,
+                               comment: Option[String] = None) extends FortuneEvent {
+    require(fromCurrency != toCurrency)
+  }
 
   case class FortuneInitializationFinished(user: UserId,
                                            metadata: FortuneMetadata) extends FortuneEvent

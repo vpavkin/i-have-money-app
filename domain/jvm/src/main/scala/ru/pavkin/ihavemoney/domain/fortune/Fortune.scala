@@ -2,7 +2,7 @@ package ru.pavkin.ihavemoney.domain.fortune
 
 import io.funcqrs._
 import io.funcqrs.behavior._
-import ru.pavkin.ihavemoney.domain.errors._
+import ru.pavkin.ihavemoney.domain.errors.{BalanceIsNotEnough, _}
 import ru.pavkin.ihavemoney.domain.user.UserId
 
 case class Fortune(id: FortuneId,
@@ -53,6 +53,12 @@ case class Fortune(id: FortuneId,
   def decrease(by: Worth): Fortune =
     copy(balances = balances + (by.currency -> (amount(by.currency) - by.amount)))
 
+  def exchange(from: Worth, to: Worth): Fortune = {
+    require(from.currency != to.currency)
+    require(this.amount(from.currency) >= from.amount)
+    decrease(from).increase(to)
+  }
+
   def worth(currency: Currency): Worth = Worth(amount(currency), currency)
   def amount(currency: Currency): BigDecimal = balances.getOrElse(currency, BigDecimal(0.0))
 
@@ -86,6 +92,8 @@ case class Fortune(id: FortuneId,
     .rejectCommand {
       case cmd: Spend if this.amount(cmd.currency) < cmd.amount =>
         BalanceIsNotEnough(this.amount(cmd.currency), cmd.currency)
+      case cmd: ExchangeCurrency if this.amount(cmd.fromCurrency) < cmd.fromAmount ⇒
+        BalanceIsNotEnough(this.amount(cmd.fromCurrency), cmd.fromCurrency)
     }
 
   def cantAcquireAssetWithNotEnoughMoney = action[Fortune]
@@ -120,6 +128,41 @@ case class Fortune(id: FortuneId,
     }
     .handleEvent {
       evt: FortuneInitializationFinished ⇒ copy(initializationMode = false)
+    }
+
+  def editorsCanExchangeCurrency = action[Fortune]
+    .handleCommand {
+      cmd: ExchangeCurrency ⇒ CurrencyExchanged(
+        cmd.user,
+        cmd.fromAmount, cmd.fromCurrency,
+        cmd.toAmount, cmd.toCurrency,
+        metadata(cmd),
+        cmd.comment
+      )
+    }
+    .handleEvent {
+      evt: CurrencyExchanged ⇒ this.exchange(Worth(evt.fromAmount, evt.fromCurrency), Worth(evt.toAmount, evt.toCurrency))
+    }
+
+  def editorsCanPerformCorrections = action[Fortune]
+    .handleCommand.manyEvents {
+    cmd: CorrectBalances ⇒
+      cmd.realBalances
+        .map {
+          case (curr, realAmount) ⇒ curr → (realAmount - this.amount(curr))
+        }
+        .filter(_._2 != BigDecimal(0))
+        .map {
+          case (curr, correction) ⇒
+            if (correction > BigDecimal(0)) FortuneIncreased(cmd.user, correction, curr, IncomeCategory("Correction"), initializer = false, metadata(cmd))
+            else FortuneSpent(cmd.user, -correction, curr, ExpenseCategory("Correction"), initializer = false, metadata(cmd))
+        }.toList
+  }
+    .handleEvent {
+      evt: FortuneIncreased => this.increase(Worth(evt.amount, evt.currency))
+    }
+    .handleEvent {
+      evt: FortuneSpent => this.decrease(Worth(evt.amount, evt.currency))
     }
 
   def editorsCanBuyAssets = action[Fortune]
@@ -278,6 +321,8 @@ object Fortune {
         fortune.editorsCanTakeOnLiabilities ++
         fortune.editorsCanPayOffLiabilities ++
         fortune.editorsCanReevaluateAssets ++
+        fortune.editorsCanPerformCorrections ++
+        fortune.editorsCanExchangeCurrency ++
         fortune.editorsCanIncreaseFortune ++
         fortune.editorsCanDecreaseFortune
   }
