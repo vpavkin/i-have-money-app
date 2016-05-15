@@ -62,16 +62,16 @@ object api {
       }.value
 
   private def recover(f: Future[String Xor String])(implicit ec: ExecutionContext) = f.recover {
-    case AjaxException(xhr) => (xhr.status match {
-      case 404 => "NotFound"
-      case 400 => s"BadRequest: ${xhr.responseText}"
-      case 503 => "ServiceUnavailable"
-      case i => s"Other Error: $i"
+    case AjaxException(xhr) ⇒ (xhr.status match {
+      case 404 ⇒ "NotFound"
+      case 400 ⇒ s"BadRequest: ${xhr.responseText}"
+      case 503 ⇒ "ServiceUnavailable"
+      case i ⇒ s"Other Error: $i"
     }).left
   }
 
   private def get(url: String)(implicit ec: ExecutionContext): Future[String Xor String] = recover {
-    Ajax.get(url).map(xhr =>
+    Ajax.get(url).map(xhr ⇒
       if (xhr.status == 200) {
         xhr.responseText.right
       } else
@@ -84,7 +84,7 @@ object api {
       url,
       data = body,
       headers = Map("Content-Type" -> "application/json")
-    ).map(xhr =>
+    ).map(xhr ⇒
       if (xhr.status == 200) {
         xhr.responseText.right
       } else

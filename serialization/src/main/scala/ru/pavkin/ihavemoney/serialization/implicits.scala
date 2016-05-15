@@ -61,13 +61,13 @@ object implicits {
     import PBAsset.Asset._
 
     def serialize(t: Asset): PBAsset = t match {
-      case s: Stocks => PBAsset(Asset1(s.serialize[PBStocks]))
-      case s: RealEstate => PBAsset(Asset2(s.serialize[PBRealEstate]))
+      case s: Stocks ⇒ PBAsset(Asset1(s.serialize[PBStocks]))
+      case s: RealEstate ⇒ PBAsset(Asset2(s.serialize[PBRealEstate]))
     }
     def deserialize(t: PBAsset): Asset = t.asset match {
-      case Empty => throw new Exception(s"Received empty asset")
-      case Asset1(value) => value.deserialize[Stocks]
-      case Asset2(value) => value.deserialize[RealEstate]
+      case Empty ⇒ throw new Exception(s"Received empty asset")
+      case Asset1(value) ⇒ value.deserialize[Stocks]
+      case Asset2(value) ⇒ value.deserialize[RealEstate]
     }
   }
 
@@ -76,14 +76,14 @@ object implicits {
     import PBLiability.Liability._
 
     def serialize(t: Liability): PBLiability = t match {
-      case n: NoInterestDebt => PBLiability(Liability1(n.serialize[PBNoInterestDebt]))
-      case n: Loan => PBLiability(Liability2(n.serialize[PBLoan]))
+      case n: NoInterestDebt ⇒ PBLiability(Liability1(n.serialize[PBNoInterestDebt]))
+      case n: Loan ⇒ PBLiability(Liability2(n.serialize[PBLoan]))
     }
 
     def deserialize(t: PBLiability): Liability = t.liability match {
-      case Empty => throw new Exception(s"Received empty liability")
-      case Liability1(value) => value.deserialize[NoInterestDebt]
-      case Liability2(value) => value.deserialize[Loan]
+      case Empty ⇒ throw new Exception(s"Received empty liability")
+      case Liability1(value) ⇒ value.deserialize[NoInterestDebt]
+      case Liability2(value) ⇒ value.deserialize[Loan]
     }
   }
 
@@ -128,8 +128,8 @@ object implicits {
           case cmd: FortuneCommand ⇒ cmd match {
             case c: ReceiveIncome ⇒ Command1(c.encode)
             case c: Spend ⇒ Command2(c.encode)
-            case c: CreateFortune => Command7(c.encode)
-            case c: AddEditor => Command8(c.encode)
+            case c: CreateFortune ⇒ Command7(c.encode)
+            case c: AddEditor ⇒ Command8(c.encode)
             case c: FinishInitialization ⇒ Command9(c.encode)
             case c: BuyAsset ⇒ Command10(c.encode)
             case c: SellAsset ⇒ Command11(c.encode)
@@ -138,10 +138,10 @@ object implicits {
             case c: PayLiabilityOff ⇒ Command14(c.encode)
           }
           case cmd: UserCommand ⇒ cmd match {
-            case c: CreateUser => Command3(c.encode)
-            case c: ConfirmEmail => Command4(c.encode)
-            case c: LoginUser => Command5(c.encode)
-            case c: ResendConfirmationEmail => Command6(c.encode)
+            case c: CreateUser ⇒ Command3(c.encode)
+            case c: ConfirmEmail ⇒ Command4(c.encode)
+            case c: LoginUser ⇒ Command5(c.encode)
+            case c: ResendConfirmationEmail ⇒ Command6(c.encode)
           }
           case other ⇒ throw new Exception(s"Unknown domain command ${other.getClass.getName}")
         }
@@ -149,21 +149,21 @@ object implicits {
       def decode(p: PBCommandEnvelope): CommandEnvelope = CommandEnvelope(
         p.aggregateId,
         p.command match {
-          case Empty => throw new Exception(s"Received empty command envelope")
-          case Command1(value) => value.decode
-          case Command2(value) => value.decode
-          case Command3(value) => value.decode
-          case Command4(value) => value.decode
-          case Command5(value) => value.decode
-          case Command6(value) => value.decode
-          case Command7(value) => value.decode
-          case Command8(value) => value.decode
-          case Command9(value) => value.decode
-          case Command10(value) => value.decode
-          case Command11(value) => value.decode
-          case Command12(value) => value.decode
-          case Command13(value) => value.decode
-          case Command14(value) => value.decode
+          case Empty ⇒ throw new Exception(s"Received empty command envelope")
+          case Command1(value) ⇒ value.decode
+          case Command2(value) ⇒ value.decode
+          case Command3(value) ⇒ value.decode
+          case Command4(value) ⇒ value.decode
+          case Command5(value) ⇒ value.decode
+          case Command6(value) ⇒ value.decode
+          case Command7(value) ⇒ value.decode
+          case Command8(value) ⇒ value.decode
+          case Command9(value) ⇒ value.decode
+          case Command10(value) ⇒ value.decode
+          case Command11(value) ⇒ value.decode
+          case Command12(value) ⇒ value.decode
+          case Command13(value) ⇒ value.decode
+          case Command14(value) ⇒ value.decode
         }
       )
       def companion: GeneratedMessageCompanion[PBCommandEnvelope] = PBCommandEnvelope

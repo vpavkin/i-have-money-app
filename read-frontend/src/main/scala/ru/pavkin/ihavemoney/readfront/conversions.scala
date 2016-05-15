@@ -6,11 +6,11 @@ import ru.pavkin.ihavemoney.protocol.readfront._
 object conversions {
 
   def toFrontendFormat(qr: QueryResult): FrontendQueryResult = qr match {
-    case MoneyBalanceQueryResult(id, balance) =>
+    case MoneyBalanceQueryResult(id, balance) ⇒
       FrontendMoneyBalance(id.value, balance.map(kv ⇒ kv._1.code → kv._2))
-    case EntityNotFound(id, error) =>
+    case EntityNotFound(id, error) ⇒
       FrontendEntityNotFound(id.value, error)
-    case QueryFailed(id, error) =>
+    case QueryFailed(id, error) ⇒
       FrontendQueryFailed(id.value, error)
   }
 }

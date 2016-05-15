@@ -30,9 +30,9 @@ case class Fortune(id: FortuneId,
   def changeAssetWorth(id: AssetId, newPrice: BigDecimal): Fortune =
     copy(assets = assets.updated(id,
       assets(id) match {
-        case s: Stocks =>
+        case s: Stocks ⇒
           s.copy(stockPrice = newPrice)
-        case r: RealEstate =>
+        case r: RealEstate ⇒
           r.copy(price = newPrice)
       }
     ))
@@ -90,7 +90,7 @@ case class Fortune(id: FortuneId,
 
   def cantHaveNegativeBalance = action[Fortune]
     .rejectCommand {
-      case cmd: Spend if this.amount(cmd.currency) < cmd.amount =>
+      case cmd: Spend if this.amount(cmd.currency) < cmd.amount ⇒
         BalanceIsNotEnough(this.amount(cmd.currency), cmd.currency)
       case cmd: ExchangeCurrency if this.amount(cmd.fromCurrency) < cmd.fromAmount ⇒
         BalanceIsNotEnough(this.amount(cmd.fromCurrency), cmd.fromCurrency)
@@ -159,15 +159,15 @@ case class Fortune(id: FortuneId,
         }.toList
   }
     .handleEvent {
-      evt: FortuneIncreased => this.increase(Worth(evt.amount, evt.currency))
+      evt: FortuneIncreased ⇒ this.increase(Worth(evt.amount, evt.currency))
     }
     .handleEvent {
-      evt: FortuneSpent => this.decrease(Worth(evt.amount, evt.currency))
+      evt: FortuneSpent ⇒ this.decrease(Worth(evt.amount, evt.currency))
     }
 
   def editorsCanBuyAssets = action[Fortune]
     .handleCommand.manyEvents[BuyAsset, FortuneEvent] {
-    cmd: BuyAsset =>
+    cmd: BuyAsset ⇒
       val assetId = AssetId.generate
       println(s"Creating new asset with id $assetId")
       val assetAcquired = AssetAcquired(
@@ -190,21 +190,21 @@ case class Fortune(id: FortuneId,
       else List(assetAcquired)
   }
     .handleEvent {
-      evt: FortuneIncreased => this.increase(Worth(evt.amount, evt.currency))
+      evt: FortuneIncreased ⇒ this.increase(Worth(evt.amount, evt.currency))
     }
     .handleEvent {
-      evt: AssetAcquired =>
+      evt: AssetAcquired ⇒
         addAsset(evt.assetId, evt.asset)
           .decrease(evt.asset.worth)
     }
 
   def editorsCanSellAssets = action[Fortune]
     .handleCommand {
-      cmd: SellAsset =>
+      cmd: SellAsset ⇒
         AssetSold(cmd.user, cmd.assetId, metadata(cmd), cmd.comment)
     }
     .handleEvent {
-      evt: AssetSold =>
+      evt: AssetSold ⇒
         val asset = assets(evt.assetId)
         removeAsset(evt.assetId)
           .increase(asset.worth)
@@ -212,11 +212,11 @@ case class Fortune(id: FortuneId,
 
   def editorsCanReevaluateAssets = action[Fortune]
     .handleCommand {
-      cmd: ReevaluateAsset =>
+      cmd: ReevaluateAsset ⇒
         AssetWorthChanged(cmd.user, cmd.assetId, cmd.newPrice, metadata(cmd), cmd.comment)
     }
     .handleEvent {
-      evt: AssetWorthChanged =>
+      evt: AssetWorthChanged ⇒
         changeAssetWorth(evt.assetId, evt.newAmount)
     }
 
@@ -254,7 +254,7 @@ case class Fortune(id: FortuneId,
 
   def editorsCanIncreaseFortune = action[Fortune]
     .handleCommand {
-      cmd: ReceiveIncome => FortuneIncreased(
+      cmd: ReceiveIncome ⇒ FortuneIncreased(
         cmd.user,
         cmd.amount,
         cmd.currency,
@@ -264,12 +264,12 @@ case class Fortune(id: FortuneId,
         cmd.comment)
     }
     .handleEvent {
-      evt: FortuneIncreased => this.increase(Worth(evt.amount, evt.currency))
+      evt: FortuneIncreased ⇒ this.increase(Worth(evt.amount, evt.currency))
     }
 
   def editorsCanDecreaseFortune = action[Fortune]
     .handleCommand {
-      cmd: Spend => FortuneSpent(
+      cmd: Spend ⇒ FortuneSpent(
         cmd.user,
         cmd.amount,
         cmd.currency,
@@ -279,7 +279,7 @@ case class Fortune(id: FortuneId,
         cmd.comment)
     }
     .handleEvent {
-      evt: FortuneSpent => this.decrease(Worth(evt.amount, evt.currency))
+      evt: FortuneSpent ⇒ this.decrease(Worth(evt.amount, evt.currency))
     }
 }
 
@@ -296,17 +296,17 @@ object Fortune {
   def createFortune(fortuneId: FortuneId) =
     actions[Fortune]
       .handleCommand {
-        cmd: CreateFortune => FortuneCreated(cmd.owner, metadata(fortuneId, cmd))
+        cmd: CreateFortune ⇒ FortuneCreated(cmd.owner, metadata(fortuneId, cmd))
       }
       .handleEvent {
-        evt: FortuneCreated => Fortune(fortuneId, Map.empty, Map.empty, Map.empty, evt.owner, Set.empty)
+        evt: FortuneCreated ⇒ Fortune(fortuneId, Map.empty, Map.empty, Map.empty, evt.owner, Set.empty)
       }
 
   def behavior(fortuneId: FortuneId): Behavior[Fortune] = {
 
-    case Uninitialized(id) => createFortune(id)
+    case Uninitialized(id) ⇒ createFortune(id)
 
-    case Initialized(fortune) =>
+    case Initialized(fortune) ⇒
       fortune.unauthorizedUserCanNotAdjustFortune ++
         fortune.onlyOwnerCanAddEditors ++
         fortune.cantSendInitializationCommandsAfterInitializationIsComplete ++

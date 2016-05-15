@@ -13,7 +13,7 @@ class InterfaceActor(moneyRepo: MoneyViewRepository) extends Actor {
     case q: Query ⇒
       val origin = sender
       val queryFuture: Future[QueryResult] = q match {
-        case MoneyBalance(_, fortuneId) =>
+        case MoneyBalance(_, fortuneId) ⇒
           moneyRepo.findAll(fortuneId).map {
             case m if m.isEmpty ⇒ EntityNotFound(q.id, s"Fortune $fortuneId not found")
             case m ⇒ MoneyBalanceQueryResult(fortuneId, m)
