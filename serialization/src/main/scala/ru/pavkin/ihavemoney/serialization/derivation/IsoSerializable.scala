@@ -23,6 +23,13 @@ object IsoSerializable extends IsoSerializableImplicits {
 
 trait IsoSerializableImplicits extends LowLevelIsoSerializableImplicits {
 
+  implicit def mapSerializable[KS, VS, KR, VR](implicit IK: IsoSerializable[KS, KR],
+                                               IV: IsoSerializable[VS, VR]): IsoSerializable[Map[KS, VS], Map[KR, VR]] =
+    new IsoSerializable[Map[KS, VS], Map[KR, VR]] {
+      def serialize(t: Map[KS, VS]): Map[KR, VR] = t.map { case (k, v) ⇒ IK.serialize(k) -> IV.serialize(v) }
+      def deserialize(t: Map[KR, VR]): Map[KS, VS] = t.map { case (k, v) ⇒ IK.deserialize(k) -> IV.deserialize(v) }
+    }
+
   implicit def identitySerializable[T]: IsoSerializable[T, T] = new IsoSerializable[T, T] {
     def serialize(t: T): T = t
     def deserialize(t: T): T = t

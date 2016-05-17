@@ -105,6 +105,8 @@ object implicits {
   implicit val userFailedToLogInSuite: ProtobufSuite[UserFailedToLogIn, PBUserFailedToLogIn] = ProtobufSuite.iso[UserFailedToLogIn, PBUserFailedToLogIn]
 
   /* Commands */
+  implicit val exchangeCurrencySuite: ProtobufSuite[ExchangeCurrency, PBExchangeCurrency] = ProtobufSuite.iso[ExchangeCurrency, PBExchangeCurrency]
+  implicit val correctBalancesSuite: ProtobufSuite[CorrectBalances, PBCorrectBalances] = ProtobufSuite.iso[CorrectBalances, PBCorrectBalances]
   implicit val buyAssetSuite: ProtobufSuite[BuyAsset, PBBuyAsset] = ProtobufSuite.iso[BuyAsset, PBBuyAsset]
   implicit val sellAssetSuite: ProtobufSuite[SellAsset, PBSellAsset] = ProtobufSuite.iso[SellAsset, PBSellAsset]
   implicit val reevaluateAssetSuite: ProtobufSuite[ReevaluateAsset, PBReevaluateAsset] = ProtobufSuite.iso[ReevaluateAsset, PBReevaluateAsset]
@@ -136,6 +138,8 @@ object implicits {
             case c: ReevaluateAsset ⇒ Command12(c.encode)
             case c: TakeOnLiability ⇒ Command13(c.encode)
             case c: PayLiabilityOff ⇒ Command14(c.encode)
+            case c: ExchangeCurrency ⇒ Command15(c.encode)
+            case c: CorrectBalances ⇒ Command16(c.encode)
           }
           case cmd: UserCommand ⇒ cmd match {
             case c: CreateUser ⇒ Command3(c.encode)
@@ -164,6 +168,8 @@ object implicits {
           case Command12(value) ⇒ value.decode
           case Command13(value) ⇒ value.decode
           case Command14(value) ⇒ value.decode
+          case Command15(value) ⇒ value.decode
+          case Command16(value) ⇒ value.decode
         }
       )
       def companion: GeneratedMessageCompanion[PBCommandEnvelope] = PBCommandEnvelope
