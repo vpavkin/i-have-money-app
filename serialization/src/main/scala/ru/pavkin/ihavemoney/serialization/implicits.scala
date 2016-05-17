@@ -88,6 +88,7 @@ object implicits {
   }
 
   /* Events */
+  implicit val currencyExchangedSuite: ProtobufSuite[CurrencyExchanged, PBCurrencyExchanged] = ProtobufSuite.iso[CurrencyExchanged, PBCurrencyExchanged]
   implicit val assetAcquiredSuite: ProtobufSuite[AssetAcquired, PBAssetAcquired] = ProtobufSuite.iso[AssetAcquired, PBAssetAcquired]
   implicit val assetSoldSuite: ProtobufSuite[AssetSold, PBAssetSold] = ProtobufSuite.iso[AssetSold, PBAssetSold]
   implicit val assetWorthChangedSuite: ProtobufSuite[AssetWorthChanged, PBAssetWorthChanged] = ProtobufSuite.iso[AssetWorthChanged, PBAssetWorthChanged]
