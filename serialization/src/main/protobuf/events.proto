@@ -26,6 +26,16 @@ message PBFortuneIncreased {
 	string comment = 15;
 }
 
+message PBCurrencyExchanged {
+	string userId = 1;
+	string fromAmount = 2;
+	string fromCurrency = 3;
+	string toAmount = 4;
+	string toCurrency = 5;
+	PBMetadata metadata = 14;
+	string comment = 15;
+}
+
 message PBFortuneSpent {
 	string userId = 1;
 	string amount = 2;

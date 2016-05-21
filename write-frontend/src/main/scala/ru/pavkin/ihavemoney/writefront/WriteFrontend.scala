@@ -89,11 +89,32 @@ object WriteFrontend extends App with CirceSupport with CorsDirectives {
               }
             } ~
               pathPrefix(JavaUUID.map(i ⇒ FortuneId(i.toString))) { fortuneId: FortuneId ⇒
-                (path("finish-initialization") & post) {
+                (path("currency-exchange") & post & entity(as[ExchangeCurrencyRequest])) { req ⇒
                   complete {
-                    writeBack.sendCommandAndIgnoreResult(fortuneId, FinishInitialization(userId))
+                    writeBack.sendCommandAndIgnoreResult(fortuneId, ExchangeCurrency(
+                      userId,
+                      req.fromAmount,
+                      req.fromCurrency,
+                      req.toAmount,
+                      req.toCurrency,
+                      req.comment
+                    ))
                   }
                 } ~
+                  (path("correct-balances") & post & entity(as[CorrectBalancesRequest])) { req ⇒
+                    complete {
+                      writeBack.sendCommandAndIgnoreResult(fortuneId, CorrectBalances(
+                        userId,
+                        req.realBalances,
+                        req.comment
+                      ))
+                    }
+                  } ~
+                  (path("finish-initialization") & post) {
+                    complete {
+                      writeBack.sendCommandAndIgnoreResult(fortuneId, FinishInitialization(userId))
+                    }
+                  } ~
                   (path("income") & post & entity(as[ReceiveIncomeRequest])) { req ⇒
                     complete {
                       writeBack.sendCommandAndIgnoreResult(fortuneId, ReceiveIncome(

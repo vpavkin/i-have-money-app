@@ -80,7 +80,7 @@ lazy val testDependencies = libraryDependencies ++= Seq(
 )
 
 lazy val protobufSettings = Protobuf.protobufSettings ++
-  (Protobuf.runProtoc in Protobuf.protobufConfig := (args =>
+  (Protobuf.runProtoc in Protobuf.protobufConfig := (args ⇒
     com.github.os72.protocjar.Protoc.runProtoc("-v300" +: args.toArray)))
 
 lazy val iHaveMoney = project.in(file("."))
@@ -405,7 +405,7 @@ lazy val readFrontend = project.in(file("read-frontend"))
       (packageJSDependencies in Compile in jsApp,
         fastOptJS in Compile in jsApp,
         packageScalaJSLauncher in Compile in jsApp)
-        .map((f1, f2, f3) => Seq(f1, f2.data, f3.data)).taskValue
+        .map((f1, f2, f3) ⇒ Seq(f1, f2.data, f3.data)).taskValue
   )
   .dependsOn(domainJVM, serialization, frontendProtocolJVM)
 

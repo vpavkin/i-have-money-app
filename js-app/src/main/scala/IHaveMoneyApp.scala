@@ -17,7 +17,7 @@ import scala.scalajs.js.annotation.JSExport
 
 object IHaveMoneyApp extends JSApp {
 
-  val routerConfig = RouterConfigDsl[Route].buildConfig { dsl =>
+  val routerConfig = RouterConfigDsl[Route].buildConfig { dsl ⇒
     import dsl._
 
     (trimSlashes

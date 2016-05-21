@@ -20,6 +20,8 @@ message PBCommandEnvelope {
 		PBReevaluateAsset command12 = 13;
 		PBTakeOnLiability command13 = 14;
 		PBPayLiabilityOff command14 = 15;
+		PBExchangeCurrency command15 = 16;
+		PBCorrectBalances command16 = 17;
 	}
 }
 
@@ -42,6 +44,21 @@ message PBSpend {
 	string currency = 3;
 	string category = 4;
 	bool initializer = 5;
+	string comment = 15;
+}
+
+message PBExchangeCurrency {
+	string userId = 1;
+	string fromAmount = 2;
+	string fromCurrency = 3;
+	string toAmount = 4;
+	string toCurrency = 5;
+	string comment = 15;
+}
+
+message PBCorrectBalances {
+	string userId = 1;
+	map<string,string> realBalances = 2;
 	string comment = 15;
 }
 

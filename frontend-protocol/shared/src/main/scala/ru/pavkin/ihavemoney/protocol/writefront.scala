@@ -1,7 +1,5 @@
 package ru.pavkin.ihavemoney.protocol
 
-import java.util.UUID
-
 import io.circe._
 import io.circe.generic.semiauto._
 import ru.pavkin.ihavemoney.domain.fortune.{Asset, Currency, Liability}
@@ -21,6 +19,17 @@ object writefront extends SharedProtocol {
                           category: String,
                           initializer: Boolean = false,
                           comment: Option[String] = None) extends WriteFrontRequest
+
+  case class ExchangeCurrencyRequest(fromAmount: BigDecimal,
+                                     fromCurrency: Currency,
+                                     toAmount: BigDecimal,
+                                     toCurrency: Currency,
+                                     comment: Option[String] = None) extends WriteFrontRequest {
+    require(fromCurrency != toCurrency)
+  }
+
+  case class CorrectBalancesRequest(realBalances: Map[Currency, BigDecimal],
+                                    comment: Option[String] = None) extends WriteFrontRequest
 
   case class BuyAssetRequest(asset: Asset,
                              initializer: Boolean = false,
@@ -60,6 +69,12 @@ object writefront extends SharedProtocol {
 
   implicit val sEncoder: Encoder[SpendRequest] = deriveEncoder[SpendRequest]
   implicit val sDecoder: Decoder[SpendRequest] = deriveDecoder[SpendRequest]
+
+  implicit val exchangeCurrencyRequestEncoder: Encoder[ExchangeCurrencyRequest] = deriveEncoder[ExchangeCurrencyRequest]
+  implicit val exchangeCurrencyRequestDecoder: Decoder[ExchangeCurrencyRequest] = deriveDecoder[ExchangeCurrencyRequest]
+
+  implicit val correctBalancesRequestEncoder: Encoder[CorrectBalancesRequest] = deriveEncoder[CorrectBalancesRequest]
+  implicit val correctBalancesRequestDecoder: Decoder[CorrectBalancesRequest] = deriveDecoder[CorrectBalancesRequest]
 
   implicit val buyAssetRequestEncoder: Encoder[BuyAssetRequest] = deriveEncoder[BuyAssetRequest]
   implicit val buyAssetRequestDecoder: Decoder[BuyAssetRequest] = deriveDecoder[BuyAssetRequest]

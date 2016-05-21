@@ -26,7 +26,7 @@ object Money {
   implicit def GetResultMoneyRow(implicit
                                  e0: GetResult[String],
                                  e1: GetResult[BigDecimal]): GetResult[MoneyRow] = GetResult {
-    prs => import prs._
+    prs ⇒ import prs._
       MoneyRow(FortuneId(<<[String]), Currency.unsafeFromCode(<<[String]), <<[BigDecimal])
   }
 

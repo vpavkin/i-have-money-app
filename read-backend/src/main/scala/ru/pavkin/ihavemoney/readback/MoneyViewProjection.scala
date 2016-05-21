@@ -18,9 +18,9 @@ class MoneyViewProjection(repo: MoneyViewRepository) extends Projection {
 
   def handleEvent: HandleEvent = {
 
-    case e: FortuneIncreased =>
+    case e: FortuneIncreased ⇒
       adjustFortune(e.aggregateId, e.currency, _.getOrElse(BigDecimal(0.0)) + e.amount)
-    case e: FortuneSpent =>
+    case e: FortuneSpent ⇒
       adjustFortune(e.aggregateId, e.currency, _.getOrElse(BigDecimal(0.0)) - e.amount)
   }
 }

@@ -20,7 +20,7 @@ class FortuneProtocolSpec extends IHaveMoneySpec with ScalaFutures {
 
     val repo = new InMemoryMoneyViewRepository
     val owner = UserId("owner@example.org")
-    val id = FortuneId.generate()
+    val id = FortuneId.generate
 
     def configure(backend: InMemoryBackend): Unit =
       backend.configure {
@@ -84,9 +84,9 @@ class FortuneProtocolSpec extends IHaveMoneySpec with ScalaFutures {
       fortune ! ReceiveIncome(owner, BigDecimal(20), Currency.EUR, IncomeCategory("salary"))
       fortune ! ReceiveIncome(owner, BigDecimal(30.5), Currency.EUR, IncomeCategory("salary"))
 
-      expectEvent { case FortuneIncreased(_, amount, Currency.USD, _, _, _, None) if amount.toDouble == 123.12 => () }
-      expectEvent { case FortuneIncreased(_, amount, Currency.EUR, _, _, _, None) if amount.toDouble == 20.0 => () }
-      expectEvent { case FortuneIncreased(_, amount, Currency.EUR, _, _, _, None) if amount.toDouble == 30.5 => () }
+      expectEvent { case FortuneIncreased(_, amount, Currency.USD, _, _, _, None) if amount.toDouble == 123.12 ⇒ () }
+      expectEvent { case FortuneIncreased(_, amount, Currency.EUR, _, _, _, None) if amount.toDouble == 20.0 ⇒ () }
+      expectEvent { case FortuneIncreased(_, amount, Currency.EUR, _, _, _, None) if amount.toDouble == 30.5 ⇒ () }
 
       val view = repo.findAll(id).futureValue
       view(Currency.USD) shouldBe BigDecimal(123.12)
@@ -100,8 +100,8 @@ class FortuneProtocolSpec extends IHaveMoneySpec with ScalaFutures {
       fortune ! ReceiveIncome(owner, BigDecimal(123.12), Currency.USD, IncomeCategory("salary"))
       fortune ! Spend(owner, BigDecimal(20), Currency.USD, ExpenseCategory("food"))
 
-      expectEvent { case FortuneIncreased(_, amount, Currency.USD, _, _, _, None) if amount.toDouble == 123.12 => () }
-      expectEvent { case FortuneSpent(_, amount, Currency.USD, _, _, _, None) if amount.toDouble == 20.0 => () }
+      expectEvent { case FortuneIncreased(_, amount, Currency.USD, _, _, _, None) if amount.toDouble == 123.12 ⇒ () }
+      expectEvent { case FortuneSpent(_, amount, Currency.USD, _, _, _, None) if amount.toDouble == 20.0 ⇒ () }
 
       val view = repo.findAll(id).futureValue
       view(Currency.USD) shouldBe BigDecimal(103.12)
@@ -137,8 +137,8 @@ class FortuneProtocolSpec extends IHaveMoneySpec with ScalaFutures {
       fortune ! ReceiveIncome(owner, BigDecimal(10), Currency.USD, IncomeCategory("salary"), true)
       fortune ! ReceiveIncome(owner, BigDecimal(10), Currency.USD, IncomeCategory("salary"), false)
 
-      expectEvent { case FortuneIncreased(_, amount, Currency.USD, _, true, _, None) => () }
-      expectEvent { case FortuneIncreased(_, amount, Currency.USD, _, false, _, None) => () }
+      expectEvent { case FortuneIncreased(_, amount, Currency.USD, _, true, _, None) ⇒ () }
+      expectEvent { case FortuneIncreased(_, amount, Currency.USD, _, false, _, None) ⇒ () }
 
       fortune ? FinishInitialization(owner)
       expectEventType[FortuneInitializationFinished]
@@ -165,8 +165,8 @@ class FortuneProtocolSpec extends IHaveMoneySpec with ScalaFutures {
 
       fortune ! BuyAsset(owner, asset, initializer = true)
 
-      expectEvent { case FortuneIncreased(_, amount, Currency.USD, _, true, _, _) => () }
-      expectEvent { case AssetAcquired(_, _, ass, true, _, _) if ass == asset => () }
+      expectEvent { case FortuneIncreased(_, amount, Currency.USD, _, true, _, _) ⇒ () }
+      expectEvent { case AssetAcquired(_, _, ass, true, _, _) if ass == asset ⇒ () }
 
       intercept[BalanceIsNotEnough] {
         fortune ? BuyAsset(owner, asset, initializer = false)
@@ -183,8 +183,8 @@ class FortuneProtocolSpec extends IHaveMoneySpec with ScalaFutures {
 
       fortune ! BuyAsset(owner, asset, initializer = true)
 
-      expectEvent { case FortuneIncreased(_, amount, Currency.USD, _, true, _, _) => () }
-      expectEvent { case AssetAcquired(_, assId, ass, true, _, _) if ass == asset => assetId = assId }
+      expectEvent { case FortuneIncreased(_, amount, Currency.USD, _, true, _, _) ⇒ () }
+      expectEvent { case AssetAcquired(_, assId, ass, true, _, _) if ass == asset ⇒ assetId = assId }
 
       val message = intercept[AssetNotFound] {
         fortune ? SellAsset(owner, AssetId.generate)
@@ -192,7 +192,7 @@ class FortuneProtocolSpec extends IHaveMoneySpec with ScalaFutures {
       message should include("not found")
 
       fortune ! SellAsset(owner, assetId)
-      expectEvent { case AssetSold(_, assId, _, _) if assId == assetId => () }
+      expectEvent { case AssetSold(_, assId, _, _) if assId == assetId ⇒ () }
     }
   }
 
@@ -205,10 +205,10 @@ class FortuneProtocolSpec extends IHaveMoneySpec with ScalaFutures {
       fortune ! BuyAsset(owner, asset, initializer = true)
 
       expectEventType[FortuneIncreased]
-      expectEvent { case AssetAcquired(_, assId, ass, true, _, _) if ass == asset => assetId = assId }
+      expectEvent { case AssetAcquired(_, assId, ass, true, _, _) if ass == asset ⇒ assetId = assId }
 
       fortune ! ReevaluateAsset(owner, assetId, BigDecimal(50000))
-      expectEvent { case AssetWorthChanged(_, assId, amount, _, _) if amount == BigDecimal(50000) => () }
+      expectEvent { case AssetWorthChanged(_, assId, amount, _, _) if amount == BigDecimal(50000) ⇒ () }
     }
   }
 
@@ -220,10 +220,10 @@ class FortuneProtocolSpec extends IHaveMoneySpec with ScalaFutures {
 
       fortune ! TakeOnLiability(owner, liability)
 
-      expectEvent { case LiabilityTaken(_, liabId, liab, false, _, _) if liab == liability => liabilityId = liabId }
+      expectEvent { case LiabilityTaken(_, liabId, liab, false, _, _) if liab == liability ⇒ liabilityId = liabId }
 
       fortune ! PayLiabilityOff(owner, liabilityId, BigDecimal(400))
-      expectEvent { case LiabilityPaidOff(_, assId, amount, _, _) if amount == BigDecimal(400) => () }
+      expectEvent { case LiabilityPaidOff(_, assId, amount, _, _) if amount == BigDecimal(400) ⇒ () }
 
       fortune ! PayLiabilityOff(owner, liabilityId, BigDecimal(600))
       expectEventType[LiabilityPaidOff]
@@ -232,6 +232,42 @@ class FortuneProtocolSpec extends IHaveMoneySpec with ScalaFutures {
         fortune ? PayLiabilityOff(owner, liabilityId, BigDecimal(10))
       }.getMessage
       message should include("not found")
+    }
+  }
+
+  test("Currency exchange") {
+    new FortuneInMemoryTest {
+      val exchange = ExchangeCurrency(owner, BigDecimal(100), Currency.USD, BigDecimal(80), Currency.EUR)
+      intercept[BalanceIsNotEnough] {
+        fortune ? exchange
+      }.getMessage
+
+      expectNoEvent
+
+      fortune ! ReceiveIncome(owner, BigDecimal(123.12), Currency.USD, IncomeCategory("salary"))
+      fortune ! exchange
+
+      expectEventType[FortuneIncreased]
+      expectEvent { case CurrencyExchanged(_, fromAmount, Currency.USD, toAmount, Currency.EUR, _, None)
+        if fromAmount == BigDecimal(100) && toAmount == BigDecimal(80) ⇒ ()
+      }
+    }
+  }
+
+  test("Corrections") {
+    new FortuneInMemoryTest {
+      val correction = CorrectBalances(owner, Map(Currency.USD → BigDecimal(100), Currency.RUR → BigDecimal(2000)))
+
+      fortune ! correction
+
+      expectEvent { case FortuneIncreased(_, amount, Currency.USD, _, false, _, _) if amount == BigDecimal(100) ⇒ () }
+      expectEvent { case FortuneIncreased(_, amount, Currency.RUR, _, false, _, _) if amount == BigDecimal(2000) ⇒ () }
+
+      fortune ! ReceiveIncome(owner, BigDecimal(50), Currency.USD, IncomeCategory("salary"))
+      expectEventType[FortuneIncreased]
+
+      fortune ! correction
+      expectEvent { case FortuneSpent(_, amount, Currency.USD, _, false, _, _) if amount == BigDecimal(50) ⇒ () }
     }
   }
 }

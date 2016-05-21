@@ -24,7 +24,7 @@ object ReadBackend extends App {
     val actorSystem: ActorSystem = system
     def sourceProvider(query: Query): EventsSourceProvider = {
       query match {
-        case QueryByTag(Fortune.tag) => new FortuneTagEventSourceProvider(Fortune.tag)
+        case QueryByTag(Fortune.tag) ⇒ new FortuneTagEventSourceProvider(Fortune.tag)
       }
     }
   }.configure {

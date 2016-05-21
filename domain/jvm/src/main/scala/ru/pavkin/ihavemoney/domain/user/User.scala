@@ -29,7 +29,7 @@ case class User(id: UserId,
 
   def cantConfirmWithInvalidCode = action[User]
     .rejectCommand {
-      case cmd: ConfirmEmail if this.confirmationCode != cmd.confirmationCode =>
+      case cmd: ConfirmEmail if this.confirmationCode != cmd.confirmationCode ⇒
         InvalidConfirmationCode
     }
 
@@ -41,7 +41,7 @@ case class User(id: UserId,
 
   def cantSentConfirmationEmailForConfirmedUser = action[User]
     .rejectCommand {
-      case cmd: ResendConfirmationEmail if this.isConfirmed =>
+      case cmd: ResendConfirmationEmail if this.isConfirmed ⇒
         EmailAlreadyConfirmed
       case cmd: ConfirmEmail if this.isConfirmed ⇒
         EmailAlreadyConfirmed
@@ -116,9 +116,9 @@ object User {
 
   def behavior(fortuneId: UserId): Behavior[User] = {
 
-    case Uninitialized(id) => createUser(id)
+    case Uninitialized(id) ⇒ createUser(id)
 
-    case Initialized(user) =>
+    case Initialized(user) ⇒
       user.cantConfirmWithInvalidCode ++
         user.cantSentConfirmationEmailForConfirmedUser ++
         user.cantLogInUnconfirmedUser ++
