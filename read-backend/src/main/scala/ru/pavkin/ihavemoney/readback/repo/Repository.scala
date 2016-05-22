@@ -11,6 +11,6 @@ trait Repository[PK, Row] {
 
   def updateById(id: PK, updater: Row ⇒ Row)(implicit ec: ExecutionContext): Future[Unit] = for {
     row ← byId(id)
-    _ ← row.foreach(r ⇒ replaceById(id, updater(r)))
+    _ ← row.map(r ⇒ replaceById(id, updater(r))).getOrElse(Future.successful(()))
   } yield ()
 }
