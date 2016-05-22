@@ -35,6 +35,8 @@ class MoneyViewProjection(moneyRepo: MoneyViewRepository,
         assetRepo.byId(e.assetId → e.aggregateId).flatMap(_.map(a ⇒
           adjustFortune(e.aggregateId, a.currency, _.getOrElse(BigDecimal(0.0)) + a.worth.amount)
         ).getOrElse(Future.successful(())))
+      case e: LiabilityTaken =>
+        adjustFortune(e.aggregateId, e.liability.currency, _.getOrElse(BigDecimal(0.0)) - e.liability.amount)
       case e: LiabilityPaidOff =>
         liabilityRepo.byId(e.liabilityId → e.aggregateId).flatMap(_.map(a ⇒
           adjustFortune(e.aggregateId, a.currency, _.getOrElse(BigDecimal(0.0)) - a.amount)

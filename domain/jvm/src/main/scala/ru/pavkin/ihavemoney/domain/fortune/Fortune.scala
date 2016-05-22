@@ -42,12 +42,13 @@ case class Fortune(id: FortuneId,
 
   def payLiabilityOff(id: LiabilityId, byAmount: BigDecimal): Fortune = {
     val liab = liabilities(id)
-    if (liab.amount <= byAmount)
+    val f = if (liab.amount <= byAmount)
       copy(liabilities = liabilities - id)
     else
       copy(liabilities = liabilities.updated(
         id, liab.payOff(byAmount)
       ))
+    f.decrease(liab.worth)
   }
 
   def decrease(by: Worth): Fortune =
@@ -235,7 +236,9 @@ case class Fortune(id: FortuneId,
         )
     }
     .handleEvent {
-      evt: LiabilityTaken ⇒ addLiability(evt.liabilityId, evt.liability)
+      evt: LiabilityTaken ⇒
+        addLiability(evt.liabilityId, evt.liability)
+          .increase(evt.liability.worth)
     }
 
   def editorsCanPayOffLiabilities = action[Fortune]
@@ -249,7 +252,8 @@ case class Fortune(id: FortuneId,
       )
     }
     .handleEvent {
-      evt: LiabilityPaidOff ⇒ payLiabilityOff(evt.liabilityId, evt.amount)
+      evt: LiabilityPaidOff ⇒
+        payLiabilityOff(evt.liabilityId, evt.amount)
     }
 
   def editorsCanIncreaseFortune = action[Fortune]
