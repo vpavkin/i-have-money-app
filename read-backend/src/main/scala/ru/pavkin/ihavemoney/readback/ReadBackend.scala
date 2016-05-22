@@ -35,9 +35,9 @@ object ReadBackend extends App {
     projection(
       query = QueryByTag(Fortune.tag),
       projection = new MoneyViewProjection(moneyViewRepo, assetsViewRepo, liabilitiesViewRepo),
-      name = "MoneyViewProjection"
+      name = "FortuneViewProjection"
     ).withBackendOffsetPersistence()
   }
 
-  val interface = system.actorOf(Props(new InterfaceActor(moneyViewRepo)), "interface")
+  val interface = system.actorOf(Props(new InterfaceActor(moneyViewRepo, assetsViewRepo, liabilitiesViewRepo)), "interface")
 }

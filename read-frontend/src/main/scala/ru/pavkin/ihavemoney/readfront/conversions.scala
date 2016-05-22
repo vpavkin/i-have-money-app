@@ -1,6 +1,6 @@
 package ru.pavkin.ihavemoney.readfront
 
-import ru.pavkin.ihavemoney.domain.query.{EntityNotFound, MoneyBalanceQueryResult, QueryFailed, QueryResult}
+import ru.pavkin.ihavemoney.domain.query._
 import ru.pavkin.ihavemoney.protocol.readfront._
 
 object conversions {
@@ -12,5 +12,9 @@ object conversions {
       FrontendEntityNotFound(id.value, error)
     case QueryFailed(id, error) ⇒
       FrontendQueryFailed(id.value, error)
+    case LiabilitiesQueryResult(id, liabilities) =>
+      FrontendLiabilities(id.value, liabilities)
+    case AssetsQueryResult(id, assets) =>
+      FrontendAssets(id.value, assets)
   }
 }
