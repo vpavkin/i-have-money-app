@@ -27,7 +27,7 @@ class DatabaseLiabilitiesViewRepository(db: Database) extends LiabilitiesViewRep
 
   def byId(id: (LiabilityId, FortuneId))(implicit ec: ExecutionContext): Future[Option[Liability]] = find(id._1)
 
-  def updateById(id: (LiabilityId, FortuneId), newRow: Liability)(implicit ec: ExecutionContext): Future[Unit] =
+  def replaceById(id: (LiabilityId, FortuneId), newRow: Liability)(implicit ec: ExecutionContext): Future[Unit] =
     db.run {
       liabilitiesFindQuery(id._1).update(DebtRow(id._1, id._2, newRow.name, newRow.amount, newRow.currency, newRow match {
         case n: NoInterestDebt => None
@@ -36,7 +36,7 @@ class DatabaseLiabilitiesViewRepository(db: Database) extends LiabilitiesViewRep
     }.map(_ ⇒ ())
 
   def insert(id: (LiabilityId, FortuneId), row: Liability)(implicit ec: ExecutionContext): Future[Unit] =
-    updateById(id, row)
+    replaceById(id, row)
 
   def remove(id: (LiabilityId, FortuneId))(implicit ec: ExecutionContext): Future[Unit] = db.run {
     liabilitiesFindQuery(id._1).delete

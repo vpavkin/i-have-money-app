@@ -23,7 +23,7 @@ class DatabaseMoneyViewRepository(db: Database) extends MoneyViewRepository {
       .result
   }.map(_.headOption)
 
-  def updateById(id: (FortuneId, Currency), newRow: BigDecimal)(implicit ec: ExecutionContext): Future[Unit] = db.run {
+  def replaceById(id: (FortuneId, Currency), newRow: BigDecimal)(implicit ec: ExecutionContext): Future[Unit] = db.run {
     findQuery(id._1, id._2).map(_.amount).update(newRow)
   }.map(_ ⇒ ())
 

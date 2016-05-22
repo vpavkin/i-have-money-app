@@ -48,7 +48,7 @@ class DatabaseAssetsViewRepository(db: Database) extends AssetsViewRepository {
     r1.flatMap(s1 ⇒ r2.map(_ ++ s1)).map(_.toMap)
   }
 
-  def updateById(id: (AssetId, FortuneId), newRow: Asset)(implicit ec: ExecutionContext): Future[Unit] = newRow match {
+  def replaceById(id: (AssetId, FortuneId), newRow: Asset)(implicit ec: ExecutionContext): Future[Unit] = newRow match {
     case s: domain.Stocks =>
       db.run {
         stocksFindQuery(id._1).update(StocksRow(id._1, id._2, s.name, s.price, s.currency, s.count))
@@ -60,7 +60,7 @@ class DatabaseAssetsViewRepository(db: Database) extends AssetsViewRepository {
 
   }
 
-  def insert(id: (AssetId, FortuneId), row: Asset)(implicit ec: ExecutionContext): Future[Unit] = updateById(id, row)
+  def insert(id: (AssetId, FortuneId), row: Asset)(implicit ec: ExecutionContext): Future[Unit] = replaceById(id, row)
 
   def remove(id: (AssetId, FortuneId))(implicit ec: ExecutionContext): Future[Unit] = db.run {
     for {

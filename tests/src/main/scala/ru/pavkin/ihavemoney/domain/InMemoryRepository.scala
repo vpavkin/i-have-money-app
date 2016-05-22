@@ -10,12 +10,12 @@ trait InMemoryRepository[PK, Row] extends Repository[PK, Row] {
 
   def byId(id: PK)(implicit ec: ExecutionContext): Future[Option[Row]] = Future.successful(repo.get(id))
 
-  def updateById(id: PK, newRow: Row)(implicit ec: ExecutionContext): Future[Unit] = Future.successful {
+  def replaceById(id: PK, newRow: Row)(implicit ec: ExecutionContext): Future[Unit] = Future.successful {
     repo = repo.updated(id, newRow)
   }
 
   def insert(id: PK, row: Row)(implicit ec: ExecutionContext): Future[Unit] =
-    updateById(id, row)
+    replaceById(id, row)
 
   def remove(id: PK)(implicit ec: ExecutionContext): Future[Unit] = Future {
     repo = repo - id

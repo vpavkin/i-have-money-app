@@ -14,7 +14,7 @@ class MoneyViewProjection(moneyRepo: MoneyViewRepository,
 
   private def adjustFortune(id: FortuneId, currency: Currency, op: Option[BigDecimal] ⇒ BigDecimal): Future[Unit] = {
     moneyRepo.byId(id → currency).flatMap {
-      case Some(amount) ⇒ moneyRepo.updateById(id → currency, op(Some(amount)))
+      case Some(amount) ⇒ moneyRepo.replaceById(id → currency, op(Some(amount)))
       case None ⇒ moneyRepo.insert(id → currency, op(None))
     }
   }
