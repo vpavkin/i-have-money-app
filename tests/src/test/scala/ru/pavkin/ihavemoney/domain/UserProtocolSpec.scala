@@ -11,7 +11,7 @@ import ru.pavkin.ihavemoney.domain.fortune.FortuneProtocol._
 import ru.pavkin.ihavemoney.domain.fortune.{Currency, Fortune, FortuneId}
 import ru.pavkin.ihavemoney.domain.user.UserProtocol._
 import ru.pavkin.ihavemoney.domain.user.{User, UserId}
-import ru.pavkin.ihavemoney.readback.MoneyViewProjection
+import ru.pavkin.ihavemoney.readback.projections.MoneyViewProjection
 
 import scala.concurrent.ExecutionContext.Implicits.global
 

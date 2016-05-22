@@ -1,4 +1,4 @@
-package ru.pavkin.ihavemoney.readback
+package ru.pavkin.ihavemoney.readback.repo
 
 import ru.pavkin.ihavemoney.domain.fortune.{Currency, FortuneId}
 import ru.pavkin.ihavemoney.readback.db.{Money, MoneyRow}
@@ -16,19 +16,22 @@ class DatabaseMoneyViewRepository(db: Database) extends MoneyViewRepository {
     Money.table.filter(_.fortuneId === id.value).result
   }.map(_.map(a ⇒ a.currency → a.amount).toMap)
 
-  def find(id: FortuneId, currency: Currency)(implicit ec: ExecutionContext): Future[Option[BigDecimal]] = db.run {
-    findQuery(id, currency)
+  def byId(id: (FortuneId, Currency))(implicit ec: ExecutionContext): Future[Option[BigDecimal]] = db.run {
+    findQuery(id._1, id._2)
       .take(1)
       .map(_.amount)
       .result
   }.map(_.headOption)
 
-  def updateById(id: FortuneId, currency: Currency, newAmount: BigDecimal)(implicit ec: ExecutionContext): Future[Unit] = db.run {
-    findQuery(id, currency).map(_.amount).update(newAmount)
+  def replaceById(id: (FortuneId, Currency), newRow: BigDecimal)(implicit ec: ExecutionContext): Future[Unit] = db.run {
+    findQuery(id._1, id._2).map(_.amount).update(newRow)
   }.map(_ ⇒ ())
 
-  def insert(id: FortuneId, currency: Currency, amount: BigDecimal)(implicit ec: ExecutionContext): Future[Unit] = db.run {
-    Money.table += MoneyRow(id, currency, amount)
+  def insert(id: (FortuneId, Currency), row: BigDecimal)(implicit ec: ExecutionContext): Future[Unit] = db.run {
+    Money.table += MoneyRow(id._1, id._2, row)
   }.map(_ ⇒ ())
 
+  def remove(id: (FortuneId, Currency))(implicit ec: ExecutionContext): Future[Unit] = db.run {
+    findQuery(id._1, id._2).delete
+  }.map(_ ⇒ ())
 }

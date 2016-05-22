@@ -16,7 +16,7 @@ import akka.http.scaladsl.model.StatusCodes._
 
 import scala.concurrent.duration._
 import ru.pavkin.ihavemoney.domain.fortune.FortuneId
-import ru.pavkin.ihavemoney.domain.query.{MoneyBalance, QueryFailed, QueryId}
+import ru.pavkin.ihavemoney.domain.query._
 import ru.pavkin.ihavemoney.protocol.readfront._
 
 object ReadFrontend extends App with CirceSupport {
@@ -33,6 +33,12 @@ object ReadFrontend extends App with CirceSupport {
 
   val writeFrontURL = s"http://${config.getString("write-frontend.host")}:${config.getString("write-frontend.port")}"
 
+  def sendQuery(q: Query) =
+    readBack.query(q).recover {
+      case timeout: AskTimeoutException ⇒
+        RequestTimeout → QueryFailed(q.id, s"Query ${q.id} timed out")
+    }.map(kv ⇒ kv._1 → conversions.toFrontendFormat(kv._2))
+
   val routes = {
     logRequestResult("i-have-money-read-frontend") {
       path("write_front_url") {
@@ -42,17 +48,24 @@ object ReadFrontend extends App with CirceSupport {
           }
         }
       } ~
-        pathPrefix("balance" / Segment) { fortuneId ⇒
+        pathPrefix(JavaUUID.map(i ⇒ FortuneId(i.toString))) { fortuneId: FortuneId ⇒
           get {
-            complete {
-              val queryId = QueryId(UUID.randomUUID.toString)
-              readBack.query(MoneyBalance(queryId, FortuneId(fortuneId)))
-                .recover {
-                  case timeout: AskTimeoutException ⇒
-                    RequestTimeout → QueryFailed(queryId, s"Query $queryId timed out")
+            path("balance") {
+              complete {
+                sendQuery(MoneyBalance(QueryId(UUID.randomUUID.toString), fortuneId))
+              }
+            } ~
+              path("assets") {
+                complete {
+                  sendQuery(Assets(QueryId(UUID.randomUUID.toString), fortuneId))
                 }
-                .map(kv ⇒ kv._1 → conversions.toFrontendFormat(kv._2))
-            }
+              } ~
+              path("liabilities") {
+                complete {
+                  sendQuery(Liabilities(QueryId(UUID.randomUUID.toString), fortuneId))
+                }
+              }
+
           }
         } ~
         get {

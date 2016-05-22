@@ -7,6 +7,8 @@ import io.funcqrs.akka.backend.AkkaBackend
 import io.funcqrs.backend.{Query, QueryByTag}
 import io.funcqrs.config.api._
 import ru.pavkin.ihavemoney.domain.fortune._
+import ru.pavkin.ihavemoney.readback.projections.MoneyViewProjection
+import ru.pavkin.ihavemoney.readback.repo.{DatabaseAssetsViewRepository, DatabaseLiabilitiesViewRepository, DatabaseMoneyViewRepository}
 import slick.driver.PostgresDriver
 import slick.driver.PostgresDriver.api._
 
@@ -18,7 +20,9 @@ object ReadBackend extends App {
   val system: ActorSystem = ActorSystem(config.getString("app.system"))
 
   val database: PostgresDriver.Backend#Database = Database.forConfig("read-db")
-  val moneyRepo = new DatabaseMoneyViewRepository(database)
+  val moneyViewRepo = new DatabaseMoneyViewRepository(database)
+  val assetsViewRepo = new DatabaseAssetsViewRepository(database)
+  val liabilitiesViewRepo = new DatabaseLiabilitiesViewRepository(database)
 
   val backend = new AkkaBackend {
     val actorSystem: ActorSystem = system
@@ -30,10 +34,10 @@ object ReadBackend extends App {
   }.configure {
     projection(
       query = QueryByTag(Fortune.tag),
-      projection = new MoneyViewProjection(moneyRepo),
-      name = "MoneyViewProjection"
+      projection = new MoneyViewProjection(moneyViewRepo, assetsViewRepo, liabilitiesViewRepo),
+      name = "FortuneViewProjection"
     ).withBackendOffsetPersistence()
   }
 
-  val interface = system.actorOf(Props(new InterfaceActor(moneyRepo)), "interface")
+  val interface = system.actorOf(Props(new InterfaceActor(moneyViewRepo, assetsViewRepo, liabilitiesViewRepo)), "interface")
 }

@@ -9,3 +9,5 @@ sealed trait Query {
 }
 
 case class MoneyBalance(id: QueryId, fortuneId: FortuneId) extends Query
+case class Assets(id: QueryId, fortuneId: FortuneId) extends Query
+case class Liabilities(id: QueryId, fortuneId: FortuneId) extends Query
