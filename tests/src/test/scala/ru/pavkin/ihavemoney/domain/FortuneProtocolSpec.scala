@@ -10,7 +10,7 @@ import ru.pavkin.ihavemoney.domain.errors._
 import ru.pavkin.ihavemoney.domain.fortune.FortuneProtocol._
 import ru.pavkin.ihavemoney.domain.fortune._
 import ru.pavkin.ihavemoney.domain.user.UserId
-import ru.pavkin.ihavemoney.readback.projections.MoneyViewProjection
+import ru.pavkin.ihavemoney.readback.projections.{AssetsViewProjection, LiabilitiesViewProjection, MoneyViewProjection}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -33,6 +33,20 @@ class FortuneProtocolSpec extends IHaveMoneySpec with ScalaFutures {
             query = QueryByTag(Fortune.tag),
             projection = new MoneyViewProjection(moneyRepo, assetsRepo, liabilitiesRepo),
             name = "MoneyViewProjection"
+          )
+        }
+        .configure {
+          projection(
+            query = QueryByTag(Fortune.tag),
+            projection = new AssetsViewProjection(assetsRepo),
+            name = "AssetsViewProjection"
+          )
+        }
+        .configure {
+          projection(
+            query = QueryByTag(Fortune.tag),
+            projection = new LiabilitiesViewProjection(liabilitiesRepo),
+            name = "LiabilitiesViewProjection"
           )
         }
 
