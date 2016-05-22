@@ -2,6 +2,7 @@ package ru.pavkin.ihavemoney.readback
 
 import akka.actor.Actor
 import ru.pavkin.ihavemoney.domain.query._
+import ru.pavkin.ihavemoney.readback.repo.MoneyViewRepository
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}

@@ -38,14 +38,14 @@ class DatabaseAssetsViewRepository(db: Database) extends AssetsViewRepository {
 
   def byId(id: (AssetId, FortuneId))(implicit ec: ExecutionContext): Future[Option[Asset]] = find(id._1)
 
-  def findAll(id: FortuneId)(implicit ec: ExecutionContext): Future[List[Asset]] = {
+  def findAll(id: FortuneId)(implicit ec: ExecutionContext): Future[Map[AssetId, Asset]] = {
     val r1 = db.run {
-      RealEstate.table.filter(_.fortuneId === id.value).result.map(_.map(realEstateRowToDomain))
+      RealEstate.table.filter(_.fortuneId === id.value).result.map(_.map(r ⇒ r.assetId → realEstateRowToDomain(r)))
     }
     val r2 = db.run {
-      Stocks.table.filter(_.fortuneId === id.value).result.map(_.map(stocksRowToDomain))
+      Stocks.table.filter(_.fortuneId === id.value).result.map(_.map(r ⇒ r.assetId → stocksRowToDomain(r)))
     }
-    r1.flatMap(s1 ⇒ r2.map(_ ++ s1)).map(_.toList)
+    r1.flatMap(s1 ⇒ r2.map(_ ++ s1)).map(_.toMap)
   }
 
   def updateById(id: (AssetId, FortuneId), newRow: Asset)(implicit ec: ExecutionContext): Future[Unit] = newRow match {
