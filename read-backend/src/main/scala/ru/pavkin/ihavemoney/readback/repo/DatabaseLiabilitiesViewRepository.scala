@@ -25,6 +25,10 @@ class DatabaseLiabilitiesViewRepository(db: Database) extends LiabilitiesViewRep
       .map(_.headOption.map(liabilitiesRowToDomain))
   }
 
+  def findAll(id: FortuneId)(implicit ec: ExecutionContext): Future[Map[LiabilityId, Liability]] = db.run {
+    Debts.table.filter(_.fortuneId === id.value).result
+  }.map(_.map(a ⇒ a.liabilityId → liabilitiesRowToDomain(a)).toMap)
+
   def byId(id: (LiabilityId, FortuneId))(implicit ec: ExecutionContext): Future[Option[Liability]] = find(id._1)
 
   def replaceById(id: (LiabilityId, FortuneId), newRow: Liability)(implicit ec: ExecutionContext): Future[Unit] =
