@@ -10,7 +10,7 @@ import ru.pavkin.ihavemoney.domain.errors._
 import ru.pavkin.ihavemoney.domain.fortune.FortuneProtocol._
 import ru.pavkin.ihavemoney.domain.fortune._
 import ru.pavkin.ihavemoney.domain.user.UserId
-import ru.pavkin.ihavemoney.readback.{MoneyViewProjection, MoneyViewRepository}
+import ru.pavkin.ihavemoney.readback.MoneyViewProjection
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -18,7 +18,9 @@ class FortuneProtocolSpec extends IHaveMoneySpec with ScalaFutures {
 
   class FortuneInMemoryTestBase extends InMemoryTestSupport {
 
-    val repo = new InMemoryMoneyViewRepository
+    val moneyRepo = new InMemoryMoneyViewRepository
+    val assetsRepo = new InMemoryAssetsViewRepository
+    val liabilitiesRepo = new InMemoryLiabilitiesViewRepository
     val owner = UserId("owner@example.org")
     val id = FortuneId.generate
 
@@ -29,7 +31,7 @@ class FortuneProtocolSpec extends IHaveMoneySpec with ScalaFutures {
         .configure {
           projection(
             query = QueryByTag(Fortune.tag),
-            projection = new MoneyViewProjection(repo),
+            projection = new MoneyViewProjection(moneyRepo, assetsRepo, liabilitiesRepo),
             name = "MoneyViewProjection"
           )
         }
@@ -46,7 +48,7 @@ class FortuneProtocolSpec extends IHaveMoneySpec with ScalaFutures {
 
   test("Create fortune") {
     new FortuneInMemoryTest {
-      val view = repo.findAll(id).futureValue
+      val view = moneyRepo.findAll(id).futureValue
       view shouldBe Map.empty
     }
   }
@@ -88,7 +90,7 @@ class FortuneProtocolSpec extends IHaveMoneySpec with ScalaFutures {
       expectEvent { case FortuneIncreased(_, amount, Currency.EUR, _, _, _, None) if amount.toDouble == 20.0 ⇒ () }
       expectEvent { case FortuneIncreased(_, amount, Currency.EUR, _, _, _, None) if amount.toDouble == 30.5 ⇒ () }
 
-      val view = repo.findAll(id).futureValue
+      val view = moneyRepo.findAll(id).futureValue
       view(Currency.USD) shouldBe BigDecimal(123.12)
       view(Currency.EUR) shouldBe BigDecimal(50.5)
     }
@@ -103,7 +105,7 @@ class FortuneProtocolSpec extends IHaveMoneySpec with ScalaFutures {
       expectEvent { case FortuneIncreased(_, amount, Currency.USD, _, _, _, None) if amount.toDouble == 123.12 ⇒ () }
       expectEvent { case FortuneSpent(_, amount, Currency.USD, _, _, _, None) if amount.toDouble == 20.0 ⇒ () }
 
-      val view = repo.findAll(id).futureValue
+      val view = moneyRepo.findAll(id).futureValue
       view(Currency.USD) shouldBe BigDecimal(103.12)
     }
   }
