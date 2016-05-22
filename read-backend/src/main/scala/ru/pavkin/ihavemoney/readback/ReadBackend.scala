@@ -7,6 +7,7 @@ import io.funcqrs.akka.backend.AkkaBackend
 import io.funcqrs.backend.{Query, QueryByTag}
 import io.funcqrs.config.api._
 import ru.pavkin.ihavemoney.domain.fortune._
+import ru.pavkin.ihavemoney.readback.projections.MoneyViewProjection
 import ru.pavkin.ihavemoney.readback.repo.{DatabaseAssetsViewRepository, DatabaseLiabilitiesViewRepository, DatabaseMoneyViewRepository}
 import slick.driver.PostgresDriver
 import slick.driver.PostgresDriver.api._

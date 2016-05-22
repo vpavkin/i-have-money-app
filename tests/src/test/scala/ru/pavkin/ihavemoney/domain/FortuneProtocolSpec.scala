@@ -10,7 +10,7 @@ import ru.pavkin.ihavemoney.domain.errors._
 import ru.pavkin.ihavemoney.domain.fortune.FortuneProtocol._
 import ru.pavkin.ihavemoney.domain.fortune._
 import ru.pavkin.ihavemoney.domain.user.UserId
-import ru.pavkin.ihavemoney.readback.MoneyViewProjection
+import ru.pavkin.ihavemoney.readback.projections.MoneyViewProjection
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
