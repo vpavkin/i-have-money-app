@@ -31,4 +31,7 @@ class DatabaseMoneyViewRepository(db: Database) extends MoneyViewRepository {
     Money.table += MoneyRow(id._1, id._2, row)
   }.map(_ ⇒ ())
 
+  def remove(id: (FortuneId, Currency))(implicit ec: ExecutionContext): Future[Unit] = db.run {
+    findQuery(id._1, id._2).delete
+  }.map(_ ⇒ ())
 }

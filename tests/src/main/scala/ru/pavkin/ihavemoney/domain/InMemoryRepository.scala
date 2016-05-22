@@ -16,4 +16,8 @@ trait InMemoryRepository[PK, Row] extends Repository[PK, Row] {
 
   def insert(id: PK, row: Row)(implicit ec: ExecutionContext): Future[Unit] =
     updateById(id, row)
+
+  def remove(id: PK)(implicit ec: ExecutionContext): Future[Unit] = Future {
+    repo = repo - id
+  }
 }

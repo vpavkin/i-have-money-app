@@ -62,4 +62,10 @@ class DatabaseAssetsViewRepository(db: Database) extends AssetsViewRepository {
 
   def insert(id: (AssetId, FortuneId), row: Asset)(implicit ec: ExecutionContext): Future[Unit] = updateById(id, row)
 
+  def remove(id: (AssetId, FortuneId))(implicit ec: ExecutionContext): Future[Unit] = db.run {
+    for {
+      _ ← stocksFindQuery(id._1).delete
+      r ← realEstateFindQuery(id._1).delete
+    } yield r
+  }.map(_ ⇒ ())
 }

@@ -38,4 +38,7 @@ class DatabaseLiabilitiesViewRepository(db: Database) extends LiabilitiesViewRep
   def insert(id: (LiabilityId, FortuneId), row: Liability)(implicit ec: ExecutionContext): Future[Unit] =
     updateById(id, row)
 
+  def remove(id: (LiabilityId, FortuneId))(implicit ec: ExecutionContext): Future[Unit] = db.run {
+    liabilitiesFindQuery(id._1).delete
+  }.map(_ ⇒ ())
 }
