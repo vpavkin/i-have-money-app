@@ -7,7 +7,7 @@ import io.funcqrs.akka.backend.AkkaBackend
 import io.funcqrs.backend.{Query, QueryByTag}
 import io.funcqrs.config.api._
 import ru.pavkin.ihavemoney.domain.fortune._
-import ru.pavkin.ihavemoney.readback.projections.MoneyViewProjection
+import ru.pavkin.ihavemoney.readback.projections.{AssetsViewProjection, LiabilitiesViewProjection, MoneyViewProjection}
 import ru.pavkin.ihavemoney.readback.repo.{DatabaseAssetsViewRepository, DatabaseLiabilitiesViewRepository, DatabaseMoneyViewRepository}
 import slick.driver.PostgresDriver
 import slick.driver.PostgresDriver.api._
@@ -34,7 +34,9 @@ object ReadBackend extends App {
   }.configure {
     projection(
       query = QueryByTag(Fortune.tag),
-      projection = new MoneyViewProjection(moneyViewRepo, assetsViewRepo, liabilitiesViewRepo),
+      projection = new MoneyViewProjection(moneyViewRepo, assetsViewRepo, liabilitiesViewRepo)
+        .andThen(new AssetsViewProjection(assetsViewRepo))
+        .andThen(new LiabilitiesViewProjection(liabilitiesViewRepo)),
       name = "FortuneViewProjection"
     ).withBackendOffsetPersistence()
   }
