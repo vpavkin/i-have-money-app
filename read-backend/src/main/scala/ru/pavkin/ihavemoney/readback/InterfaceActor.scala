@@ -2,7 +2,7 @@ package ru.pavkin.ihavemoney.readback
 
 import akka.actor.Actor
 import ru.pavkin.ihavemoney.domain.query._
-import ru.pavkin.ihavemoney.readback.projections.CategoriesViewProjection
+import ru.pavkin.ihavemoney.readback.projections.{CategoriesViewProjection, FortunesPerUserProjection}
 import ru.pavkin.ihavemoney.readback.repo.{AssetsViewRepository, LiabilitiesViewRepository, MoneyViewRepository}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -11,16 +11,22 @@ import scala.util.{Failure, Success}
 class InterfaceActor(moneyRepo: MoneyViewRepository,
                      assetsRepo: AssetsViewRepository,
                      liabRepo: LiabilitiesViewRepository,
-                     categoriesRepo: CategoriesViewProjection.Repo) extends Actor {
+                     categoriesRepo: CategoriesViewProjection.Repo,
+                     fortunesRepo: FortunesPerUserProjection.Repo) extends Actor {
   implicit val dispatcher: ExecutionContext = context.system.dispatcher
 
   def receive: Receive = {
     case q: Query ⇒
       val origin = sender
       val queryFuture: Future[QueryResult] = q match {
+        case Fortunes(_, userId) ⇒
+          fortunesRepo.byId(userId).map {
+            case m if m.isEmpty ⇒ FortunesQueryResult(userId, Nil)
+            case Some(fortunes) ⇒ FortunesQueryResult(userId, fortunes.toList)
+          }
         case Categories(_, fortuneId) ⇒
           categoriesRepo.byId(fortuneId).map {
-            case m if m.isEmpty ⇒ EntityNotFound(q.id, s"Fortune $fortuneId not found")
+            case m if m.isEmpty ⇒ CategoriesQueryResult(fortuneId, Nil, Nil)
             case Some((inc, exp)) ⇒ CategoriesQueryResult(fortuneId, inc.toList, exp.toList)
           }
         case MoneyBalance(_, fortuneId) ⇒

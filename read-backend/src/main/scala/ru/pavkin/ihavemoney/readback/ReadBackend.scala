@@ -8,7 +8,8 @@ import io.funcqrs.backend.{Query, QueryByTag}
 import io.funcqrs.config.api._
 import ru.pavkin.ihavemoney.domain.fortune.FortuneProtocol.{ExpenseCategory, IncomeCategory}
 import ru.pavkin.ihavemoney.domain.fortune._
-import ru.pavkin.ihavemoney.readback.projections.{AssetsViewProjection, CategoriesViewProjection, LiabilitiesViewProjection, MoneyViewProjection}
+import ru.pavkin.ihavemoney.domain.user.UserId
+import ru.pavkin.ihavemoney.readback.projections._
 import ru.pavkin.ihavemoney.readback.repo.{DatabaseAssetsViewRepository, DatabaseLiabilitiesViewRepository, DatabaseMoneyViewRepository, InMemoryRepository}
 import slick.driver.PostgresDriver
 import slick.driver.PostgresDriver.api._
@@ -26,6 +27,7 @@ object ReadBackend extends App {
   val liabilitiesViewRepo = new DatabaseLiabilitiesViewRepository(database)
 
   val categoriesRepo = new InMemoryRepository[FortuneId, (Set[IncomeCategory], Set[ExpenseCategory])] {}
+  val fortunesRepo = new InMemoryRepository[UserId, (Set[FortuneId])] {}
 
   val backend = new AkkaBackend {
     val actorSystem: ActorSystem = system
@@ -45,10 +47,16 @@ object ReadBackend extends App {
   }.configure {
     projection(
       query = QueryByTag(Fortune.tag),
-      projection = new CategoriesViewProjection(categoriesRepo),
-      name = "CategoriesViewProjection"
+      projection = new CategoriesViewProjection(categoriesRepo)
+        .andThen(new FortunesPerUserProjection(fortunesRepo)),
+      name = "InMemoryFortuneViewProjection"
     ).withoutOffsetPersistence()
   }
 
-  val interface = system.actorOf(Props(new InterfaceActor(moneyViewRepo, assetsViewRepo, liabilitiesViewRepo, categoriesRepo)), "interface")
+  val interface = system.actorOf(Props(new InterfaceActor(
+    moneyViewRepo,
+    assetsViewRepo,
+    liabilitiesViewRepo,
+    categoriesRepo,
+    fortunesRepo)), "interface")
 }

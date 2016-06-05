@@ -1,6 +1,7 @@
 package ru.pavkin.ihavemoney.domain.query
 
 import ru.pavkin.ihavemoney.domain.fortune.FortuneId
+import ru.pavkin.ihavemoney.domain.user.UserId
 
 case class QueryId(value: String)
 
@@ -12,3 +13,4 @@ case class MoneyBalance(id: QueryId, fortuneId: FortuneId) extends Query
 case class Assets(id: QueryId, fortuneId: FortuneId) extends Query
 case class Liabilities(id: QueryId, fortuneId: FortuneId) extends Query
 case class Categories(id: QueryId, fortuneId: FortuneId) extends Query
+case class Fortunes(id: QueryId, userId: UserId) extends Query
