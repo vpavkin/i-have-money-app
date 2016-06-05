@@ -1,7 +1,7 @@
 package ru.pavkin.ihavemoney.readfront
 
 import java.util.UUID
-
+import io.circe.syntax._
 import akka.actor.ActorSystem
 import akka.event.Logging
 import akka.http.scaladsl.Http
@@ -13,10 +13,10 @@ import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
 import de.heikoseeberger.akkahttpcirce.CirceSupport
 import akka.http.scaladsl.model.StatusCodes._
-
 import scala.concurrent.duration._
 import ru.pavkin.ihavemoney.domain.fortune.FortuneId
 import ru.pavkin.ihavemoney.domain.query._
+import ru.pavkin.ihavemoney.protocol.FailedRequest
 import ru.pavkin.ihavemoney.protocol.readfront._
 
 object ReadFrontend extends App with CirceSupport {
@@ -34,10 +34,23 @@ object ReadFrontend extends App with CirceSupport {
   val writeFrontURL = s"http://${config.getString("write-frontend.host")}:${config.getString("write-frontend.port")}"
 
   def sendQuery(q: Query) =
-    readBack.query(q).recover {
-      case timeout: AskTimeoutException ⇒
-        RequestTimeout → QueryFailed(q.id, s"Query ${q.id} timed out")
-    }.map(kv ⇒ kv._1 → conversions.toFrontendFormat(kv._2))
+    readBack.query(q)
+      .map(kv ⇒ kv._2 match {
+        case MoneyBalanceQueryResult(id, balance) ⇒
+          kv._1 → (FrontendMoneyBalance(id.value, balance.map(kv ⇒ kv._1.code → kv._2)): FrontendQueryResult).asJson
+        case LiabilitiesQueryResult(id, liabilities) =>
+          kv._1 → (FrontendLiabilities(id.value, liabilities): FrontendQueryResult).asJson
+        case AssetsQueryResult(id, assets) =>
+          kv._1 → (FrontendAssets(id.value, assets): FrontendQueryResult).asJson
+        case e: EntityNotFound ⇒
+          kv._1 → FailedRequest(e.id.value.toString, e.error).asJson
+        case e: QueryFailed ⇒
+          kv._1 → FailedRequest(e.id.value.toString, e.error).asJson
+      })
+      .recover {
+        case timeout: AskTimeoutException ⇒
+          RequestTimeout → FailedRequest(q.id.toString, s"Query ${q.id} timed out").asJson
+      }
 
   val routes = {
     logRequestResult("i-have-money-read-frontend") {

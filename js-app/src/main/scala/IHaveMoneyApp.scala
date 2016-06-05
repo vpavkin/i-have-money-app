@@ -6,7 +6,7 @@ import org.scalajs.dom._
 import org.scalajs.dom.raw.HTMLStyleElement
 import ru.pavkin.ihavemoney.frontend.{Route, api}
 import ru.pavkin.ihavemoney.frontend.Route._
-import ru.pavkin.ihavemoney.frontend.components.{AddTransactionsComponent, BalanceViewComponent, Nav}
+import ru.pavkin.ihavemoney.frontend.components.{AddTransactionsComponent, BalanceViewComponent, LoginComponent, Nav}
 import ru.pavkin.ihavemoney.frontend.styles.Global
 
 import scalacss.Defaults._
@@ -22,14 +22,15 @@ object IHaveMoneyApp extends JSApp {
 
     (trimSlashes
       | staticRoute(root, AddTransactions) ~> render(AddTransactionsComponent.component())
-      | staticRoute("#page2", BalanceView) ~> render(BalanceViewComponent.component()))
+      | staticRoute("#page2", BalanceView) ~> render(BalanceViewComponent.component())
+      | staticRoute("#login", Login) ~> render(LoginComponent.component()))
       .notFound(redirectToPage(AddTransactions)(Redirect.Replace))
       .renderWith(layout)
       .verify(AddTransactions, BalanceView)
   }
 
   def layout(c: RouterCtl[Route], r: Resolution[Route]) = div(
-    Nav.component(c),
+    if (r.page != Login) Nav.component(c) else div(),
     div(className := "container", r.render())
   )
 

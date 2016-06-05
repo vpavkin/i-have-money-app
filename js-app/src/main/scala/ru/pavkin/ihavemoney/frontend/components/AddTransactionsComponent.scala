@@ -9,6 +9,8 @@ import ru.pavkin.ihavemoney.frontend.api
 import ru.pavkin.utils.option._
 import scala.scalajs.concurrent.JSExecutionContext.Implicits.queue
 import scala.util.Try
+import ru.pavkin.ihavemoney.frontend.styles.Global._
+import scalacss.ScalaCssReact._
 
 object AddTransactionsComponent {
 
@@ -148,7 +150,7 @@ object AddTransactionsComponent {
         ),
         div(className := "form-group",
           div(className := "col-sm-offset-2 col-sm-10",
-            button(tpe := "submit", className := "btn btn-success", disabled := (!valid),
+            button(tpe := "submit", className := "btn btn-success", buttonMarginRight, disabled := (!valid),
               onClick ==> onIncomeSubmit(state), "Income"),
             button(tpe := "submit", className := "btn btn-danger", disabled := (!valid),
               onClick ==> onExpenseSubmit(state), "Expense")

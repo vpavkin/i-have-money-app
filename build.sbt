@@ -43,7 +43,7 @@ lazy val catsVersion = "0.4.1"
 lazy val circeVersion = "0.3.0"
 lazy val akkaVersion = "2.4.2"
 lazy val akkaPersistenceJDBCVersion = "2.2.15"
-lazy val akkaHttpCorsVersion = "0.1.1"
+lazy val akkaHttpCorsVersion = "0.1.2"
 lazy val scalaCheckVersion = "1.12.5"
 lazy val scalaTestVersion = "2.2.6"
 
@@ -422,6 +422,8 @@ lazy val jsApp = project.in(file("js-app"))
       "com.github.japgolly.scalajs-react" %%% "extra" % "0.11.0",
       "com.github.japgolly.scalacss" %%% "core" % "0.4.1",
       "com.github.japgolly.scalacss" %%% "ext-react" % "0.4.1",
+      "me.chrons" %%% "diode" % "0.5.2",
+      "me.chrons" %%% "diode-react" % "0.5.2",
       "org.querki" %%% "jquery-facade" % "1.0-RC3",
       "io.circe" %%% "circe-core" % circeVersion,
       "io.circe" %%% "circe-generic" % circeVersion,
