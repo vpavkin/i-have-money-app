@@ -23,7 +23,7 @@ object IHaveMoneyApp extends JSApp {
     (trimSlashes
       | staticRoute(root, AddTransactions) ~> render(AddTransactionsComponent.component())
       | staticRoute("#page2", BalanceView) ~> render(BalanceViewComponent.component())
-      | staticRoute("#login", Login) ~> render(LoginComponent.component()))
+      | staticRoute("#login", Login) ~> renderR(ctl ⇒ LoginComponent.component(ctl)))
       .notFound(redirectToPage(AddTransactions)(Redirect.Replace))
       .renderWith(layout)
       .verify(AddTransactions, BalanceView)

@@ -72,12 +72,15 @@ object WriteFrontend extends App with CirceSupport with CorsDirectives {
                 case _ ⇒ unexpected
               })
             }
-          } ~
-          (path("confirmEmail") & post & entity(as[ConfirmEmailRequest])) { req ⇒
-            complete {
-              writeBack.sendCommandAndIgnoreResult(UserId(req.email), ConfirmEmail(req.confirmationCode))
+          } ~ path("confirmEmail") {
+          get {
+            parameters('email, 'code) { (email, code) =>
+              complete {
+                writeBack.sendCommandAndIgnoreResult(UserId(email), ConfirmEmail(code))
+              }
             }
-          } ~
+          }
+        } ~
           (path("resendConfirmationEmail") & post & entity(as[ResendConfirmationEmailRequest])) { req ⇒
             complete {
               writeBack.sendCommandAndIgnoreResult(UserId(req.email), ResendConfirmationEmail())

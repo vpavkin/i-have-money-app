@@ -13,6 +13,7 @@ import ru.pavkin.ihavemoney.domain.fortune.FortuneProtocol.FortuneCommand
 import ru.pavkin.ihavemoney.domain.fortune._
 import ru.pavkin.ihavemoney.domain.user.UserProtocol.UserCommand
 import ru.pavkin.ihavemoney.domain.user.{User, UserId}
+import services.{SmtpConfig, SmtpEmailService}
 
 import scala.concurrent.duration._
 
@@ -23,11 +24,16 @@ object WriteBackend extends App {
   val config = ConfigFactory.load()
   val system: ActorSystem = ActorSystem(config.getString("app.system"))
 
+  val emailUrlBase = s"http://${config.getString("app.writefront.host")}:${config.getString("app.writefront.port")}"
+  def confirmationUrlFactory(email: String, code: String) = s"$emailUrlBase/confirmEmail?email=$email&code=$code"
+  val emailConfig = SmtpConfig.load(config)
+  val emailService = new SmtpEmailService(emailConfig)
+
   val backend = new AkkaBackend {
     val actorSystem: ActorSystem = system
     def sourceProvider(query: Query): EventsSourceProvider = null
   }.configure {
-    aggregate[User](User.behavior)
+    aggregate[User](User.behavior(emailService, confirmationUrlFactory))
   }.configure {
     aggregate[Fortune](Fortune.behavior)
   }

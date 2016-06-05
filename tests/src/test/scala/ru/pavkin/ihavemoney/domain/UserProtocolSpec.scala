@@ -12,8 +12,10 @@ import ru.pavkin.ihavemoney.domain.fortune.{Currency, Fortune, FortuneId}
 import ru.pavkin.ihavemoney.domain.user.UserProtocol._
 import ru.pavkin.ihavemoney.domain.user.{User, UserId}
 import ru.pavkin.ihavemoney.readback.projections.MoneyViewProjection
+import ru.pavkin.ihavemoney.services.EmailService
 
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.{ExecutionContext, Future}
 
 class UserProtocolSpec extends IHaveMoneySpec with ScalaFutures {
 
@@ -25,7 +27,10 @@ class UserProtocolSpec extends IHaveMoneySpec with ScalaFutures {
 
     def configure(backend: InMemoryBackend): Unit =
       backend.configure {
-        aggregate[User](User.behavior)
+        aggregate[User](User.behavior(new EmailService {
+          def sendEmail(from: String, to: String, subject: String, content: String)(implicit ec: ExecutionContext): Future[Unit] =
+            Future.successful(println(s"Sending $subject to $to"))
+        }, _ + _))
       }
 
     def ref(id: UserId) = aggregateRef[User](id)

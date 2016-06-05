@@ -6,6 +6,7 @@ import io.funcqrs._
 import io.funcqrs.behavior._
 import ru.pavkin.ihavemoney.domain.errors.{EmailAlreadyConfirmed, EmailIsNotYetConfirmed, InvalidConfirmationCode}
 import ru.pavkin.ihavemoney.domain.passwords
+import ru.pavkin.ihavemoney.services.EmailService
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
@@ -55,9 +56,9 @@ case class User(id: UserId,
       evt: UserConfirmed ⇒ this.copy(isConfirmed = true)
     }
 
-  def resendConfirmationEmail = action[User]
+  def resendConfirmationEmail(emailService: EmailService, linkFactory: (String, String) ⇒ String) = action[User]
     .handleCommandAsync[ResendConfirmationEmail, ConfirmationEmailSent] {
-    cmd ⇒ User.sendConfirmationEmail(metadata(cmd), this.confirmationCode)
+    cmd ⇒ User.sendConfirmationEmail(emailService, linkFactory)(metadata(cmd), this.confirmationCode)
   }
     .handleEvent {
       evt: ConfirmationEmailSent ⇒ this
@@ -88,21 +89,28 @@ object User {
     UserMetadata(userId, cmd.id, tags = Set(tag))
   }
 
-  def sendConfirmationEmail(userMetadata: UserMetadata, confirmationCode: String)(implicit ec: ExecutionContext): Future[ConfirmationEmailSent] =
-    Future {
-      println(s"Sending confirmation email (stub) to: ${userMetadata.aggregateId.email}. Code: $confirmationCode")
-      ConfirmationEmailSent(userMetadata)
-    }
+  def sendConfirmationEmail(emailService: EmailService, linkFactory: (String, String) ⇒ String)(userMetadata: UserMetadata, confirmationCode: String)(implicit ec: ExecutionContext): Future[ConfirmationEmailSent] = {
+    println(s"Sending confirmation email to: ${userMetadata.aggregateId.email}. Code: $confirmationCode")
+    val url = linkFactory(userMetadata.aggregateId.email, confirmationCode)
+    emailService.sendEmail("ihavemoney@ihavemoney.com", userMetadata.aggregateId.email, "I have money: email confirmation",
+      s"""<h3>Hi!</h3>
+         <p>It's "I have money" service.</p>
+         <p>Please, confirm your email by clicking following link:</p>
+         <a href="$url">$url</a>
+
+      """
+    ).map(_ ⇒ ConfirmationEmailSent(userMetadata))
+  }
 
   def generateConfirmationCode: String = UUID.randomUUID.toString
 
-  def createUser(id: UserId) =
+  def createUser(emailService: EmailService, linkFactory: (String, String) ⇒ String)(id: UserId) =
     actions[User]
       .handleCommandAsync {
         cmd: CreateUser ⇒
           val md = metadata(id, cmd)
           val code = generateConfirmationCode
-          sendConfirmationEmail(md, code)
+          sendConfirmationEmail(emailService, linkFactory)(md, code)
             .map(_ ⇒ UserCreated(
               passwords.encrypt(cmd.password),
               cmd.displayName,
@@ -114,16 +122,16 @@ object User {
         e: UserCreated ⇒ User(id, e.passwordHash, e.displayName, e.confirmationCode, isConfirmed = false)
       }
 
-  def behavior(fortuneId: UserId): Behavior[User] = {
+  def behavior(emailService: EmailService, linkFactory: (String, String) ⇒ String)(fortuneId: UserId): Behavior[User] = {
 
-    case Uninitialized(id) ⇒ createUser(id)
+    case Uninitialized(id) ⇒ createUser(emailService, linkFactory)(id)
 
     case Initialized(user) ⇒
       user.cantConfirmWithInvalidCode ++
         user.cantSentConfirmationEmailForConfirmedUser ++
         user.cantLogInUnconfirmedUser ++
         user.confirmEmail ++
-        user.resendConfirmationEmail ++
+        user.resendConfirmationEmail(emailService, linkFactory) ++
         user.login
 
   }

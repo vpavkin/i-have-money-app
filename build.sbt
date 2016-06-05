@@ -148,7 +148,8 @@ lazy val writeBackend = project.in(file("write-backend"))
       "com.typesafe.akka" %% "akka-cluster-sharding" % akkaVersion,
       "com.typesafe.akka" %% "akka-distributed-data-experimental" % akkaVersion,
       "com.typesafe.akka" %% "akka-persistence-query-experimental" % akkaVersion,
-      "org.postgresql" % "postgresql" % postgreSQLVersion
+      "org.postgresql" % "postgresql" % postgreSQLVersion,
+      "org.apache.commons" % "commons-email" % "1.4"
     )
   )
   .settings(testDependencies)
@@ -178,7 +179,11 @@ lazy val writeBackend = project.in(file("write-backend"))
           "ihavemoney_writeback_db_port" → "5432",
           "ihavemoney_writeback_db_name" → "ihavemoney-write",
           "ihavemoney_writeback_db_user" → "admin",
-          "ihavemoney_writeback_db_password" → "changeit"
+          "ihavemoney_writeback_db_password" → "changeit",
+          "ihavemoney_writefront_host" → "127.0.0.1",
+          "ihavemoney_writefront_http_port" → "8101",
+          "ihavemoney_writeback_smtp_user" → "example@gmail.com",
+          "ihavemoney_writeback_smtp_password" → "changeit"
         )
         copy(artifact, artifactTargetPath)
         copy(resources, applicationConf)
