@@ -5,7 +5,7 @@ import akka.http.scaladsl.model.StatusCode
 import akka.http.scaladsl.model.StatusCodes._
 import akka.pattern.ask
 import akka.util.Timeout
-import ru.pavkin.ihavemoney.domain.query.{EntityNotFound, Query, QueryFailed, QueryResult}
+import ru.pavkin.ihavemoney.domain.query._
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -19,6 +19,8 @@ class ReadBackClient(system: ActorSystem, interfaceAddress: String) {
       .map {
         case e: EntityNotFound ⇒
           NotFound → e
+        case e: AccessDenied ⇒
+          Unauthorized → e
         case e: QueryFailed ⇒
           InternalServerError → e
         case q ⇒

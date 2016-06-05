@@ -1,6 +1,7 @@
 package ru.pavkin.ihavemoney.readfront
 
 import java.util.UUID
+
 import io.circe.syntax._
 import akka.actor.ActorSystem
 import akka.event.Logging
@@ -13,11 +14,17 @@ import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
 import de.heikoseeberger.akkahttpcirce.CirceSupport
 import akka.http.scaladsl.model.StatusCodes._
+import akka.http.scaladsl.model.headers.{HttpChallenge, HttpCredentials, OAuth2BearerToken}
+
 import scala.concurrent.duration._
 import ru.pavkin.ihavemoney.domain.fortune.FortuneId
 import ru.pavkin.ihavemoney.domain.query._
+import ru.pavkin.ihavemoney.domain.user.UserId
 import ru.pavkin.ihavemoney.protocol.FailedRequest
 import ru.pavkin.ihavemoney.protocol.readfront._
+import ru.pavkin.ihavemoney.auth.JWTTokenFactory
+
+import scala.concurrent.Future
 
 object ReadFrontend extends App with CirceSupport {
 
@@ -33,6 +40,19 @@ object ReadFrontend extends App with CirceSupport {
 
   val writeFrontURL = s"http://${config.getString("write-frontend.host")}:${config.getString("write-frontend.port")}"
 
+  val tokenFactory: JWTTokenFactory = new JWTTokenFactory(config.getString("app.secret-key"))
+
+  val authenticator: (Option[HttpCredentials]) ⇒ Future[AuthenticationResult[UserId]] = (credentials: Option[HttpCredentials]) ⇒ Future {
+    credentials.flatMap {
+      case token: OAuth2BearerToken ⇒
+        tokenFactory.authenticate(token.token)
+      case _ ⇒ None
+    } match {
+      case Some(userId) ⇒ Right(UserId(userId))
+      case None ⇒ Left(HttpChallenge("Bearer", "ihavemoney", Map("error" → "invalid_token")))
+    }
+  }
+
   def sendQuery(q: Query) =
     readBack.query(q)
       .map(kv ⇒ kv._2 match {
@@ -46,6 +66,8 @@ object ReadFrontend extends App with CirceSupport {
           kv._1 → (FrontendLiabilities(id.value, liabilities): FrontendQueryResult).asJson
         case AssetsQueryResult(id, assets) =>
           kv._1 → (FrontendAssets(id.value, assets): FrontendQueryResult).asJson
+        case e: AccessDenied ⇒
+          kv._1 → FailedRequest(e.id.value.toString, e.error).asJson
         case e: EntityNotFound ⇒
           kv._1 → FailedRequest(e.id.value.toString, e.error).asJson
         case e: QueryFailed ⇒
@@ -65,30 +87,39 @@ object ReadFrontend extends App with CirceSupport {
           }
         }
       } ~
-        pathPrefix(JavaUUID.map(i ⇒ FortuneId(i.toString))) { fortuneId: FortuneId ⇒
-          get {
-            path("categories") {
+        authenticateOrRejectWithChallenge(authenticator) { userId ⇒
+          path("fortunes") {
+            get {
               complete {
-                sendQuery(Categories(QueryId(UUID.randomUUID.toString), fortuneId))
+                sendQuery(Fortunes(QueryId(UUID.randomUUID.toString), userId))
               }
-            } ~
-              path("balance") {
-                complete {
-                  sendQuery(MoneyBalance(QueryId(UUID.randomUUID.toString), fortuneId))
-                }
-              } ~
-              path("assets") {
-                complete {
-                  sendQuery(Assets(QueryId(UUID.randomUUID.toString), fortuneId))
-                }
-              } ~
-              path("liabilities") {
-                complete {
-                  sendQuery(Liabilities(QueryId(UUID.randomUUID.toString), fortuneId))
-                }
-              }
+            }
+          } ~
+            pathPrefix("fortune" / JavaUUID.map(i ⇒ FortuneId(i.toString))) { fortuneId: FortuneId ⇒
+              get {
+                path("categories") {
+                  complete {
+                    sendQuery(Categories(QueryId(UUID.randomUUID.toString), userId, fortuneId))
+                  }
+                } ~
+                  path("balance") {
+                    complete {
+                      sendQuery(MoneyBalance(QueryId(UUID.randomUUID.toString), userId, fortuneId))
+                    }
+                  } ~
+                  path("assets") {
+                    complete {
+                      sendQuery(Assets(QueryId(UUID.randomUUID.toString), userId, fortuneId))
+                    }
+                  } ~
+                  path("liabilities") {
+                    complete {
+                      sendQuery(Liabilities(QueryId(UUID.randomUUID.toString), userId, fortuneId))
+                    }
+                  }
 
-          }
+              }
+            }
         } ~
         get {
           pathSingleSlash {

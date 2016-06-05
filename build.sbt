@@ -101,7 +101,8 @@ lazy val domain = crossProject.in(file("domain"))
   )
   .jvmSettings(libraryDependencies ++= Seq(
     "io.strongtyped" %% "fun-cqrs-core" % funCQRSVersion,
-    "com.github.t3hnar" %% "scala-bcrypt" % "2.6"
+    "com.github.t3hnar" %% "scala-bcrypt" % "2.6",
+    "com.pauldijou" %% "jwt-circe" % "0.7.1"
   ))
   .jvmSettings(testDependencies)
 
@@ -212,8 +213,7 @@ lazy val writeFrontend = project.in(file("write-frontend"))
       "io.circe" %% "circe-core" % circeVersion,
       "io.circe" %% "circe-generic" % circeVersion,
       "io.circe" %% "circe-parser" % circeVersion,
-      "de.heikoseeberger" %% "akka-http-circe" % "1.5.3",
-      "com.pauldijou" %% "jwt-circe" % "0.7.1"
+      "de.heikoseeberger" %% "akka-http-circe" % "1.5.3"
     )
   )
   .settings(testDependencies)

@@ -1,4 +1,4 @@
-package ru.pavkin.ihavemoney.writefront.auth
+package ru.pavkin.ihavemoney.auth
 
 import java.time.Instant
 import java.time.temporal.ChronoUnit

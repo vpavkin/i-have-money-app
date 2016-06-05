@@ -21,7 +21,7 @@ import ru.pavkin.ihavemoney.domain.user.UserId
 import ru.pavkin.ihavemoney.domain.user.UserProtocol._
 import ru.pavkin.ihavemoney.protocol.writefront._
 import ru.pavkin.ihavemoney.protocol.{Auth, CommandProcessedWithResult, FailedRequest}
-import ru.pavkin.ihavemoney.writefront.auth.JWTTokenFactory
+import ru.pavkin.ihavemoney.auth.JWTTokenFactory
 
 import scala.concurrent.Future
 import scala.concurrent.duration._

@@ -1,7 +1,9 @@
 package ru.pavkin.ihavemoney.readback
 
 import akka.actor.Actor
+import ru.pavkin.ihavemoney.domain.fortune.FortuneId
 import ru.pavkin.ihavemoney.domain.query._
+import ru.pavkin.ihavemoney.domain.user.UserId
 import ru.pavkin.ihavemoney.readback.projections.{CategoriesViewProjection, FortunesPerUserProjection}
 import ru.pavkin.ihavemoney.readback.repo.{AssetsViewRepository, LiabilitiesViewRepository, MoneyViewRepository}
 
@@ -15,37 +17,51 @@ class InterfaceActor(moneyRepo: MoneyViewRepository,
                      fortunesRepo: FortunesPerUserProjection.Repo) extends Actor {
   implicit val dispatcher: ExecutionContext = context.system.dispatcher
 
+  def hasAccess(user: UserId, toFortune: FortuneId): Future[Boolean] =
+    fortunesRepo.byId(user).map(_.exists(_.contains(toFortune)))
+
+  def checkAccess[Q <: FortuneQuery](q: Q, handler: ⇒ Future[QueryResult]): Future[QueryResult] =
+    hasAccess(q.user, q.fortuneId).flatMap {
+      case true ⇒ handler
+      case false ⇒ Future.successful(AccessDenied(q.id, s"User ${q.user} doesn't have access to fortune ${q.fortuneId}"))
+    }
+
   def receive: Receive = {
-    case q: Query ⇒
+    case query: Query ⇒
       val origin = sender
-      val queryFuture: Future[QueryResult] = q match {
+      val queryFuture: Future[QueryResult] = query match {
         case Fortunes(_, userId) ⇒
           fortunesRepo.byId(userId).map {
             case m if m.isEmpty ⇒ FortunesQueryResult(userId, Nil)
             case Some(fortunes) ⇒ FortunesQueryResult(userId, fortunes.toList)
           }
-        case Categories(_, fortuneId) ⇒
+
+        case q@Categories(_, uid, fortuneId) ⇒ checkAccess(q,
           categoriesRepo.byId(fortuneId).map {
             case m if m.isEmpty ⇒ CategoriesQueryResult(fortuneId, Nil, Nil)
             case Some((inc, exp)) ⇒ CategoriesQueryResult(fortuneId, inc.toList, exp.toList)
           }
-        case MoneyBalance(_, fortuneId) ⇒
+        )
+        case q@MoneyBalance(_, uid, fortuneId) ⇒ checkAccess(q,
           moneyRepo.findAll(fortuneId).map {
             case m if m.isEmpty ⇒ EntityNotFound(q.id, s"Fortune $fortuneId not found")
             case m ⇒ MoneyBalanceQueryResult(fortuneId, m)
           }
-        case Assets(id, fortuneId) =>
+        )
+        case q@Assets(id, uid, fortuneId) => checkAccess(q,
           assetsRepo.findAll(fortuneId)
             .map(_.map { case (k, v) ⇒ k.value.toString -> v })
             .map(AssetsQueryResult(fortuneId, _))
-        case Liabilities(id, fortuneId) =>
+        )
+        case q@Liabilities(id, uid, fortuneId) => checkAccess(q,
           liabRepo.findAll(fortuneId)
             .map(_.map { case (k, v) ⇒ k.value.toString -> v })
             .map(LiabilitiesQueryResult(fortuneId, _))
+        )
       }
       queryFuture.onComplete {
         case Success(r) ⇒ origin ! r
-        case Failure(ex) ⇒ origin ! QueryFailed(q.id, ex.getMessage)
+        case Failure(ex) ⇒ origin ! QueryFailed(query.id, ex.getMessage)
       }
   }
 }
