@@ -67,7 +67,7 @@ case class User(id: UserId,
   def login = action[User]
     .handleCommand {
       cmd: LoginUser ⇒ if (passwords.isCorrect(cmd.password, this.passwordHash))
-        UserLoggedIn(metadata(cmd))
+        UserLoggedIn(this.displayName, metadata(cmd))
       else
         UserFailedToLogIn(cmd.password, metadata(cmd))
     }

@@ -29,7 +29,7 @@ object UserProtocol extends ProtocolLike {
 
   case class UserConfirmed(metadata: UserMetadata) extends UserEvent
   case class ConfirmationEmailSent(metadata: UserMetadata) extends UserEvent
-  case class UserLoggedIn(metadata: UserMetadata) extends UserEvent
+  case class UserLoggedIn(displayName: String, metadata: UserMetadata) extends UserEvent
   case class UserFailedToLogIn(invalidPassword: String, metadata: UserMetadata) extends UserEvent
 
   /*-------------------Metadata---------------------*/

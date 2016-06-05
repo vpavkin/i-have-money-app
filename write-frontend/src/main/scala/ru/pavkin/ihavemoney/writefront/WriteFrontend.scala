@@ -1,12 +1,11 @@
 package ru.pavkin.ihavemoney.writefront
 
-import io.circe.syntax._
 import akka.actor.ActorSystem
 import akka.event.Logging
 import akka.http.scaladsl.Http
+import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.StatusCodes._
-import akka.http.scaladsl.model.Uri
-import akka.http.scaladsl.model.headers.{HttpChallenge, HttpCredentials, OAuth2BearerToken}
+import akka.http.scaladsl.model.headers.{HttpChallenge, HttpCredentials, Location, OAuth2BearerToken}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.stream.ActorMaterializer
@@ -14,13 +13,14 @@ import akka.util.Timeout
 import ch.megard.akka.http.cors.{CorsDirectives, CorsSettings}
 import com.typesafe.config.ConfigFactory
 import de.heikoseeberger.akkahttpcirce.CirceSupport
-import ru.pavkin.ihavemoney.domain.fortune.{AssetId, FortuneId, LiabilityId}
+import io.circe.syntax._
 import ru.pavkin.ihavemoney.domain.fortune.FortuneProtocol._
+import ru.pavkin.ihavemoney.domain.fortune.{AssetId, FortuneId, LiabilityId}
 import ru.pavkin.ihavemoney.domain.unexpected
 import ru.pavkin.ihavemoney.domain.user.UserId
 import ru.pavkin.ihavemoney.domain.user.UserProtocol._
-import ru.pavkin.ihavemoney.protocol.{Auth, CommandProcessedWithResult, FailedRequest}
 import ru.pavkin.ihavemoney.protocol.writefront._
+import ru.pavkin.ihavemoney.protocol.{Auth, CommandProcessedWithResult, FailedRequest}
 import ru.pavkin.ihavemoney.writefront.auth.JWTTokenFactory
 
 import scala.concurrent.Future
@@ -65,7 +65,7 @@ object WriteFrontend extends App with CirceSupport with CorsDirectives {
               //todo: add display name to userLoggedIn message
               val command = LoginUser(req.password)
               writeBack.sendCommand(UserId(req.email), command)((evt: UserEvent) ⇒ evt match {
-                case e: UserLoggedIn ⇒ OK → CommandProcessedWithResult(command.id.value, Auth(req.email, "lol", tokenFactory.issue(req.email))).asJson
+                case e: UserLoggedIn ⇒ OK → CommandProcessedWithResult(command.id.value, Auth(req.email, e.displayName, tokenFactory.issue(req.email))).asJson
                 case e: UserFailedToLogIn ⇒ Unauthorized → FailedRequest(
                   command.id.value.toString,
                   "Login failed: Invalid password"
@@ -79,7 +79,10 @@ object WriteFrontend extends App with CirceSupport with CorsDirectives {
               complete {
                 writeBack.sendCommandAndIgnoreResult(UserId(email), ConfirmEmail(code))
                   .map(_ ⇒
-                    redirect(Uri./, Found)
+                    HttpResponse(
+                      status = Found,
+                      headers = Location("/") :: Nil
+                    )
                   )
               }
             }
