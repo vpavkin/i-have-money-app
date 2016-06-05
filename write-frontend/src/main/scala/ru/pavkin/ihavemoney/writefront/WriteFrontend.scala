@@ -5,6 +5,7 @@ import akka.actor.ActorSystem
 import akka.event.Logging
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.StatusCodes._
+import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.headers.{HttpChallenge, HttpCredentials, OAuth2BearerToken}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
@@ -77,6 +78,9 @@ object WriteFrontend extends App with CirceSupport with CorsDirectives {
             parameters('email, 'code) { (email, code) =>
               complete {
                 writeBack.sendCommandAndIgnoreResult(UserId(email), ConfirmEmail(code))
+                  .map(_ ⇒
+                    redirect(Uri./, Found)
+                  )
               }
             }
           }
