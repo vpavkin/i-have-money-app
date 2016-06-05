@@ -6,9 +6,10 @@ import io.funcqrs.akka.EventsSourceProvider
 import io.funcqrs.akka.backend.AkkaBackend
 import io.funcqrs.backend.{Query, QueryByTag}
 import io.funcqrs.config.api._
+import ru.pavkin.ihavemoney.domain.fortune.FortuneProtocol.{ExpenseCategory, IncomeCategory}
 import ru.pavkin.ihavemoney.domain.fortune._
-import ru.pavkin.ihavemoney.readback.projections.{AssetsViewProjection, LiabilitiesViewProjection, MoneyViewProjection}
-import ru.pavkin.ihavemoney.readback.repo.{DatabaseAssetsViewRepository, DatabaseLiabilitiesViewRepository, DatabaseMoneyViewRepository}
+import ru.pavkin.ihavemoney.readback.projections.{AssetsViewProjection, CategoriesViewProjection, LiabilitiesViewProjection, MoneyViewProjection}
+import ru.pavkin.ihavemoney.readback.repo.{DatabaseAssetsViewRepository, DatabaseLiabilitiesViewRepository, DatabaseMoneyViewRepository, InMemoryRepository}
 import slick.driver.PostgresDriver
 import slick.driver.PostgresDriver.api._
 
@@ -23,6 +24,8 @@ object ReadBackend extends App {
   val moneyViewRepo = new DatabaseMoneyViewRepository(database)
   val assetsViewRepo = new DatabaseAssetsViewRepository(database)
   val liabilitiesViewRepo = new DatabaseLiabilitiesViewRepository(database)
+
+  val categoriesRepo = new InMemoryRepository[FortuneId, (Set[IncomeCategory], Set[ExpenseCategory])] {}
 
   val backend = new AkkaBackend {
     val actorSystem: ActorSystem = system
@@ -39,7 +42,13 @@ object ReadBackend extends App {
         .andThen(new LiabilitiesViewProjection(liabilitiesViewRepo)),
       name = "FortuneViewProjection"
     ).withBackendOffsetPersistence()
+  }.configure {
+    projection(
+      query = QueryByTag(Fortune.tag),
+      projection = new CategoriesViewProjection(categoriesRepo),
+      name = "CategoriesViewProjection"
+    ).withoutOffsetPersistence()
   }
 
-  val interface = system.actorOf(Props(new InterfaceActor(moneyViewRepo, assetsViewRepo, liabilitiesViewRepo)), "interface")
+  val interface = system.actorOf(Props(new InterfaceActor(moneyViewRepo, assetsViewRepo, liabilitiesViewRepo, categoriesRepo)), "interface")
 }

@@ -2,6 +2,7 @@ package ru.pavkin.ihavemoney.readback
 
 import akka.actor.Actor
 import ru.pavkin.ihavemoney.domain.query._
+import ru.pavkin.ihavemoney.readback.projections.CategoriesViewProjection
 import ru.pavkin.ihavemoney.readback.repo.{AssetsViewRepository, LiabilitiesViewRepository, MoneyViewRepository}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -9,13 +10,19 @@ import scala.util.{Failure, Success}
 
 class InterfaceActor(moneyRepo: MoneyViewRepository,
                      assetsRepo: AssetsViewRepository,
-                     liabRepo: LiabilitiesViewRepository) extends Actor {
+                     liabRepo: LiabilitiesViewRepository,
+                     categoriesRepo: CategoriesViewProjection.Repo) extends Actor {
   implicit val dispatcher: ExecutionContext = context.system.dispatcher
 
   def receive: Receive = {
     case q: Query ⇒
       val origin = sender
       val queryFuture: Future[QueryResult] = q match {
+        case Categories(_, fortuneId) ⇒
+          categoriesRepo.byId(fortuneId).map {
+            case m if m.isEmpty ⇒ EntityNotFound(q.id, s"Fortune $fortuneId not found")
+            case Some((inc, exp)) ⇒ CategoriesQueryResult(fortuneId, inc.toList, exp.toList)
+          }
         case MoneyBalance(_, fortuneId) ⇒
           moneyRepo.findAll(fortuneId).map {
             case m if m.isEmpty ⇒ EntityNotFound(q.id, s"Fortune $fortuneId not found")

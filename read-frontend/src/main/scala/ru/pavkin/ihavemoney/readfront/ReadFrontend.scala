@@ -36,6 +36,8 @@ object ReadFrontend extends App with CirceSupport {
   def sendQuery(q: Query) =
     readBack.query(q)
       .map(kv ⇒ kv._2 match {
+        case CategoriesQueryResult(id, inc, exp) ⇒
+          kv._1 → (FrontendCategories(id.value, inc.map(_.name), exp.map(_.name)): FrontendQueryResult).asJson
         case MoneyBalanceQueryResult(id, balance) ⇒
           kv._1 → (FrontendMoneyBalance(id.value, balance.map(kv ⇒ kv._1.code → kv._2)): FrontendQueryResult).asJson
         case LiabilitiesQueryResult(id, liabilities) =>
@@ -63,11 +65,16 @@ object ReadFrontend extends App with CirceSupport {
       } ~
         pathPrefix(JavaUUID.map(i ⇒ FortuneId(i.toString))) { fortuneId: FortuneId ⇒
           get {
-            path("balance") {
+            path("categories") {
               complete {
-                sendQuery(MoneyBalance(QueryId(UUID.randomUUID.toString), fortuneId))
+                sendQuery(Categories(QueryId(UUID.randomUUID.toString), fortuneId))
               }
             } ~
+              path("balance") {
+                complete {
+                  sendQuery(MoneyBalance(QueryId(UUID.randomUUID.toString), fortuneId))
+                }
+              } ~
               path("assets") {
                 complete {
                   sendQuery(Assets(QueryId(UUID.randomUUID.toString), fortuneId))
