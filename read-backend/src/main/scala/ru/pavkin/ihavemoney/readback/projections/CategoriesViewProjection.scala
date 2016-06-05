@@ -10,15 +10,17 @@ import scala.concurrent.Future
 
 class CategoriesViewProjection(repo: CategoriesViewProjection.Repo) extends Projection {
 
+  def update(id: FortuneId, updater: ((Set[IncomeCategory], Set[ExpenseCategory])) ⇒ (Set[IncomeCategory], Set[ExpenseCategory])) =
+    repo.byId(id).map(_.getOrElse(Set.empty[IncomeCategory] → Set.empty[ExpenseCategory]))
+      .flatMap(tpl ⇒
+        repo.replaceById(id, updater(tpl))
+      )
+
   def addCategory(id: FortuneId, category: IncomeCategory) =
-    repo.updateById(id,
-      tpl ⇒ (tpl._1 + category) → tpl._2
-    )
+    update(id, tpl ⇒ (tpl._1 + category) → tpl._2)
 
   def addCategory(id: FortuneId, category: ExpenseCategory) =
-    repo.updateById(id,
-      tpl ⇒ tpl._1 → (tpl._2 + category)
-    )
+    update(id, tpl ⇒ tpl._1 → (tpl._2 + category))
 
   def handleEvent: HandleEvent = {
 
