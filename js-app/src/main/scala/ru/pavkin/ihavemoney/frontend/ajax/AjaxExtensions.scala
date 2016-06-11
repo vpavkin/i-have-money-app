@@ -27,6 +27,15 @@ object AjaxExtensions {
     case AjaxException(xhr) ⇒ handler(xhr)
   }
 
+  def postEmpty(url: String,
+                timeout: Int = 0,
+                headers: Map[String, String] = Map.empty,
+                withCredentials: Boolean = false)
+               (implicit ec: ExecutionContext): Future[RequestResult[String]] =
+    Ajax.post(url, null, timeout, headers, withCredentials)
+      .map(defaultHandler)
+      .recover(ajaxExceptionHandler(defaultHandler))
+
   def postJson[R: Encoder](url: String,
                            data: R,
                            timeout: Int = 0,

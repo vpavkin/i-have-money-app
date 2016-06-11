@@ -6,7 +6,7 @@ import akka.persistence.query.EventEnvelope
 import akka.stream.scaladsl.Source
 import io.funcqrs.Tag
 import io.funcqrs.akka.EventsSourceProvider
-import ru.pavkin.ihavemoney.proto.events.{PBFortuneIncreased, PBFortuneSpent}
+import ru.pavkin.ihavemoney.proto.events._
 import ru.pavkin.ihavemoney.serialization.ProtobufSuite.syntax._
 import ru.pavkin.ihavemoney.serialization.implicits._
 
@@ -26,9 +26,25 @@ class FortuneTagEventSourceProvider(tag: Tag) extends EventsSourceProvider {
       .mapMaterializedValue(_ ⇒ NotUsed)
       .map {
         case e: EventEnvelope ⇒ e.event match {
+          case p: PBFortuneCreated ⇒ e.copy(event = p.decode)
+          case p: PBEditorAdded ⇒ e.copy(event = p.decode)
+          case p: PBFortuneInitializationFinished ⇒ e.copy(event = p.decode)
           case p: PBFortuneIncreased ⇒ e.copy(event = p.decode)
           case p: PBFortuneSpent ⇒ e.copy(event = p.decode)
-          case p ⇒ e
+          case p: PBUserCreated ⇒ e.copy(event = p.decode)
+          case p: PBUserConfirmed ⇒ e.copy(event = p.decode)
+          case p: PBConfirmationEmailSent ⇒ e.copy(event = p.decode)
+          case p: PBUserLoggedIn ⇒ e.copy(event = p.decode)
+          case p: PBUserFailedToLogIn ⇒ e.copy(event = p.decode)
+          case p: PBAssetAcquired ⇒ e.copy(event = p.decode)
+          case p: PBAssetSold ⇒ e.copy(event = p.decode)
+          case p: PBAssetWorthChanged ⇒ e.copy(event = p.decode)
+          case p: PBLiabilityTaken ⇒ e.copy(event = p.decode)
+          case p: PBLiabilityPaidOff ⇒ e.copy(event = p.decode)
+          case p: PBCurrencyExchanged ⇒ e.copy(event = p.decode)
+          case p ⇒
+            println("Received Event that is not handled by adapter")
+            e
         }
       }
 }

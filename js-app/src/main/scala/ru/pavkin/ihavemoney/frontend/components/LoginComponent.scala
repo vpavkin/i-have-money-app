@@ -38,7 +38,7 @@ object LoginComponent {
         case Xor.Left(error) ⇒ Callback.alert(error.getMessage)
         case Xor.Right(auth) ⇒ Callback {
           AppCircuit.dispatch(LogIn(auth))
-        }.flatMap(_ ⇒ router.set(Route.AddTransactions))
+        }.flatMap(_ ⇒ router.set(Route.Preloader))
       }
     )
 

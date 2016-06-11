@@ -61,7 +61,7 @@ object ReadFrontend extends App with CirceSupport {
         case CategoriesQueryResult(id, inc, exp) ⇒
           kv._1 → (FrontendCategories(id.value, inc.map(_.name), exp.map(_.name)): FrontendQueryResult).asJson
         case MoneyBalanceQueryResult(id, balance) ⇒
-          kv._1 → (FrontendMoneyBalance(id.value, balance.map(kv ⇒ kv._1.code → kv._2)): FrontendQueryResult).asJson
+          kv._1 → (FrontendMoneyBalance(id.value, balance): FrontendQueryResult).asJson
         case LiabilitiesQueryResult(id, liabilities) =>
           kv._1 → (FrontendLiabilities(id.value, liabilities): FrontendQueryResult).asJson
         case AssetsQueryResult(id, assets) =>

@@ -7,21 +7,21 @@ import org.scalajs.dom.raw.HTMLInputElement
 import ru.pavkin.ihavemoney.domain.fortune.Currency
 import ru.pavkin.ihavemoney.frontend.api
 import ru.pavkin.utils.option._
+
 import scala.scalajs.concurrent.JSExecutionContext.Implicits.queue
 import scala.util.Try
 import ru.pavkin.ihavemoney.frontend.styles.Global._
+
 import scalacss.ScalaCssReact._
 
 object AddTransactionsComponent {
 
-  case class State(fortuneId: String,
-                   currency: String,
+  case class State(currency: String,
                    amount: String,
                    category: String,
                    comment: String)
   class Backend($: BackendScope[Unit, State]) {
 
-    val fortuneIdInput = Ref[HTMLInputElement]("fortuneIdInput")
     val amountInput = Ref[HTMLInputElement]("amountInput")
     val currencyInput = Ref[HTMLInputElement]("currencyInput")
     val categoryInput = Ref[HTMLInputElement]("categoryInput")
@@ -39,11 +39,10 @@ object AddTransactionsComponent {
         Callback.alert("Invalid data").runNow()
       else
         api.addIncome(
-          state.fortuneId,
           BigDecimal(state.amount),
           Currency.unsafeFromCode(state.currency),
           state.category,
-          false,
+          initializer = false,
           notEmpty(state.comment)
         ).map {
           case Xor.Left(error) ⇒ Callback.alert(s"Error: $error").runNow()
@@ -56,11 +55,10 @@ object AddTransactionsComponent {
         Callback.alert("Invalid data").runNow()
       else
         api.addExpense(
-          state.fortuneId,
           BigDecimal(state.amount),
           Currency.unsafeFromCode(state.currency),
           state.category,
-          false,
+          initializer = false,
           notEmpty(state.comment)
         ).map {
           case Xor.Left(error) ⇒ Callback.alert(s"Error: $error").runNow()
@@ -70,8 +68,7 @@ object AddTransactionsComponent {
 
 
     def isValid(s: State) =
-      s.fortuneId.nonEmpty &&
-        Try(BigDecimal(s.amount)).isSuccess &&
+      Try(BigDecimal(s.amount)).isSuccess &&
         Currency.isCurrency(s.currency) &&
         s.category.nonEmpty
 
@@ -80,21 +77,6 @@ object AddTransactionsComponent {
       form(
         className := "form-horizontal",
         onSubmit ==> onFormSubmit,
-        div(className := "form-group",
-          label(htmlFor := "fortuneIdInput", className := "col-sm-2 control-label", "Fortune ID"),
-          div(className := "col-sm-10",
-            input(
-              ref := fortuneIdInput,
-              required := true,
-              tpe := "text",
-              className := "form-control",
-              id := "fortuneIdInput",
-              placeholder := "Fortune Id",
-              value := state.fortuneId,
-              onChange ==> onTextChange((s, v) ⇒ s.copy(fortuneId = v))
-            )
-          )
-        ),
         div(className := "form-group",
           label(htmlFor := "amountInput", className := "col-sm-2 control-label", "Amount"),
           div(className := "col-sm-8", input(
@@ -160,7 +142,7 @@ object AddTransactionsComponent {
     }
   }
   val component = ReactComponentB[Unit]("AddTransactionsComponent")
-    .initialState(State("MyFortune", "USD", "1000", "Salary", ""))
+    .initialState(State("USD", "1000", "Salary", ""))
     .renderBackend[Backend]
     .build
 }

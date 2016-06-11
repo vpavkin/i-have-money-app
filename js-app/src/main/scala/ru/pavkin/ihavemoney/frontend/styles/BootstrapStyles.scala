@@ -50,6 +50,7 @@ class BootstrapStyles(gridSize: Int)(implicit r: mutable.Register) extends Style
   val buttonOpt = commonStyle(commonDomain, "btn")
   val button = buttonOpt(default)
   val buttonXS = classNamesStyle("btn-xs")
+  val buttonLG = classNamesStyle("btn-lg")
 
   val panelOpt = commonStyle(commonDomain, "panel")
   val panel = panelOpt(default)

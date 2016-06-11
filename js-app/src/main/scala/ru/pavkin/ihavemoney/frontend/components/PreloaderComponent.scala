@@ -6,7 +6,7 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra.router.RouterCtl
 import japgolly.scalajs.react.vdom.all._
 import ru.pavkin.ihavemoney.frontend.redux.AppCircuit
-import ru.pavkin.ihavemoney.frontend.redux.actions.LogIn
+import ru.pavkin.ihavemoney.frontend.redux.actions.{FortuneObtained, LogIn}
 import ru.pavkin.ihavemoney.frontend.redux.model.RootModel
 import ru.pavkin.ihavemoney.frontend.{Route, api}
 import ru.pavkin.ihavemoney.protocol.Auth
@@ -23,15 +23,10 @@ object PreloaderComponent {
       api.fortunes.map {
         case Xor.Left(error) ⇒ Callback.alert(error.getMessage)
         case Xor.Right(l) ⇒
-          Callback {
-            // todo: dispatch to circuit
-            // AppCircuit.dispatch(LogIn(auth))
-          }.flatMap(_ ⇒
-            if (l.isEmpty)
-              Callback.alert("Show button to add fortune")
-            else
-              router.set(Route.AddTransactions)
-          )
+          if (l.isEmpty)
+            router.set(Route.NoFortunes)
+          else
+            Callback(AppCircuit.dispatch(FortuneObtained(l.head))) >> router.set(Route.AddTransactions)
       }
     )
 

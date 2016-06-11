@@ -1,89 +1,46 @@
 package ru.pavkin.ihavemoney.frontend.components
 
-import cats.data.Xor
+import diode.data.Pot
+import diode.react.ModelProxy
+import diode.react.ReactPot._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.all._
-import org.scalajs.dom.raw.HTMLInputElement
-import ru.pavkin.ihavemoney.frontend.api
-import scala.scalajs.concurrent.JSExecutionContext.Implicits.queue
+import ru.pavkin.ihavemoney.domain.fortune.Currency
+import ru.pavkin.ihavemoney.frontend.redux.AppCircuit
+import ru.pavkin.ihavemoney.frontend.redux.actions.LoadBalances
 
 object BalanceViewComponent {
 
-  case class State(fortuneId: String,
-                   balances: Map[String, BigDecimal])
+  case class Props(balances: ModelProxy[Pot[Map[Currency, BigDecimal]]])
 
-  class Backend($: BackendScope[Unit, State]) {
+  class Backend($: BackendScope[Props, Unit]) {
 
-    val fortuneIdInput = Ref[HTMLInputElement]("fortuneIdInput")
-
-    def onTextChange(change: (State, String) ⇒ State)(e: ReactEventI) = {
-      val newValue = e.target.value
-      $.modState(change(_, newValue))
+    def loadBalances(props: Props) = Callback {
+      AppCircuit.dispatch(LoadBalances())
     }
 
-    def onFormSubmit(e: ReactEventI) = e.preventDefaultCB
-
-    def loadBalances(fortuneId: String) = Callback {
-      println(s"Refresh balance for $fortuneId")
-      if (fortuneId.isEmpty)
-        Callback.alert("Empty id").runNow()
-      else
-        api.getBalances(
-          fortuneId
-        ).map {
-          case Xor.Left(error) ⇒ Callback.alert(s"Error: $error").runNow()
-          case Xor.Right(balances) ⇒
-            $.modState(_.copy(balances = balances)).runNow()
-        }
-    }
-
-    def render(state: State) = {
+    def render(props: Props) = {
       div(
-        form(
-          className := "form-horizontal",
-          onSubmit ==> onFormSubmit,
-          div(className := "form-group",
-            label(htmlFor := "fortuneIdInput", className := "col-sm-2 control-label", "Fortune ID"),
-            div(className := "col-sm-8",
-              input(
-                ref := fortuneIdInput,
-                required := true,
-                tpe := "text",
-                className := "form-control",
-                id := "fortuneIdInput",
-                placeholder := "Fortune Id",
-                value := state.fortuneId,
-                onChange ==> onTextChange((s, v) ⇒ s.copy(fortuneId = v))
-              )
-            ),
-            div(className := "col-sm-2",
-              button(tpe := "submit", className := "btn btn-success", disabled := state.fortuneId.isEmpty,
-                onClick --> loadBalances(state.fortuneId), "Refresh")
-            )
-          )
-        ),
-        if (state.balances.nonEmpty)
+        props.balances().renderEmpty("Loading..."),
+        props.balances().renderPending(_ => div("Loading...")),
+        props.balances().renderReady(balances ⇒
           div(
             table(className := "table table-striped table-hover table-condensed",
               thead(tr(th("Currency"), th("Amount"))),
               tbody(
-                state.balances.map {
-                  case (currency, amount) ⇒ tr(td(currency), td(amount.toString))
+                balances.map {
+                  case (currency, amount) ⇒ tr(td(currency.code), td(amount.toString))
                 }
               )
             )
           )
-        else
-          div()
+        )
       )
     }
-
-    def init = $.state.flatMap(s ⇒ loadBalances(s.fortuneId))
   }
 
-  val component = ReactComponentB[Unit]("AddTransactionsComponent")
-    .initialState(State("MyFortune", Map.empty))
+  val component = ReactComponentB[Props]("AddTransactionsComponent")
     .renderBackend[Backend]
-    .componentDidMount(_.backend.init)
+    .componentDidMount(s ⇒ s.backend.loadBalances(s.props))
     .build
 }
