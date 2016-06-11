@@ -6,7 +6,8 @@ import org.scalajs.dom._
 import org.scalajs.dom.raw.HTMLStyleElement
 import ru.pavkin.ihavemoney.frontend.{Route, api}
 import ru.pavkin.ihavemoney.frontend.Route._
-import ru.pavkin.ihavemoney.frontend.components.{AddTransactionsComponent, BalanceViewComponent, LoginComponent, Nav}
+import ru.pavkin.ihavemoney.frontend.components._
+import ru.pavkin.ihavemoney.frontend.redux.AppCircuit
 import ru.pavkin.ihavemoney.frontend.styles.Global
 
 import scalacss.Defaults._
@@ -21,8 +22,10 @@ object IHaveMoneyApp extends JSApp {
     import dsl._
 
     (trimSlashes
-      | staticRoute(root, AddTransactions) ~> render(AddTransactionsComponent.component())
-      | staticRoute("#page2", BalanceView) ~> render(BalanceViewComponent.component())
+      | staticRoute(root, Preloader) ~> renderR(ctl ⇒
+      AppCircuit.connect(identity(_))(proxy => PreloaderComponent.component(PreloaderComponent.Props(ctl, proxy))))
+      | staticRoute("#transactions", AddTransactions) ~> render(AddTransactionsComponent.component())
+      | staticRoute("#balance", BalanceView) ~> render(BalanceViewComponent.component())
       | staticRoute("#login", Login) ~> renderR(ctl ⇒ LoginComponent.component(ctl)))
       .notFound(redirectToPage(AddTransactions)(Redirect.Replace))
       .renderWith(layout)
@@ -30,7 +33,10 @@ object IHaveMoneyApp extends JSApp {
   }
 
   def layout(c: RouterCtl[Route], r: Resolution[Route]) = div(
-    if (r.page != Login) Nav.component(c) else div(),
+    r.page match {
+      case Login | Preloader ⇒ EmptyTag
+      case _ ⇒ Nav.component(c)
+    },
     div(className := "container", r.render())
   )
 

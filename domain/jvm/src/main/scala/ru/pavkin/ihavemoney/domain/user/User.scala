@@ -11,7 +11,6 @@ import ru.pavkin.ihavemoney.services.EmailService
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 
-// todo: inject email service into behaviour
 case class User(id: UserId,
                 passwordHash: String,
                 displayName: String,
