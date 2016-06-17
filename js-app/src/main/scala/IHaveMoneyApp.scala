@@ -27,6 +27,7 @@ object IHaveMoneyApp extends JSApp {
       | staticRoute("#nofortune", NoFortunes) ~> renderR(ctl ⇒ NoFortuneComponent.component(ctl))
       | staticRoute("#transactions", AddTransactions) ~> render(AddTransactionsComponent.component())
       | staticRoute("#balance", BalanceView) ~> render(AppCircuit.connect(_.balances)(b ⇒ BalanceViewComponent.component(BalanceViewComponent.Props(b))))
+      | staticRoute("#log", TransactionLogView) ~> render(AppCircuit.connect(_.log)(b ⇒ TransactionLogComponent.component(TransactionLogComponent.Props(b))))
       | staticRoute("#login", Login) ~> renderR(ctl ⇒ LoginComponent.component(ctl)))
       .notFound(redirectToPage(AddTransactions)(Redirect.Replace))
       .renderWith(layout)

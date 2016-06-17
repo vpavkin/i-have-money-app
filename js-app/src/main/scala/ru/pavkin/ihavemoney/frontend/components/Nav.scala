@@ -45,7 +45,8 @@ object Nav {
             height := "1px",
             ul(className := "nav navbar-nav",
               routeLink("Add Transactions", AddTransactions),
-              routeLink("Balance View", BalanceView)
+              routeLink("Balance View", BalanceView),
+              routeLink("TransactionLog", TransactionLogView)
             )
           )
         )

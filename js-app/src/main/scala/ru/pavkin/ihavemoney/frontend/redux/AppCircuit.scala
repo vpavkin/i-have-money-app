@@ -5,8 +5,7 @@ import diode.react.ReactConnector
 import io.circe.parser._
 import io.circe.syntax._
 import org.scalajs.dom
-import ru.pavkin.ihavemoney.frontend.redux.actions.FortuneObtained
-import ru.pavkin.ihavemoney.frontend.redux.handlers.{AuthHandler, FortuneObtainedHandler, LoadBalancesHandler}
+import ru.pavkin.ihavemoney.frontend.redux.handlers.{AuthHandler, FortuneObtainedHandler, LoadBalancesHandler, LoadTransactionLogHandler}
 import ru.pavkin.ihavemoney.frontend.redux.model.RootModel
 import ru.pavkin.ihavemoney.protocol.Auth
 
@@ -22,7 +21,8 @@ object AppCircuit extends Circuit[RootModel] with ReactConnector[RootModel] {
   protected def actionHandler: HandlerFunction = composeHandlers(
     new AuthHandler(zoomRW(_.auth)((m, v) => m.copy(auth = v))),
     new FortuneObtainedHandler(zoomRW(_.fortuneId)((m, v) => m.copy(fortuneId = v))),
-    new LoadBalancesHandler(zoomRW(_.balances)((m, v) => m.copy(balances = v)))
+    new LoadBalancesHandler(zoomRW(_.balances)((m, v) => m.copy(balances = v))),
+    new LoadTransactionLogHandler(zoomRW(_.log)((m, v) => m.copy(log = v)))
   )
 
   override def initialModel = RootModel(None)

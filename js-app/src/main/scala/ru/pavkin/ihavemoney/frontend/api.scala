@@ -34,6 +34,7 @@ object api {
     def readFortune = readFrontBaseUrl / "fortune"
     def getFortunes = readFrontBaseUrl / "fortunes"
     def getBalances(fortuneId: String) = readFortune / fortuneId / "balance"
+    def getTransactionLog(fortuneId: String) = readFortune / fortuneId / "log"
   }
 
   def authHeader = "Authorization" → s"Bearer ${AppCircuit.auth.map(_.token).getOrElse("")}"
@@ -82,6 +83,13 @@ object api {
     expect[FrontendQueryResult](get(routes.getBalances(AppCircuit.fortune).value, headers = Map(authHeader)))
       .map(_.flatMap {
         case FrontendMoneyBalance(_, balances) ⇒ Xor.Right(balances)
+        case _ ⇒ Xor.Left(OtherError("Unexpected response"))
+      })
+
+  def getTransactionLog(implicit ec: ExecutionContext): Future[RequestError Xor List[Transaction]] =
+    expect[FrontendQueryResult](get(routes.getTransactionLog(AppCircuit.fortune).value, headers = Map(authHeader)))
+      .map(_.flatMap {
+        case FrontendTransactions(_, transactions) ⇒ Xor.Right(transactions)
         case _ ⇒ Xor.Left(OtherError("Unexpected response"))
       })
 }
