@@ -52,10 +52,10 @@ trait SharedProtocol {
   }
 
   implicit final val encodeLocalDateDefault: Encoder[LocalDate] = Encoder.instance(time =>
-    Json.string(s"${p(time.getDayOfMonth)}:${p(time.getMonthValue)}:${time.getYear}")
+    Json.string(s"${p(time.getDayOfMonth)}-${p(time.getMonthValue)}-${time.getYear}")
   )
 
-  private def p(s: Int) = "".padTo(2, "0").mkString + s.toString
+  private def p(s: Int) = "".padTo(2 - s.toString.length, "0").mkString + s.toString
   implicit val decoderTransaction = Decoder[Transaction]
   implicit val encoderTransaction = Encoder[Transaction]
 }
