@@ -341,6 +341,7 @@ lazy val frontendProtocol = crossProject.in(file("frontend-protocol"))
     "io.circe" %%% "circe-generic" % circeVersion,
     "io.circe" %%% "circe-parser" % circeVersion
   ))
+  .jsSettings(libraryDependencies += "org.scala-js" %%% "scalajs-java-time" % "0.1.0")
   .dependsOn(domain)
 
 lazy val frontendProtocolJS = frontendProtocol.js

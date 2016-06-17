@@ -11,6 +11,7 @@ import ru.pavkin.ihavemoney.domain.fortune._
 import ru.pavkin.ihavemoney.domain.user.UserId
 import ru.pavkin.ihavemoney.readback.projections._
 import ru.pavkin.ihavemoney.readback.repo.{DatabaseAssetsViewRepository, DatabaseLiabilitiesViewRepository, DatabaseMoneyViewRepository, InMemoryRepository}
+import ru.pavkin.ihavemoney.readback.sources.{CurrentFortuneTagEventSourceProvider, FortuneTagEventSourceProvider}
 import slick.driver.PostgresDriver
 import slick.driver.PostgresDriver.api._
 
@@ -29,11 +30,13 @@ object ReadBackend extends App {
   val categoriesRepo = new InMemoryRepository[FortuneId, (Set[IncomeCategory], Set[ExpenseCategory])] {}
   val fortunesRepo = new InMemoryRepository[UserId, (Set[FortuneId])] {}
 
+  val fortuneEventsProvider = new FortuneTagEventSourceProvider(Fortune.tag)
+
   val backend = new AkkaBackend {
     val actorSystem: ActorSystem = system
     def sourceProvider(query: Query): EventsSourceProvider = {
       query match {
-        case QueryByTag(Fortune.tag) ⇒ new FortuneTagEventSourceProvider(Fortune.tag)
+        case QueryByTag(Fortune.tag) ⇒ fortuneEventsProvider
       }
     }
   }.configure {
@@ -54,6 +57,7 @@ object ReadBackend extends App {
   }
 
   val interface = system.actorOf(Props(new InterfaceActor(
+    new CurrentFortuneTagEventSourceProvider(Fortune.tag),
     moneyViewRepo,
     assetsViewRepo,
     liabilitiesViewRepo,

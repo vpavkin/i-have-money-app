@@ -1,16 +1,19 @@
 package ru.pavkin.ihavemoney.readback
 
 import akka.actor.Actor
+import io.funcqrs.akka.EventsSourceProvider
 import ru.pavkin.ihavemoney.domain.fortune.FortuneId
+import ru.pavkin.ihavemoney.domain.fortune.FortuneProtocol.FortuneEvent
 import ru.pavkin.ihavemoney.domain.query._
 import ru.pavkin.ihavemoney.domain.user.UserId
-import ru.pavkin.ihavemoney.readback.projections.{CategoriesViewProjection, FortunesPerUserProjection}
+import ru.pavkin.ihavemoney.readback.projections.{CategoriesViewProjection, FortuneAdjustmentsProjection, FortunesPerUserProjection}
 import ru.pavkin.ihavemoney.readback.repo.{AssetsViewRepository, LiabilitiesViewRepository, MoneyViewRepository}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
-class InterfaceActor(moneyRepo: MoneyViewRepository,
+class InterfaceActor(fortuneEventsProvider: EventsSourceProvider,
+                     moneyRepo: MoneyViewRepository,
                      assetsRepo: AssetsViewRepository,
                      liabRepo: LiabilitiesViewRepository,
                      categoriesRepo: CategoriesViewProjection.Repo,
@@ -26,6 +29,8 @@ class InterfaceActor(moneyRepo: MoneyViewRepository,
       case false ⇒ Future.successful(AccessDenied(q.id, s"User ${q.user} doesn't have access to fortune ${q.fortuneId}"))
     }
 
+  def log(id: FortuneId): Future[List[FortuneEvent]] = new FortuneAdjustmentsProjection(id, fortuneEventsProvider).run
+
   def receive: Receive = {
     case query: Query ⇒
       val origin = sender
@@ -36,6 +41,9 @@ class InterfaceActor(moneyRepo: MoneyViewRepository,
             case Some(fortunes) ⇒ FortunesQueryResult(userId, fortunes.toList)
           }
 
+        case q@TransactionLog(_, uid, fortuneId) ⇒ checkAccess(q,
+          log(fortuneId).map(TransactionLogQueryResult(fortuneId, _))
+        )
         case q@Categories(_, uid, fortuneId) ⇒ checkAccess(q,
           categoriesRepo.byId(fortuneId).map {
             case m if m.isEmpty ⇒ CategoriesQueryResult(fortuneId, Nil, Nil)

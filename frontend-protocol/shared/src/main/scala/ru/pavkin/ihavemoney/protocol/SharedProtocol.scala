@@ -1,8 +1,10 @@
 package ru.pavkin.ihavemoney.protocol
 
+import java.time.LocalDate
+
 import cats.data.Xor
-import io.circe.{Decoder, DecodingFailure, Encoder, Json}
 import io.circe.syntax._
+import io.circe.{Decoder, DecodingFailure, Encoder, Json}
 import io.circe.generic.auto._
 import ru.pavkin.ihavemoney.domain.fortune.{Asset, Currency, Liability}
 
@@ -37,4 +39,23 @@ trait SharedProtocol {
       })
   }
 
+
+  implicit final val decodeLocalDateDefault: Decoder[LocalDate] = Decoder.instance { c =>
+    c.as[String].flatMap { s =>
+      s.split("-").toList match {
+        case day :: month :: year :: Nil ⇒
+          Xor.catchNonFatal(LocalDate.of(year.toInt, month.toInt, day.toInt))
+            .leftMap(ex ⇒ DecodingFailure(ex.getMessage, c.history))
+        case _ ⇒ Xor.left(DecodingFailure("Invalid date string", c.history))
+      }
+    }
+  }
+
+  implicit final val encodeLocalDateDefault: Encoder[LocalDate] = Encoder.instance(time =>
+    Json.string(s"${p(time.getDayOfMonth)}:${p(time.getMonthValue)}:${time.getYear}")
+  )
+
+  private def p(s: Int) = "".padTo(2, "0").mkString + s.toString
+  implicit val decoderTransaction = Decoder[Transaction]
+  implicit val encoderTransaction = Encoder[Transaction]
 }

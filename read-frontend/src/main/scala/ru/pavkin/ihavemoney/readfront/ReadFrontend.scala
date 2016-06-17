@@ -20,9 +20,10 @@ import scala.concurrent.duration._
 import ru.pavkin.ihavemoney.domain.fortune.FortuneId
 import ru.pavkin.ihavemoney.domain.query._
 import ru.pavkin.ihavemoney.domain.user.UserId
-import ru.pavkin.ihavemoney.protocol.FailedRequest
+import ru.pavkin.ihavemoney.protocol.{FailedRequest, Transaction}
 import ru.pavkin.ihavemoney.protocol.readfront._
 import ru.pavkin.ihavemoney.auth.JWTTokenFactory
+import ru.pavkin.ihavemoney.domain.fortune.FortuneProtocol.{FortuneIncreased, FortuneSpent}
 
 import scala.concurrent.Future
 
@@ -53,6 +54,14 @@ object ReadFrontend extends App with CirceSupport {
     }
   }
 
+  def toFrontendTransactions(r: TransactionLogQueryResult): FrontendTransactions = FrontendTransactions(
+    r.id.value,
+    r.events.collect {
+      case e: FortuneIncreased ⇒ Transaction(e.user.value, e.amount, e.currency, e.category.name, e.initializer, e.metadata.date.toLocalDate, e.comment)
+      case e: FortuneSpent ⇒ Transaction(e.user.value, -e.amount, e.currency, e.category.name, e.initializer, e.metadata.date.toLocalDate, e.comment)
+    }
+  )
+
   def sendQuery(q: Query) =
     readBack.query(q)
       .map(kv ⇒ kv._2 match {
@@ -60,6 +69,8 @@ object ReadFrontend extends App with CirceSupport {
           kv._1 → (FrontendFortunes(id.value, fortunes.map(_.value)): FrontendQueryResult).asJson
         case CategoriesQueryResult(id, inc, exp) ⇒
           kv._1 → (FrontendCategories(id.value, inc.map(_.name), exp.map(_.name)): FrontendQueryResult).asJson
+        case r@TransactionLogQueryResult(id, events) ⇒
+          kv._1 → (toFrontendTransactions(r): FrontendQueryResult).asJson
         case MoneyBalanceQueryResult(id, balance) ⇒
           kv._1 → (FrontendMoneyBalance(id.value, balance): FrontendQueryResult).asJson
         case LiabilitiesQueryResult(id, liabilities) =>
@@ -115,6 +126,11 @@ object ReadFrontend extends App with CirceSupport {
                   path("liabilities") {
                     complete {
                       sendQuery(Liabilities(QueryId(UUID.randomUUID.toString), userId, fortuneId))
+                    }
+                  } ~
+                  path("log") {
+                    complete {
+                      sendQuery(TransactionLog(QueryId(UUID.randomUUID.toString), userId, fortuneId))
                     }
                   }
 
