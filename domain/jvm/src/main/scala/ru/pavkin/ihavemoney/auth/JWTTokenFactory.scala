@@ -3,7 +3,10 @@ package ru.pavkin.ihavemoney.auth
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
+import io.circe.parser._
+import io.circe.generic.auto._
 import pdi.jwt.{JwtAlgorithm, JwtCirce, JwtClaim}
+import ru.pavkin.ihavemoney.domain.user.UserId
 
 class JWTTokenFactory(secretKey: String) {
 
@@ -17,6 +20,8 @@ class JWTTokenFactory(secretKey: String) {
       JwtAlgorithm.HS256
     )
 
-  def authenticate(token: String): Option[String] =
-    JwtCirce.decode(token, secretKey, Seq(JwtAlgorithm.HS256)).toOption.map(_.content)
+  def authenticate(token: String): Option[UserId] =
+    JwtCirce.decode(token, secretKey, Seq(JwtAlgorithm.HS256)).toOption.flatMap(
+      c ⇒ decode[UserId](c.content).toOption
+    )
 }

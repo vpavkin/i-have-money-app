@@ -49,7 +49,7 @@ object ReadFrontend extends App with CirceSupport {
         tokenFactory.authenticate(token.token)
       case _ ⇒ None
     } match {
-      case Some(userId) ⇒ Right(UserId(userId))
+      case Some(userId) ⇒ Right(userId)
       case None ⇒ Left(HttpChallenge("Bearer", "ihavemoney", Map("error" → "invalid_token")))
     }
   }
