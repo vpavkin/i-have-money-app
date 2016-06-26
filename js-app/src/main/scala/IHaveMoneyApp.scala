@@ -5,7 +5,7 @@ import japgolly.scalajs.react.vdom.all._
 import org.scalajs.dom
 import ru.pavkin.ihavemoney.frontend.components._
 import ru.pavkin.ihavemoney.frontend.redux.AppCircuit
-import ru.pavkin.ihavemoney.frontend.redux.actions.LoggedIn
+import ru.pavkin.ihavemoney.frontend.redux.actions.{LoggedIn, SetInitializerRedirect}
 import ru.pavkin.ihavemoney.frontend.styles.Global
 import ru.pavkin.ihavemoney.frontend.styles.Global._
 import ru.pavkin.ihavemoney.frontend.{Route, api}
@@ -23,6 +23,15 @@ object IHaveMoneyApp extends JSApp {
     def renderAddTransactions = render(AddTransactionsC.component())
     def renderInitializer = renderR(InitializerC(_))
 
+    def isValidRedirect(r: Route) = r != Route.Login && r != Route.Initializer
+    def storeRedirectToRoute(prev: Option[Route], next: Route) = (prev, next) match {
+      case (Some(r), Route.Initializer) if isValidRedirect(r) ⇒
+        AppCircuit.dispatch(SetInitializerRedirect(r))
+      case (Some(r), Route.Login) if isValidRedirect(r) ⇒
+        AppCircuit.dispatch(SetInitializerRedirect(r))
+      case _ ⇒ ()
+    }
+
     (trimSlashes
       | staticRoute(root, Route.Initializer) ~> renderInitializer
       | staticRoute("#nofortune", Route.NoFortunes) ~> renderR(ctl ⇒ NoFortuneC.component(ctl))
@@ -32,6 +41,10 @@ object IHaveMoneyApp extends JSApp {
       | staticRoute("#login", Route.Login) ~> renderR(ctl ⇒ LoginC.component(ctl)))
       .notFound(redirectToPage(Route.AddTransactions)(Redirect.Replace))
       .renderWith(layout)
+      .onPostRender((prev, next) => Callback {
+        println(s"Page changing from $prev to $next.")
+        storeRedirectToRoute(prev, next)
+      })
       .verify(Route.AddTransactions, Route.BalanceView)
   }
 

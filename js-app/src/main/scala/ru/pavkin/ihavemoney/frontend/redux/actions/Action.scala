@@ -4,6 +4,7 @@ import cats.data.Xor
 import diode.data.{Empty, Pot, PotAction}
 import japgolly.scalajs.react.ReactElement
 import ru.pavkin.ihavemoney.domain.fortune.Currency
+import ru.pavkin.ihavemoney.frontend.Route
 import ru.pavkin.ihavemoney.protocol.{Auth, RequestError, Transaction}
 
 import scala.concurrent.Future
@@ -35,3 +36,5 @@ case class SendRequest(command: Future[Xor[RequestError, Unit]], potResult: Pot[
   extends Action with PotAction[Unit, SendRequest] {
   def next(newResult: Pot[Unit]): SendRequest = copy(potResult = newResult)
 }
+
+case class SetInitializerRedirect(route: Route) extends Action
