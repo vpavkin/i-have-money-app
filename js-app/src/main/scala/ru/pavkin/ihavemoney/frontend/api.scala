@@ -5,7 +5,7 @@ import io.circe.Decoder
 import io.circe.syntax._
 import japgolly.scalajs.react.Callback
 import japgolly.scalajs.react.extra.router.BaseUrl
-import ru.pavkin.ihavemoney.domain.fortune.{Asset, Currency}
+import ru.pavkin.ihavemoney.domain.fortune.{Asset, Currency, Liability}
 import ru.pavkin.ihavemoney.frontend.ajax.AjaxExtensions._
 import ru.pavkin.ihavemoney.frontend.redux.AppCircuit
 import ru.pavkin.ihavemoney.protocol._
@@ -38,6 +38,7 @@ object api {
     def getBalances(fortuneId: String) = readFortune / fortuneId / "balance"
     def getTransactionLog(fortuneId: String) = readFortune / fortuneId / "log"
     def getAssets(fortuneId: String) = readFortune / fortuneId / "assets"
+    def getLiabilities(fortuneId: String) = readFortune / fortuneId / "liabilities"
   }
 
   def authHeader = "Authorization" → s"Bearer ${AppCircuit.auth.map(_.token).getOrElse("")}"
@@ -105,6 +106,11 @@ object api {
   def getAssets(implicit ec: ExecutionContext): Future[RequestError Xor Map[String, Asset]] =
     query(routes.getAssets(AppCircuit.fortune), {
       case FrontendAssets(_, assets) ⇒ assets
+    })
+
+  def getLiabilities(implicit ec: ExecutionContext): Future[RequestError Xor Map[String, Liability]] =
+    query(routes.getLiabilities(AppCircuit.fortune), {
+      case FrontendLiabilities(_, liabilities) ⇒ liabilities
     })
 
   def getTransactionLog(implicit ec: ExecutionContext): Future[RequestError Xor List[Transaction]] =

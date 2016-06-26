@@ -3,7 +3,7 @@ package ru.pavkin.ihavemoney.frontend.redux.actions
 import cats.data.Xor
 import diode.data.{Empty, Pot, PotAction}
 import japgolly.scalajs.react.ReactElement
-import ru.pavkin.ihavemoney.domain.fortune.{Asset, Currency}
+import ru.pavkin.ihavemoney.domain.fortune.{Asset, Currency, Liability}
 import ru.pavkin.ihavemoney.frontend.Route
 import ru.pavkin.ihavemoney.protocol.{Auth, RequestError, Transaction}
 
@@ -24,6 +24,11 @@ case class LoadBalances(potResult: Pot[Map[Currency, BigDecimal]] = Pot.empty)
 case class LoadAssets(potResult: Pot[Map[String, Asset]] = Pot.empty)
   extends Action with PotAction[Map[String, Asset], LoadAssets] {
   def next(newResult: Pot[Map[String, Asset]]): LoadAssets = copy(potResult = newResult)
+}
+
+case class LoadLiabilities(potResult: Pot[Map[String, Liability]] = Pot.empty)
+  extends Action with PotAction[Map[String, Liability], LoadLiabilities] {
+  def next(newResult: Pot[Map[String, Liability]]): LoadLiabilities = copy(potResult = newResult)
 }
 
 case class LoadTransactionLog(potResult: Pot[List[Transaction]] = Pot.empty)

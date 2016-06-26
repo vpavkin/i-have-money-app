@@ -24,8 +24,9 @@ object IHaveMoneyApp extends JSApp {
     def renderInitializer = renderR(InitializerC(_))
     def renderBalance = render(connectors.balances(b ⇒
       connectors.assets(a ⇒
-        BalanceViewC.component(BalanceViewC.Props(b, a)))
-    ))
+        connectors.liabilities(l ⇒
+          BalanceViewC.component(BalanceViewC.Props(b, a, l)))
+      )))
 
     def isValidRedirect(r: Route) = r != Route.Login && r != Route.Initializer
     def storeRedirectToRoute(prev: Option[Route], next: Route) = (prev, next) match {
