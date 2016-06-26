@@ -5,24 +5,28 @@ import diode.react.ModelProxy
 import diode.react.ReactPot._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.all._
-import ru.pavkin.ihavemoney.domain.fortune.Currency
+import ru.pavkin.ihavemoney.domain.fortune.{Asset, Currency}
 import ru.pavkin.ihavemoney.frontend.redux.AppCircuit
-import ru.pavkin.ihavemoney.frontend.redux.actions.LoadBalances
+import ru.pavkin.ihavemoney.frontend.redux.actions.{LoadAssets, LoadBalances}
+import ru.pavkin.ihavemoney.frontend.styles.Global._
+import scalacss.ScalaCssReact._
 
 object BalanceViewC {
 
-  case class Props(balances: ModelProxy[Pot[Map[Currency, BigDecimal]]])
+  case class Props(balances: ModelProxy[Pot[Map[Currency, BigDecimal]]],
+                   assets: ModelProxy[Pot[Map[String, Asset]]])
 
   class Backend($: BackendScope[Props, Unit]) {
 
-    def loadBalances(pr: Props) = Callback {
+    def loadData(pr: Props) = Callback {
       AppCircuit.dispatch(LoadBalances())
+      AppCircuit.dispatch(LoadAssets())
     }
 
-    def render(pr: Props) = {
-      div(
-        pr.balances().renderEmpty("Loading..."),
-        pr.balances().renderPending(_ => div("Loading...")),
+    def render(pr: Props) = div(common.container,
+      div(grid.columnAll(GRID_SIZE / 2), className := "panel",
+        pr.balances().renderEmpty(PreloaderC()),
+        pr.balances().renderPending(_ => PreloaderC()),
         pr.balances().renderReady(balances ⇒
           div(
             table(className := "table table-striped table-hover table-condensed",
@@ -35,12 +39,24 @@ object BalanceViewC {
             )
           )
         )
+      ),
+      div(grid.columnAll(GRID_SIZE / 2), className := "panel",
+        pr.assets().renderEmpty(PreloaderC()),
+        pr.assets().renderPending(_ => PreloaderC()),
+        pr.assets().renderReady(assets ⇒
+          div(
+            table(className := "table table-striped table-hover table-condensed",
+              thead(tr(th("Asset"), th("Worth"))),
+              tbody(assets.values.map(asset ⇒ tr(td(asset.name), td(asset.worth.toString))))
+            )
+          )
+        )
       )
-    }
+    )
   }
 
   val component = ReactComponentB[Props]("AddTransactionsComponent")
     .renderBackend[Backend]
-    .componentDidMount(s ⇒ s.backend.loadBalances(s.props))
+    .componentDidMount(s ⇒ s.backend.loadData(s.props))
     .build
 }

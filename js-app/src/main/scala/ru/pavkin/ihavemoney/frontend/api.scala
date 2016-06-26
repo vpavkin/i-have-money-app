@@ -1,6 +1,7 @@
 package ru.pavkin.ihavemoney.frontend
 
 import cats.data.Xor
+import io.circe.Decoder
 import io.circe.syntax._
 import japgolly.scalajs.react.Callback
 import japgolly.scalajs.react.extra.router.BaseUrl
@@ -39,13 +40,6 @@ object api {
   }
 
   def authHeader = "Authorization" → s"Bearer ${AppCircuit.auth.map(_.token).getOrElse("")}"
-
-  def fortunes(implicit ec: ExecutionContext): Future[Xor[RequestError, List[String]]] = expect[FrontendQueryResult](
-    get(routes.getFortunes.value, headers = Map(authHeader)))
-    .map(_.flatMap {
-      case FrontendFortunes(_, fortunes) ⇒ Xor.Right(fortunes)
-      case _ ⇒ Xor.Left(OtherError("Unexpected response"))
-    })
 
   def login(email: String, password: String)(implicit ec: ExecutionContext): Future[Xor[RequestError, Auth]] = expect[CommandProcessedWithResult[Auth]](
     postJson(routes.login.value, LogInRequest(email, password))
@@ -89,17 +83,31 @@ object api {
       headers = Map(authHeader)
     ).map(_.map(_ ⇒ ()))
 
+  // queries
+
+  def query[A](route: BaseUrl, extractor: PartialFunction[FrontendQueryResult, A])
+              (implicit ec: ExecutionContext): Future[Xor[RequestError, A]] = expect[FrontendQueryResult](
+    get(route.value, headers = Map(authHeader))
+  ).map(_.flatMap { res ⇒
+    extractor.andThen(Xor.Right(_)).applyOrElse(res, (_: FrontendQueryResult) ⇒ Xor.Left(OtherError("Unexpected response")))
+  })
+
+  def fortunes(implicit ec: ExecutionContext): Future[Xor[RequestError, List[String]]] = query(routes.getFortunes, {
+    case FrontendFortunes(_, fortunes) ⇒ fortunes
+  })
+
   def getBalances(implicit ec: ExecutionContext): Future[RequestError Xor Map[Currency, BigDecimal]] =
-    expect[FrontendQueryResult](get(routes.getBalances(AppCircuit.fortune).value, headers = Map(authHeader)))
-      .map(_.flatMap {
-        case FrontendMoneyBalance(_, balances) ⇒ Xor.Right(balances)
-        case _ ⇒ Xor.Left(OtherError("Unexpected response"))
-      })
+    query(routes.getBalances(AppCircuit.fortune), {
+      case FrontendMoneyBalance(_, balances) ⇒ balances
+    })
+
+  def getAssets(implicit ec: ExecutionContext): Future[RequestError Xor Map[String, Asset]] =
+    query(routes.assets(AppCircuit.fortune), {
+      case FrontendAssets(_, assets) ⇒ assets
+    })
 
   def getTransactionLog(implicit ec: ExecutionContext): Future[RequestError Xor List[Transaction]] =
-    expect[FrontendQueryResult](get(routes.getTransactionLog(AppCircuit.fortune).value, headers = Map(authHeader)))
-      .map(_.flatMap {
-        case FrontendTransactions(_, transactions) ⇒ Xor.Right(transactions)
-        case _ ⇒ Xor.Left(OtherError("Unexpected response"))
-      })
+    query(routes.getTransactionLog(AppCircuit.fortune), {
+      case FrontendTransactions(_, transactions) ⇒ transactions
+    })
 }

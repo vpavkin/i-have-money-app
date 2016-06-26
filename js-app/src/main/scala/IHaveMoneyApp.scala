@@ -22,6 +22,10 @@ object IHaveMoneyApp extends JSApp {
 
     def renderAddTransactions = render(AddTransactionsC.component())
     def renderInitializer = renderR(InitializerC(_))
+    def renderBalance = render(AppCircuit.connect(_.balances)(b ⇒
+      AppCircuit.connect(_.assets)(a ⇒
+        BalanceViewC.component(BalanceViewC.Props(b, a)))
+    ))
 
     def isValidRedirect(r: Route) = r != Route.Login && r != Route.Initializer
     def storeRedirectToRoute(prev: Option[Route], next: Route) = (prev, next) match {
@@ -36,7 +40,7 @@ object IHaveMoneyApp extends JSApp {
       | staticRoute(root, Route.Initializer) ~> renderInitializer
       | staticRoute("#nofortune", Route.NoFortunes) ~> renderR(ctl ⇒ NoFortuneC.component(ctl))
       | staticRoute("#transactions", Route.AddTransactions) ~> renderAddTransactions
-      | staticRoute("#balance", Route.BalanceView) ~> render(AppCircuit.connect(_.balances)(b ⇒ BalanceViewC.component(BalanceViewC.Props(b))))
+      | staticRoute("#balance", Route.BalanceView) ~> renderBalance
       | staticRoute("#log", Route.TransactionLogView) ~> render(AppCircuit.connect(_.log)(b ⇒ TransactionLogC.component(TransactionLogC.Props(b))))
       | staticRoute("#login", Route.Login) ~> renderR(ctl ⇒ LoginC.component(ctl)))
       .notFound(redirectToPage(Route.AddTransactions)(Redirect.Replace))
