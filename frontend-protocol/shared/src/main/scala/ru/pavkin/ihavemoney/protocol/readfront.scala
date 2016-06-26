@@ -9,8 +9,8 @@ object readfront extends SharedProtocol {
   case class FrontendFortunes(userId: String, fortunes: List[String]) extends FrontendQueryResult
   case class FrontendCategories(fortuneId: String, income: List[String], expenses: List[String]) extends FrontendQueryResult
   case class FrontendMoneyBalance(fortuneId: String, balances: Map[Currency, BigDecimal]) extends FrontendQueryResult
-  case class FrontendAssets(fortuneId: String, balances: Map[String, Asset]) extends FrontendQueryResult
-  case class FrontendLiabilities(fortuneId: String, balances: Map[String, Liability]) extends FrontendQueryResult
+  case class FrontendAssets(fortuneId: String, assets: Map[String, Asset]) extends FrontendQueryResult
+  case class FrontendLiabilities(fortuneId: String, liabilities: Map[String, Liability]) extends FrontendQueryResult
   case class FrontendTransactions(fortuneId: String, transactions: List[Transaction]) extends FrontendQueryResult
 
   implicit val fqEncoder: Encoder[FrontendQueryResult] = deriveEncoder[FrontendQueryResult]

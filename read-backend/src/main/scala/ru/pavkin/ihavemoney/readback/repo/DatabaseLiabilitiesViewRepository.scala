@@ -12,7 +12,6 @@ class DatabaseLiabilitiesViewRepository(db: Database) extends LiabilitiesViewRep
   private def liabilitiesFindQuery(id: LiabilityId) =
     Debts.table
       .filter(_.liabilityId === id.value.toString)
-      .take(1)
 
   private def liabilitiesRowToDomain(s: DebtRow) = s.interestRate match {
     case None ⇒ domain.NoInterestDebt(s.name, s.amount, s.currency)
@@ -21,6 +20,7 @@ class DatabaseLiabilitiesViewRepository(db: Database) extends LiabilitiesViewRep
 
   private def find(id: LiabilityId)(implicit ec: ExecutionContext): Future[Option[Liability]] = db.run {
     liabilitiesFindQuery(id)
+      .take(1)
       .result
       .map(_.headOption.map(liabilitiesRowToDomain))
   }
@@ -40,7 +40,12 @@ class DatabaseLiabilitiesViewRepository(db: Database) extends LiabilitiesViewRep
     }.map(_ ⇒ ())
 
   def insert(id: (LiabilityId, FortuneId), row: Liability)(implicit ec: ExecutionContext): Future[Unit] =
-    replaceById(id, row)
+    db.run {
+      Debts.table += DebtRow(id._1, id._2, row.name, row.amount, row.currency, row match {
+        case n: NoInterestDebt => None
+        case l: Loan => Some(l.interestRate)
+      })
+    }.map(_ ⇒ ())
 
   def remove(id: (LiabilityId, FortuneId))(implicit ec: ExecutionContext): Future[Unit] = db.run {
     liabilitiesFindQuery(id._1).delete

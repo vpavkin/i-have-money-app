@@ -9,7 +9,7 @@ import ru.pavkin.ihavemoney.protocol.{Auth, RequestError, Transaction}
 
 import scala.concurrent.Future
 
-sealed trait Action
+sealed trait Action extends diode.Action
 
 case class UpdateFortuneId(potResult: Pot[List[String]] = Pot.empty) extends Action
   with PotAction[List[String], UpdateFortuneId] {

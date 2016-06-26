@@ -13,7 +13,7 @@ import ru.pavkin.ihavemoney.domain.fortune.FortuneProtocol.FortuneCommand
 import ru.pavkin.ihavemoney.domain.fortune._
 import ru.pavkin.ihavemoney.domain.user.UserProtocol.UserCommand
 import ru.pavkin.ihavemoney.domain.user.{User, UserId}
-import services.{SmtpConfig, SmtpEmailService}
+import services.{DummyEmailService, SmtpConfig, SmtpEmailService}
 
 import scala.concurrent.duration._
 

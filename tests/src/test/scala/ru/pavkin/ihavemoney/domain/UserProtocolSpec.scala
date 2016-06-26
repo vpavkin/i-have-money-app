@@ -1,21 +1,13 @@
 package ru.pavkin.ihavemoney.domain
 
-import io.funcqrs.CommandException
-import io.funcqrs.backend.QueryByTag
 import io.funcqrs.config.Api._
 import io.funcqrs.test.InMemoryTestSupport
 import io.funcqrs.test.backend.InMemoryBackend
 import org.scalatest.concurrent.ScalaFutures
 import ru.pavkin.ihavemoney.domain.errors._
-import ru.pavkin.ihavemoney.domain.fortune.FortuneProtocol._
-import ru.pavkin.ihavemoney.domain.fortune.{Currency, Fortune, FortuneId}
 import ru.pavkin.ihavemoney.domain.user.UserProtocol._
 import ru.pavkin.ihavemoney.domain.user.{User, UserId}
-import ru.pavkin.ihavemoney.readback.projections.MoneyViewProjection
-import ru.pavkin.ihavemoney.services.EmailService
-
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{ExecutionContext, Future}
+import ru.pavkin.ihavemoney.writeback.services.DummyEmailService
 
 class UserProtocolSpec extends IHaveMoneySpec with ScalaFutures {
 
@@ -25,12 +17,11 @@ class UserProtocolSpec extends IHaveMoneySpec with ScalaFutures {
     val displayName = "A user"
     val password = "secret"
 
+    val emailService = new DummyEmailService
+
     def configure(backend: InMemoryBackend): Unit =
       backend.configure {
-        aggregate[User](User.behavior(new EmailService {
-          def sendEmail(from: String, to: String, subject: String, content: String)(implicit ec: ExecutionContext): Future[Unit] =
-            Future.successful(println(s"Sending $subject to $to"))
-        }, _ + _))
+        aggregate[User](User.behavior(emailService, _ + _))
       }
 
     def ref(id: UserId) = aggregateRef[User](id)

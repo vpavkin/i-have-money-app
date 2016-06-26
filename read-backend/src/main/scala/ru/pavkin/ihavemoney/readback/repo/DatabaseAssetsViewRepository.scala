@@ -13,23 +13,23 @@ class DatabaseAssetsViewRepository(db: Database) extends AssetsViewRepository {
   private def stocksFindQuery(id: AssetId) =
     Stocks.table
       .filter(_.assetId === id.value.toString)
-      .take(1)
 
   private def realEstateFindQuery(id: AssetId) =
     RealEstate.table
       .filter(_.assetId === id.value.toString)
-      .take(1)
 
   private def stocksRowToDomain(s: StocksRow) = domain.Stocks(s.name, s.price, s.currency, s.count)
   private def realEstateRowToDomain(s: RealEstateRow) = domain.RealEstate(s.name, s.price, s.currency)
 
   private def find(id: AssetId)(implicit ec: ExecutionContext): Future[Option[Asset]] = db.run {
     stocksFindQuery(id)
+      .take(1)
       .result
       .map(_.headOption.map(stocksRowToDomain))
   }.flatMap {
     case None ⇒ db.run {
       realEstateFindQuery(id)
+        .take(1)
         .result
         .map(_.headOption.map(realEstateRowToDomain))
     }
@@ -60,7 +60,16 @@ class DatabaseAssetsViewRepository(db: Database) extends AssetsViewRepository {
 
   }
 
-  def insert(id: (AssetId, FortuneId), row: Asset)(implicit ec: ExecutionContext): Future[Unit] = replaceById(id, row)
+  def insert(id: (AssetId, FortuneId), row: Asset)(implicit ec: ExecutionContext): Future[Unit] = row match {
+    case s: domain.Stocks =>
+      db.run {
+        Stocks.table += StocksRow(id._1, id._2, s.name, s.price, s.currency, s.count)
+      }.map(_ ⇒ ())
+    case r: domain.RealEstate =>
+      db.run {
+        RealEstate.table += RealEstateRow(id._1, id._2, r.name, r.price, r.currency)
+      }.map(_ ⇒ ())
+  }
 
   def remove(id: (AssetId, FortuneId))(implicit ec: ExecutionContext): Future[Unit] = db.run {
     for {

@@ -37,6 +37,7 @@ object api {
     def getFortunes = readFrontBaseUrl / "fortunes"
     def getBalances(fortuneId: String) = readFortune / fortuneId / "balance"
     def getTransactionLog(fortuneId: String) = readFortune / fortuneId / "log"
+    def getAssets(fortuneId: String) = readFortune / fortuneId / "assets"
   }
 
   def authHeader = "Authorization" → s"Bearer ${AppCircuit.auth.map(_.token).getOrElse("")}"
@@ -102,7 +103,7 @@ object api {
     })
 
   def getAssets(implicit ec: ExecutionContext): Future[RequestError Xor Map[String, Asset]] =
-    query(routes.assets(AppCircuit.fortune), {
+    query(routes.getAssets(AppCircuit.fortune), {
       case FrontendAssets(_, assets) ⇒ assets
     })
 

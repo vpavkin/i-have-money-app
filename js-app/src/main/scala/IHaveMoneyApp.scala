@@ -4,7 +4,7 @@ import japgolly.scalajs.react.extra.router.{Redirect, Resolution, Router, Router
 import japgolly.scalajs.react.vdom.all._
 import org.scalajs.dom
 import ru.pavkin.ihavemoney.frontend.components._
-import ru.pavkin.ihavemoney.frontend.redux.AppCircuit
+import ru.pavkin.ihavemoney.frontend.redux.{AppCircuit, connectors}
 import ru.pavkin.ihavemoney.frontend.redux.actions.{LoggedIn, SetInitializerRedirect}
 import ru.pavkin.ihavemoney.frontend.styles.Global
 import ru.pavkin.ihavemoney.frontend.styles.Global._
@@ -22,8 +22,8 @@ object IHaveMoneyApp extends JSApp {
 
     def renderAddTransactions = render(AddTransactionsC.component())
     def renderInitializer = renderR(InitializerC(_))
-    def renderBalance = render(AppCircuit.connect(_.balances)(b ⇒
-      AppCircuit.connect(_.assets)(a ⇒
+    def renderBalance = render(connectors.balances(b ⇒
+      connectors.assets(a ⇒
         BalanceViewC.component(BalanceViewC.Props(b, a)))
     ))
 
@@ -41,7 +41,7 @@ object IHaveMoneyApp extends JSApp {
       | staticRoute("#nofortune", Route.NoFortunes) ~> renderR(ctl ⇒ NoFortuneC.component(ctl))
       | staticRoute("#transactions", Route.AddTransactions) ~> renderAddTransactions
       | staticRoute("#balance", Route.BalanceView) ~> renderBalance
-      | staticRoute("#log", Route.TransactionLogView) ~> render(AppCircuit.connect(_.log)(b ⇒ TransactionLogC.component(TransactionLogC.Props(b))))
+      | staticRoute("#log", Route.TransactionLogView) ~> render(connectors.log(b ⇒ TransactionLogC.component(TransactionLogC.Props(b))))
       | staticRoute("#login", Route.Login) ~> renderR(ctl ⇒ LoginC.component(ctl)))
       .notFound(redirectToPage(Route.AddTransactions)(Redirect.Replace))
       .renderWith(layout)
@@ -57,7 +57,7 @@ object IHaveMoneyApp extends JSApp {
       case Route.Login | Route.Initializer ⇒ r.render()
       case _ ⇒ div(
         NavigationBar.component(c),
-        div(common.container, AppCircuit.connect(_.fortunes)(_ () match {
+        div(common.container, connectors.fortunes(_ () match {
           case Ready(x) =>
             r.render()
           case Failed(exception) =>
@@ -66,11 +66,11 @@ object IHaveMoneyApp extends JSApp {
         }))
       )
     },
-    AppCircuit.connect(_.modal)(px ⇒ div(px() match {
+    connectors.modal(px ⇒ div(px() match {
       case Some(element) ⇒ element
       case None ⇒ EmptyTag
     })),
-    AppCircuit.connect(_.activeRequest)(px ⇒ div(px() match {
+    connectors.activeRequest(px ⇒ div(px() match {
       case Pending(_) | PendingStale(_, _) => PreloaderC()
       case _ ⇒ EmptyTag
     }))
