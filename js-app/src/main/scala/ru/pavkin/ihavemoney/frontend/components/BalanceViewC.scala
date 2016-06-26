@@ -9,21 +9,21 @@ import ru.pavkin.ihavemoney.domain.fortune.Currency
 import ru.pavkin.ihavemoney.frontend.redux.AppCircuit
 import ru.pavkin.ihavemoney.frontend.redux.actions.LoadBalances
 
-object BalanceViewComponent {
+object BalanceViewC {
 
   case class Props(balances: ModelProxy[Pot[Map[Currency, BigDecimal]]])
 
   class Backend($: BackendScope[Props, Unit]) {
 
-    def loadBalances(props: Props) = Callback {
+    def loadBalances(pr: Props) = Callback {
       AppCircuit.dispatch(LoadBalances())
     }
 
-    def render(props: Props) = {
+    def render(pr: Props) = {
       div(
-        props.balances().renderEmpty("Loading..."),
-        props.balances().renderPending(_ => div("Loading...")),
-        props.balances().renderReady(balances ⇒
+        pr.balances().renderEmpty("Loading..."),
+        pr.balances().renderPending(_ => div("Loading...")),
+        pr.balances().renderReady(balances ⇒
           div(
             table(className := "table table-striped table-hover table-condensed",
               thead(tr(th("Currency"), th("Amount"))),

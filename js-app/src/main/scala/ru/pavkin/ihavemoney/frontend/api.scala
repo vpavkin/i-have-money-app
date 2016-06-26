@@ -4,7 +4,7 @@ import cats.data.Xor
 import io.circe.syntax._
 import japgolly.scalajs.react.Callback
 import japgolly.scalajs.react.extra.router.BaseUrl
-import ru.pavkin.ihavemoney.domain.fortune.Currency
+import ru.pavkin.ihavemoney.domain.fortune.{Asset, Currency}
 import ru.pavkin.ihavemoney.frontend.ajax.AjaxExtensions._
 import ru.pavkin.ihavemoney.frontend.redux.AppCircuit
 import ru.pavkin.ihavemoney.protocol._
@@ -30,6 +30,7 @@ object api {
     def fortune = writeFrontBaseUrl / "fortune"
     def addIncome(fortuneId: String) = fortune / fortuneId / "income"
     def addExpense(fortuneId: String) = fortune / fortuneId / "spend"
+    def assets(fortuneId: String) = fortune / fortuneId / "assets"
 
     def readFortune = readFrontBaseUrl / "fortune"
     def getFortunes = readFrontBaseUrl / "fortunes"
@@ -76,6 +77,15 @@ object api {
                 (implicit ec: ExecutionContext): Future[Xor[RequestError, Unit]] =
     postJson(routes.addExpense(AppCircuit.fortune).value,
       SpendRequest(amount, currency, category, initializer, comment),
+      headers = Map(authHeader)
+    ).map(_.map(_ ⇒ ()))
+
+  def buyAsset(asset: Asset,
+               initializer: Boolean = false,
+               comment: Option[String])
+              (implicit ec: ExecutionContext): Future[Xor[RequestError, Unit]] =
+    postJson(routes.assets(AppCircuit.fortune).value,
+      BuyAssetRequest(asset, initializer, comment),
       headers = Map(authHeader)
     ).map(_.map(_ ⇒ ()))
 

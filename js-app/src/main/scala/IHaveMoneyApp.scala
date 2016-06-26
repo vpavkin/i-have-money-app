@@ -1,51 +1,81 @@
+import diode.data._
 import japgolly.scalajs.react._
-import japgolly.scalajs.react.extra.router.{BaseUrl, Redirect, Resolution, Router, RouterConfigDsl, RouterCtl}
+import japgolly.scalajs.react.extra.router.{Redirect, Resolution, Router, RouterConfigDsl, RouterCtl}
 import japgolly.scalajs.react.vdom.all._
 import org.scalajs.dom
-import org.scalajs.dom._
-import org.scalajs.dom.raw.HTMLStyleElement
-import ru.pavkin.ihavemoney.frontend.{Route, api}
-import ru.pavkin.ihavemoney.frontend.Route._
 import ru.pavkin.ihavemoney.frontend.components._
 import ru.pavkin.ihavemoney.frontend.redux.AppCircuit
+import ru.pavkin.ihavemoney.frontend.redux.actions.LoggedIn
 import ru.pavkin.ihavemoney.frontend.styles.Global
+import ru.pavkin.ihavemoney.frontend.styles.Global._
+import ru.pavkin.ihavemoney.frontend.{Route, api}
 
-import scalacss.Defaults._
-import scalacss.ScalaCssReact._
 import scala.scalajs.js.JSApp
 import scala.scalajs.js.annotation.JSExport
-
+import scalacss.Defaults._
+import scalacss.ScalaCssReact._
 
 object IHaveMoneyApp extends JSApp {
 
   val routerConfig = RouterConfigDsl[Route].buildConfig { dsl ⇒
     import dsl._
 
+    def renderAddTransactions = render(AddTransactionsC.component())
+    def renderInitializer = renderR(InitializerC(_))
+
     (trimSlashes
-      | staticRoute(root, Preloader) ~> renderR(ctl ⇒
-      AppCircuit.connect(identity(_))(proxy => PreloaderComponent.component(PreloaderComponent.Props(ctl, proxy))))
-      | staticRoute("#nofortune", NoFortunes) ~> renderR(ctl ⇒ NoFortuneComponent.component(ctl))
-      | staticRoute("#transactions", AddTransactions) ~> render(AddTransactionsComponent.component())
-      | staticRoute("#balance", BalanceView) ~> render(AppCircuit.connect(_.balances)(b ⇒ BalanceViewComponent.component(BalanceViewComponent.Props(b))))
-      | staticRoute("#log", TransactionLogView) ~> render(AppCircuit.connect(_.log)(b ⇒ TransactionLogComponent.component(TransactionLogComponent.Props(b))))
-      | staticRoute("#login", Login) ~> renderR(ctl ⇒ LoginComponent.component(ctl)))
-      .notFound(redirectToPage(AddTransactions)(Redirect.Replace))
+      | staticRoute(root, Route.Initializer) ~> renderInitializer
+      | staticRoute("#nofortune", Route.NoFortunes) ~> renderR(ctl ⇒ NoFortuneC.component(ctl))
+      | staticRoute("#transactions", Route.AddTransactions) ~> renderAddTransactions
+      | staticRoute("#balance", Route.BalanceView) ~> render(AppCircuit.connect(_.balances)(b ⇒ BalanceViewC.component(BalanceViewC.Props(b))))
+      | staticRoute("#log", Route.TransactionLogView) ~> render(AppCircuit.connect(_.log)(b ⇒ TransactionLogC.component(TransactionLogC.Props(b))))
+      | staticRoute("#login", Route.Login) ~> renderR(ctl ⇒ LoginC.component(ctl)))
+      .notFound(redirectToPage(Route.AddTransactions)(Redirect.Replace))
       .renderWith(layout)
-      .verify(AddTransactions, BalanceView)
+      .verify(Route.AddTransactions, Route.BalanceView)
   }
 
   def layout(c: RouterCtl[Route], r: Resolution[Route]) = div(
     r.page match {
-      case Login | Preloader ⇒ EmptyTag
-      case _ ⇒ Nav.component(c)
+      case Route.Login | Route.Initializer ⇒ r.render()
+      case _ ⇒ div(
+        NavigationBar.component(c),
+        div(common.container, AppCircuit.connect(_.fortunes)(_ () match {
+          case Ready(x) =>
+            r.render()
+          case Failed(exception) =>
+            FatalErrorC.component(exception.getMessage)
+          case _ => PreloaderC()
+        }))
+      )
     },
-    div(className := "container", r.render())
+    AppCircuit.connect(_.modal)(px ⇒ div(px() match {
+      case Some(element) ⇒ element
+      case None ⇒ EmptyTag
+    })),
+    AppCircuit.connect(_.activeRequest)(px ⇒ div(px() match {
+      case Pending(_) | PendingStale(_, _) => PreloaderC()
+      case _ ⇒ EmptyTag
+    }))
   )
+
+  def renderRouter: RouterCtl[Route] = {
+    val (router, ctl) = Router.componentAndCtl(api.readFrontBaseUrl, routerConfig.logToConsole)
+    router().render(dom.document.getElementById("root"))
+    ctl
+  }
 
   @JSExport
   def main(): Unit = {
-    dom.document.head appendChild Global.render[HTMLStyleElement]
-    val router = Router(api.readFrontBaseUrl, routerConfig.logToConsole)
-    router() render dom.document.getElementById("root")
+    Global.addToDocument
+    val ctl = renderRouter
+
+    AppCircuit.tryGetAuthFromLocalStorage match {
+      case Some(a) ⇒
+        AppCircuit.dispatch(LoggedIn(a))
+        ctl.set(Route.Initializer).delayMs(200).void.runNow()
+      case None ⇒
+        ctl.set(Route.Login).delayMs(200).void.runNow()
+    }
   }
 }

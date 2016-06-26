@@ -9,21 +9,21 @@ import ru.pavkin.ihavemoney.frontend.redux.AppCircuit
 import ru.pavkin.ihavemoney.frontend.redux.actions.LoadTransactionLog
 import ru.pavkin.ihavemoney.protocol.Transaction
 
-object TransactionLogComponent {
+object TransactionLogC {
 
   case class Props(log: ModelProxy[Pot[List[Transaction]]])
 
   class Backend($: BackendScope[Props, Unit]) {
 
-    def loadTransactionLog(props: Props) = Callback {
+    def loadTransactionLog(pr: Props) = Callback {
       AppCircuit.dispatch(LoadTransactionLog())
     }
 
-    def render(props: Props) = {
+    def render(pr: Props) = {
       div(
-        props.log().renderEmpty("Loading..."),
-        props.log().renderPending(_ => div("Loading...")),
-        props.log().renderReady(log ⇒
+        pr.log().renderEmpty("Loading..."),
+        pr.log().renderPending(_ => div("Loading...")),
+        pr.log().renderReady(log ⇒
           div(
             table(className := "table table-striped table-hover table-condensed",
               thead(tr(th("Date"), th("Category"), th("Editor"), th("Currency"), th("Amount"))),

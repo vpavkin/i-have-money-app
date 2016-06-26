@@ -1,12 +1,20 @@
 package ru.pavkin.ihavemoney.frontend.redux.model
 
 import diode.data.Pot
+import japgolly.scalajs.react.ReactElement
 import ru.pavkin.ihavemoney.domain.fortune.Currency
+import ru.pavkin.ihavemoney.frontend.Route
 import ru.pavkin.ihavemoney.protocol.{Auth, Transaction}
 
 case class RootModel(auth: Option[Auth],
-                     fortuneId: Option[String] = None,
+                     fortunes: Pot[List[String]] = Pot.empty,
                      balances: Pot[Map[Currency, BigDecimal]] = Pot.empty,
-                     log: Pot[List[Transaction]] = Pot.empty)
+                     log: Pot[List[Transaction]] = Pot.empty,
+                     initializerRedirectsTo: Option[Route] = None,
+                     modal: Option[ReactElement] = None,
+                     activeRequest: Pot[Unit] = Pot.empty) {
+
+  def fortuneId: String = fortunes.get.head
+}
 
 

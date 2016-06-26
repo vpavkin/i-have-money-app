@@ -1,0 +1,37 @@
+package ru.pavkin.ihavemoney.frontend.redux.actions
+
+import cats.data.Xor
+import diode.data.{Empty, Pot, PotAction}
+import japgolly.scalajs.react.ReactElement
+import ru.pavkin.ihavemoney.domain.fortune.Currency
+import ru.pavkin.ihavemoney.protocol.{Auth, RequestError, Transaction}
+
+import scala.concurrent.Future
+
+sealed trait Action
+
+case class UpdateFortuneId(potResult: Pot[List[String]] = Pot.empty) extends Action
+  with PotAction[List[String], UpdateFortuneId] {
+  def next(newResult: Pot[List[String]]): UpdateFortuneId = copy(potResult = newResult)
+}
+
+case class LoadBalances(potResult: Pot[Map[Currency, BigDecimal]] = Pot.empty)
+  extends Action with PotAction[Map[Currency, BigDecimal], LoadBalances] {
+  def next(newResult: Pot[Map[Currency, BigDecimal]]): LoadBalances = copy(potResult = newResult)
+}
+
+case class LoadTransactionLog(potResult: Pot[List[Transaction]] = Pot.empty)
+  extends Action with PotAction[List[Transaction], LoadTransactionLog] {
+  def next(newResult: Pot[List[Transaction]]): LoadTransactionLog = copy(potResult = newResult)
+}
+
+case class LoggedIn(auth: Auth) extends Action
+case object LoggedOut extends Action
+
+case class ShowModal(modal: ReactElement) extends Action
+case object HideModal extends Action
+
+case class SendRequest(command: Future[Xor[RequestError, Unit]], potResult: Pot[Unit] = Empty)
+  extends Action with PotAction[Unit, SendRequest] {
+  def next(newResult: Pot[Unit]): SendRequest = copy(potResult = newResult)
+}
