@@ -28,7 +28,8 @@ object ReadBackend extends App {
   val liabilitiesViewRepo = new DatabaseLiabilitiesViewRepository(database)
 
   val categoriesRepo = new InMemoryRepository[FortuneId, (Set[IncomeCategory], Set[ExpenseCategory])] {}
-  val fortunesRepo = new InMemoryRepository[UserId, (Set[FortuneId])] {}
+  val userRegistryRepo = new InMemoryRepository[UserId, Set[FortuneId]] {}
+  val fortuneInfoRepo = new InMemoryRepository[FortuneId, FortuneInfo] {}
 
   val fortuneEventsProvider = new FortuneTagEventSourceProvider(Fortune.tag)
 
@@ -43,15 +44,16 @@ object ReadBackend extends App {
     projection(
       query = QueryByTag(Fortune.tag),
       projection = new MoneyViewProjection(moneyViewRepo, assetsViewRepo, liabilitiesViewRepo)
-        .andThen(new AssetsViewProjection(assetsViewRepo))
-        .andThen(new LiabilitiesViewProjection(liabilitiesViewRepo)),
+          .andThen(new AssetsViewProjection(assetsViewRepo))
+          .andThen(new LiabilitiesViewProjection(liabilitiesViewRepo)),
       name = "FortuneViewProjection"
     ).withBackendOffsetPersistence()
   }.configure {
     projection(
       query = QueryByTag(Fortune.tag),
       projection = new CategoriesViewProjection(categoriesRepo)
-        .andThen(new FortunesPerUserProjection(fortunesRepo)),
+          .andThen(new FortunesPerUserProjection(userRegistryRepo))
+          .andThen(new FortuneInfoProjection(fortuneInfoRepo)),
       name = "InMemoryFortuneViewProjection"
     ).withoutOffsetPersistence()
   }
@@ -62,5 +64,6 @@ object ReadBackend extends App {
     assetsViewRepo,
     liabilitiesViewRepo,
     categoriesRepo,
-    fortunesRepo)), "interface")
+    userRegistryRepo,
+    fortuneInfoRepo)), "interface")
 }

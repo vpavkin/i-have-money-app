@@ -5,7 +5,7 @@ import io.circe.Decoder
 import io.circe.syntax._
 import japgolly.scalajs.react.Callback
 import japgolly.scalajs.react.extra.router.BaseUrl
-import ru.pavkin.ihavemoney.domain.fortune.{Asset, Currency, Liability}
+import ru.pavkin.ihavemoney.domain.fortune.{Asset, Currency, FortuneInfo, Liability}
 import ru.pavkin.ihavemoney.frontend.ajax.AjaxExtensions._
 import ru.pavkin.ihavemoney.frontend.redux.AppCircuit
 import ru.pavkin.ihavemoney.protocol._
@@ -52,35 +52,38 @@ object api {
 
   def createFortune: Future[Xor[RequestError, Unit]] =
     postEmpty(routes.fortune.value, headers = Map(authHeader))
-      .map(_.map(_ ⇒ ()))
+        .map(_.map(_ ⇒ ()))
 
-  def addIncome(amount: BigDecimal,
-                currency: Currency,
-                category: String,
-                initializer: Boolean = false,
-                comment: Option[String])
-               (implicit ec: ExecutionContext): Future[Xor[RequestError, Unit]] =
-    postJson(routes.addIncome(AppCircuit.fortune).value,
+  def addIncome(
+      amount: BigDecimal,
+      currency: Currency,
+      category: String,
+      initializer: Boolean = false,
+      comment: Option[String])
+      (implicit ec: ExecutionContext): Future[Xor[RequestError, Unit]] =
+    postJson(routes.addIncome(AppCircuit.fortuneId).value,
       ReceiveIncomeRequest(amount, currency, category, initializer, comment),
       headers = Map(authHeader)
     ).map(_.map(_ ⇒ ()))
 
-  def addExpense(amount: BigDecimal,
-                 currency: Currency,
-                 category: String,
-                 initializer: Boolean = false,
-                 comment: Option[String])
-                (implicit ec: ExecutionContext): Future[Xor[RequestError, Unit]] =
-    postJson(routes.addExpense(AppCircuit.fortune).value,
+  def addExpense(
+      amount: BigDecimal,
+      currency: Currency,
+      category: String,
+      initializer: Boolean = false,
+      comment: Option[String])
+      (implicit ec: ExecutionContext): Future[Xor[RequestError, Unit]] =
+    postJson(routes.addExpense(AppCircuit.fortuneId).value,
       SpendRequest(amount, currency, category, initializer, comment),
       headers = Map(authHeader)
     ).map(_.map(_ ⇒ ()))
 
-  def buyAsset(asset: Asset,
-               initializer: Boolean = false,
-               comment: Option[String])
-              (implicit ec: ExecutionContext): Future[Xor[RequestError, Unit]] =
-    postJson(routes.assets(AppCircuit.fortune).value,
+  def buyAsset(
+      asset: Asset,
+      initializer: Boolean = false,
+      comment: Option[String])
+      (implicit ec: ExecutionContext): Future[Xor[RequestError, Unit]] =
+    postJson(routes.assets(AppCircuit.fortuneId).value,
       BuyAssetRequest(asset, initializer, comment),
       headers = Map(authHeader)
     ).map(_.map(_ ⇒ ()))
@@ -88,33 +91,33 @@ object api {
   // queries
 
   def query[A](route: BaseUrl, extractor: PartialFunction[FrontendQueryResult, A])
-              (implicit ec: ExecutionContext): Future[Xor[RequestError, A]] = expect[FrontendQueryResult](
+      (implicit ec: ExecutionContext): Future[Xor[RequestError, A]] = expect[FrontendQueryResult](
     get(route.value, headers = Map(authHeader))
   ).map(_.flatMap { res ⇒
     extractor.andThen(Xor.Right(_)).applyOrElse(res, (_: FrontendQueryResult) ⇒ Xor.Left(OtherError("Unexpected response")))
   })
 
-  def fortunes(implicit ec: ExecutionContext): Future[Xor[RequestError, List[String]]] = query(routes.getFortunes, {
+  def fortunes(implicit ec: ExecutionContext): Future[Xor[RequestError, List[FortuneInfo]]] = query(routes.getFortunes, {
     case FrontendFortunes(_, fortunes) ⇒ fortunes
   })
 
   def getBalances(implicit ec: ExecutionContext): Future[RequestError Xor Map[Currency, BigDecimal]] =
-    query(routes.getBalances(AppCircuit.fortune), {
+    query(routes.getBalances(AppCircuit.fortuneId), {
       case FrontendMoneyBalance(_, balances) ⇒ balances
     })
 
   def getAssets(implicit ec: ExecutionContext): Future[RequestError Xor Map[String, Asset]] =
-    query(routes.getAssets(AppCircuit.fortune), {
+    query(routes.getAssets(AppCircuit.fortuneId), {
       case FrontendAssets(_, assets) ⇒ assets
     })
 
   def getLiabilities(implicit ec: ExecutionContext): Future[RequestError Xor Map[String, Liability]] =
-    query(routes.getLiabilities(AppCircuit.fortune), {
+    query(routes.getLiabilities(AppCircuit.fortuneId), {
       case FrontendLiabilities(_, liabilities) ⇒ liabilities
     })
 
   def getTransactionLog(implicit ec: ExecutionContext): Future[RequestError Xor List[Transaction]] =
-    query(routes.getTransactionLog(AppCircuit.fortune), {
+    query(routes.getTransactionLog(AppCircuit.fortuneId), {
       case FrontendTransactions(_, transactions) ⇒ transactions
     })
 }

@@ -2,11 +2,11 @@ package ru.pavkin.ihavemoney.protocol
 
 import io.circe._
 import io.circe.generic.semiauto._
-import ru.pavkin.ihavemoney.domain.fortune.{Asset, Currency, Liability}
+import ru.pavkin.ihavemoney.domain.fortune.{Asset, Currency, FortuneInfo, Liability}
 
 object readfront extends SharedProtocol {
   sealed trait FrontendQueryResult
-  case class FrontendFortunes(userId: String, fortunes: List[String]) extends FrontendQueryResult
+  case class FrontendFortunes(userId: String, fortunes: List[FortuneInfo]) extends FrontendQueryResult
   case class FrontendCategories(fortuneId: String, income: List[String], expenses: List[String]) extends FrontendQueryResult
   case class FrontendMoneyBalance(fortuneId: String, balances: Map[Currency, BigDecimal]) extends FrontendQueryResult
   case class FrontendAssets(fortuneId: String, assets: Map[String, Asset]) extends FrontendQueryResult

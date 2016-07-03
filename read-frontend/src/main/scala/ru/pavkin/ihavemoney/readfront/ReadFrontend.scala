@@ -66,7 +66,7 @@ object ReadFrontend extends App with CirceSupport {
     readBack.query(q)
       .map(kv ⇒ kv._2 match {
         case FortunesQueryResult(id, fortunes) ⇒
-          kv._1 → (FrontendFortunes(id.value, fortunes.map(_.value)): FrontendQueryResult).asJson
+          kv._1 → (FrontendFortunes(id.value, fortunes): FrontendQueryResult).asJson
         case CategoriesQueryResult(id, inc, exp) ⇒
           kv._1 → (FrontendCategories(id.value, inc.map(_.name), exp.map(_.name)): FrontendQueryResult).asJson
         case r@TransactionLogQueryResult(id, events) ⇒

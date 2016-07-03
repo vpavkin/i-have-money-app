@@ -49,6 +49,7 @@ object AppCircuit extends Circuit[RootModel] with ReactConnector[RootModel] {
   def auth = state.auth
   def fortunes = state.fortunes.get
   def fortune = fortunes.head
+  def fortuneId = fortune.id
 
   def showModal(modal: ReactElement) = dispatch(ShowModal(modal))
   def hideModal() = dispatch(HideModal)

@@ -3,7 +3,7 @@ package ru.pavkin.ihavemoney.frontend.redux.actions
 import cats.data.Xor
 import diode.data.{Empty, Pot, PotAction}
 import japgolly.scalajs.react.ReactElement
-import ru.pavkin.ihavemoney.domain.fortune.{Asset, Currency, Liability}
+import ru.pavkin.ihavemoney.domain.fortune.{Asset, Currency, FortuneInfo, Liability}
 import ru.pavkin.ihavemoney.frontend.Route
 import ru.pavkin.ihavemoney.protocol.{Auth, RequestError, Transaction}
 
@@ -11,9 +11,9 @@ import scala.concurrent.Future
 
 sealed trait Action extends diode.Action
 
-case class UpdateFortuneId(potResult: Pot[List[String]] = Pot.empty) extends Action
-  with PotAction[List[String], UpdateFortuneId] {
-  def next(newResult: Pot[List[String]]): UpdateFortuneId = copy(potResult = newResult)
+case class UpdateFortuneId(potResult: Pot[List[FortuneInfo]] = Pot.empty) extends Action
+  with PotAction[List[FortuneInfo], UpdateFortuneId] {
+  def next(newResult: Pot[List[FortuneInfo]]): UpdateFortuneId = copy(potResult = newResult)
 }
 
 case class LoadBalances(potResult: Pot[Map[Currency, BigDecimal]] = Pot.empty)

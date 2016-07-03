@@ -6,7 +6,7 @@ import ru.pavkin.ihavemoney.domain.user.UserId
 
 sealed trait QueryResult
 
-case class FortunesQueryResult(id: UserId, fortunes: List[FortuneId]) extends QueryResult
+case class FortunesQueryResult(id: UserId, fortunes: List[FortuneInfo]) extends QueryResult
 case class CategoriesQueryResult(id: FortuneId, income: List[IncomeCategory], expences: List[ExpenseCategory]) extends QueryResult
 case class TransactionLogQueryResult(id: FortuneId, events: List[FortuneEvent]) extends QueryResult
 case class MoneyBalanceQueryResult(id: FortuneId, balance: Map[Currency, BigDecimal]) extends QueryResult
