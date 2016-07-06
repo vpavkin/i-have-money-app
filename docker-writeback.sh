@@ -11,4 +11,4 @@ docker run -i --net=host \
 -e ihavemoney_writefront_http_port=8101 \
 -e ihavemoney_writeback_smtp_user=example@gmail.com \
 -e ihavemoney_writeback_smtp_password=changeit \
---name writeback -a stdin ihavemoney/write-backend
+--name writeback -a stdin vpavkin/ihavemoney-write-backend
