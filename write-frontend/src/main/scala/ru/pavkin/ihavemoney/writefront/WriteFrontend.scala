@@ -129,6 +129,11 @@ object WriteFrontend extends App with CirceSupport with CorsDirectives {
                         writeBack.sendCommandAndIgnoreResult(fortuneId, FinishInitialization(userId))
                       }
                     } ~
+                    (path("editors") & post & entity(as[AddEditorRequest])) { req ⇒
+                      complete {
+                        writeBack.sendCommandAndIgnoreResult(fortuneId, AddEditor(userId, UserId(req.email)))
+                      }
+                    } ~
                     (path("income") & post & entity(as[ReceiveIncomeRequest])) { req ⇒
                       complete {
                         writeBack.sendCommandAndIgnoreResult(fortuneId, ReceiveIncome(

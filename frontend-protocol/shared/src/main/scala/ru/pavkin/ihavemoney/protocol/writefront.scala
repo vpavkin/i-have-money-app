@@ -54,6 +54,7 @@ object writefront extends SharedProtocol {
   case class ConfirmEmailRequest(email: String, confirmationCode: String) extends WriteFrontRequest
   case class LogInRequest(email: String, password: String) extends WriteFrontRequest
   case class ResendConfirmationEmailRequest(email: String) extends WriteFrontRequest
+  case class AddEditorRequest(email: String) extends WriteFrontRequest
 
   implicit val riEncoder: Encoder[ReceiveIncomeRequest] = deriveEncoder[ReceiveIncomeRequest]
   implicit val riDecoder: Decoder[ReceiveIncomeRequest] = deriveDecoder[ReceiveIncomeRequest]
@@ -93,6 +94,9 @@ object writefront extends SharedProtocol {
 
   implicit val resendEmailEncoder: Encoder[ResendConfirmationEmailRequest] = deriveEncoder[ResendConfirmationEmailRequest]
   implicit val resendEmailDecoder: Decoder[ResendConfirmationEmailRequest] = deriveDecoder[ResendConfirmationEmailRequest]
+
+  implicit val addEditorEncoder: Encoder[AddEditorRequest] = deriveEncoder[AddEditorRequest]
+  implicit val addEditorDecoder: Decoder[AddEditorRequest] = deriveDecoder[AddEditorRequest]
 
   implicit val reqEncoder: Encoder[WriteFrontRequest] = deriveEncoder[WriteFrontRequest]
   implicit val reqDecoder: Decoder[WriteFrontRequest] = deriveDecoder[WriteFrontRequest]

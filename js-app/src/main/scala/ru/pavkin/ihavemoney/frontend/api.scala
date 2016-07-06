@@ -29,6 +29,8 @@ object api {
     def login = writeFrontBaseUrl / "logIn"
     def register = writeFrontBaseUrl / "signIn"
     def fortune = writeFrontBaseUrl / "fortune"
+    def editors(fortuneId: String) = fortune / fortuneId / "editors"
+    def finishInit(fortuneId: String) = fortune / fortuneId / "finish-initialization"
     def addIncome(fortuneId: String) = fortune / fortuneId / "income"
     def addExpense(fortuneId: String) = fortune / fortuneId / "spend"
     def assets(fortuneId: String) = fortune / fortuneId / "assets"
@@ -85,6 +87,17 @@ object api {
       (implicit ec: ExecutionContext): Future[Xor[RequestError, Unit]] =
     postJson(routes.assets(AppCircuit.fortuneId).value,
       BuyAssetRequest(asset, initializer, comment),
+      headers = Map(authHeader)
+    ).map(_.map(_ ⇒ ()))
+
+  def addEditor(email: String)(implicit ec: ExecutionContext): Future[Xor[RequestError, Unit]] =
+    postJson(routes.editors(AppCircuit.fortuneId).value,
+      AddEditorRequest(email),
+      headers = Map(authHeader)
+    ).map(_.map(_ ⇒ ()))
+
+  def finishInitialization(implicit ec: ExecutionContext): Future[Xor[RequestError, Unit]] =
+    postEmpty(routes.finishInit(AppCircuit.fortuneId).value,
       headers = Map(authHeader)
     ).map(_.map(_ ⇒ ()))
 

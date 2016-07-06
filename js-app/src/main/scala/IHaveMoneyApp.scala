@@ -27,6 +27,9 @@ object IHaveMoneyApp extends JSApp {
         connectors.liabilities(l ⇒
           BalanceViewC.component(BalanceViewC.Props(b, a, l)))
       )))
+    def renderFortuneSettings = render(connectors.fortunes(f ⇒
+      FortuneSettingsC(f)
+    ))
 
     def isValidRedirect(r: Route) = r != Route.Login && r != Route.Initializer
     def storeRedirectToRoute(prev: Option[Route], next: Route) = (prev, next) match {
@@ -38,19 +41,20 @@ object IHaveMoneyApp extends JSApp {
     }
 
     (trimSlashes
-      | staticRoute(root, Route.Initializer) ~> renderInitializer
-      | staticRoute("#nofortune", Route.NoFortunes) ~> renderR(ctl ⇒ NoFortuneC.component(ctl))
-      | staticRoute("#transactions", Route.AddTransactions) ~> renderAddTransactions
-      | staticRoute("#balance", Route.BalanceView) ~> renderBalance
-      | staticRoute("#log", Route.TransactionLogView) ~> render(connectors.log(b ⇒ TransactionLogC.component(TransactionLogC.Props(b))))
-      | staticRoute("#login", Route.Login) ~> renderR(ctl ⇒ LoginC.component(ctl)))
-      .notFound(redirectToPage(Route.AddTransactions)(Redirect.Replace))
-      .renderWith(layout)
-      .onPostRender((prev, next) => Callback {
-        println(s"Page changing from $prev to $next.")
-        storeRedirectToRoute(prev, next)
-      })
-      .verify(Route.AddTransactions, Route.BalanceView)
+        | staticRoute(root, Route.Initializer) ~> renderInitializer
+        | staticRoute("#nofortune", Route.NoFortunes) ~> renderR(ctl ⇒ NoFortuneC.component(ctl))
+        | staticRoute("#transactions", Route.AddTransactions) ~> renderAddTransactions
+        | staticRoute("#balance", Route.BalanceView) ~> renderBalance
+        | staticRoute("#settings", Route.FortuneSettingsView) ~> renderFortuneSettings
+        | staticRoute("#log", Route.TransactionLogView) ~> render(connectors.log(b ⇒ TransactionLogC.component(TransactionLogC.Props(b))))
+        | staticRoute("#login", Route.Login) ~> renderR(ctl ⇒ LoginC.component(ctl)))
+        .notFound(redirectToPage(Route.AddTransactions)(Redirect.Replace))
+        .renderWith(layout)
+        .onPostRender((prev, next) => Callback {
+          println(s"Page changing from $prev to $next.")
+          storeRedirectToRoute(prev, next)
+        })
+        .verify(Route.AddTransactions, Route.BalanceView)
   }
 
   def layout(c: RouterCtl[Route], r: Resolution[Route]) = div(

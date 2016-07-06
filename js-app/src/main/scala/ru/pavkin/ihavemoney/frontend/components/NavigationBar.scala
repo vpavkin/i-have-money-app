@@ -48,7 +48,8 @@ object NavigationBar {
             ul(common.navbarSection,
               routeLink("Add Transactions", AddTransactions),
               routeLink("Balance View", BalanceView),
-              routeLink("TransactionLog", TransactionLogView)
+              routeLink("TransactionLog", TransactionLogView),
+              routeLink("Settings", FortuneSettingsView)
             ),
             ul(common.navbarSection, common.navbarRight,
               Dropdown.component.withKey("loggedInAs")(Dropdown.Props(
