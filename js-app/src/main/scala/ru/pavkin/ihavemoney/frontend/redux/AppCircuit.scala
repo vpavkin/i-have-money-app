@@ -7,7 +7,7 @@ import io.circe.syntax._
 import japgolly.scalajs.react.ReactElement
 import org.scalajs.dom
 import ru.pavkin.ihavemoney.frontend.redux.actions.{HideModal, ShowModal}
-import ru.pavkin.ihavemoney.frontend.redux.handlers.{AuthHandler, InitializerRedirectsToHandler, LoadAssetsHandler, LoadBalancesHandler, LoadLiabilitiesHandler, LoadTransactionLogHandler, ModalHandler, SendRequestHandler, UpdateFortuneIdHandler}
+import ru.pavkin.ihavemoney.frontend.redux.handlers._
 import ru.pavkin.ihavemoney.frontend.redux.model.RootModel
 import ru.pavkin.ihavemoney.protocol.Auth
 
@@ -32,6 +32,7 @@ object AppCircuit extends Circuit[RootModel] with ReactConnector[RootModel] {
     new LoadAssetsHandler(zoomRW(_.assets)((m, v) => m.copy(assets = v))),
     new LoadLiabilitiesHandler(zoomRW(_.liabilities)((m, v) => m.copy(liabilities = v))),
     new LoadTransactionLogHandler(zoomRW(_.log)((m, v) => m.copy(log = v))),
+    new LoadCategoriesHandler(zoomRW(_.categories)((m, v) => m.copy(categories = v))),
     new ModalHandler(zoomRW(_.modal)((m, v) => m.copy(modal = v))),
     new SendRequestHandler(zoomRW(_.activeRequest)((m, v) => m.copy(activeRequest = v))),
     new InitializerRedirectsToHandler(zoomRW(_.initializerRedirectsTo)((m, v) => m.copy(initializerRedirectsTo = v)))

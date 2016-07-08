@@ -9,5 +9,6 @@ object connectors {
   val balances = AppCircuit.connect(_.balances)
   val assets = AppCircuit.connect(_.assets)
   val liabilities = AppCircuit.connect(_.liabilities)
+  val categories = AppCircuit.connect(_.categories)
   val log = AppCircuit.connect(_.log)
 }

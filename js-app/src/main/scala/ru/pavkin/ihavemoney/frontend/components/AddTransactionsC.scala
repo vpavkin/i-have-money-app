@@ -13,7 +13,7 @@ import ru.pavkin.ihavemoney.frontend.redux.AppCircuit
 import ru.pavkin.ihavemoney.frontend.redux.actions.LoadCategories
 import ru.pavkin.ihavemoney.frontend.redux.model.Categories
 import ru.pavkin.utils.option._
-
+import diode.react.ReactPot._
 import scala.scalajs.concurrent.JSExecutionContext.Implicits.queue
 import scala.util.Try
 import ru.pavkin.ihavemoney.frontend.styles.Global._
@@ -31,6 +31,10 @@ object AddTransactionsC {
 
   case class Props(categories: ModelProxy[Pot[Categories]])
 
+  val defaultCategories = Set("Salary", "Presents")
+
+  def enrich(real: List[String]): Set[String] = defaultCategories ++ real
+
   class Backend($: BackendScope[Props, State]) {
 
     val amountInput = Ref[HTMLInputElement]("amountInput")
@@ -40,8 +44,11 @@ object AddTransactionsC {
 
     def onTextChange(change: (State, String) ⇒ State)(e: ReactEventI) = {
       val newValue = e.target.value
-      $.modState(change(_, newValue))
+      applyStateChange(change)(newValue)
     }
+
+    def applyStateChange(change: (State, String) ⇒ State)(newValue: String): Callback =
+      $.modState(change(_, newValue))
 
     def onFormSubmit(e: ReactEventI) = e.preventDefaultCB
 
@@ -106,18 +113,14 @@ object AddTransactionsC {
             List("USD", "EUR", "RUR").map(option(_))
           ))
         ),
-        // todo: use categories projection for autocomplete
-        FormGroup(
-          HorizontalForm.Label("Category", "categoryInput"),
-          div(HorizontalForm.input, input.text(
-            ref := categoryInput,
-            required := true,
-            common.formControl,
-            id := "categoryInput",
-            placeholder := "Category",
-            value := state.category,
-            onChange ==> onTextChange((s, v) ⇒ s.copy(category = v))
-          )
+        pr.categories().renderReady(categories ⇒
+          FormGroup(
+            HorizontalForm.Label("Category", "categoryInput"),
+            div(HorizontalForm.input, StringValueSelector(
+              state.category,
+              s ⇒ applyStateChange((st, v) ⇒ st.copy(category = v))(s),
+              enrich(categories.income ++ categories.expense).toList,
+              addStyles = Seq(increasedFontSize)))
           )
         ),
         FormGroup(
@@ -129,8 +132,7 @@ object AddTransactionsC {
             placeholder := "Comment",
             value := state.comment,
             onChange ==> onTextChange((s, v) ⇒ s.copy(comment = v))
-          )
-          )
+          ))
         ),
         FormGroup(
           div(grid.columnOffsetAll(2), grid.columnAll(10),
@@ -149,7 +151,7 @@ object AddTransactionsC {
     }
   }
   val component = ReactComponentB[Props]("AddTransactionsComponent")
-      .initialState(State("USD", "1000", "Salary", ""))
+      .initialState(State("USD", "1000", defaultCategories.toList.sorted.head, ""))
       .renderBackend[Backend]
       .componentDidMount(s ⇒ s.backend.init)
       .build
