@@ -1,6 +1,4 @@
-package ru.pavkin.ihavemoney.domain
-
-import ru.pavkin.ihavemoney.readback.repo.Repository
+package ru.pavkin.ihavemoney.readback.repo
 
 import scala.concurrent.{ExecutionContext, Future}
 

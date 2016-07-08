@@ -2,6 +2,7 @@ package ru.pavkin.ihavemoney.readfront
 
 import java.util.UUID
 
+import io.circe.syntax._
 import akka.actor.ActorSystem
 import akka.event.Logging
 import akka.http.scaladsl.Http
@@ -13,11 +14,18 @@ import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
 import de.heikoseeberger.akkahttpcirce.CirceSupport
 import akka.http.scaladsl.model.StatusCodes._
+import akka.http.scaladsl.model.headers.{HttpChallenge, HttpCredentials, OAuth2BearerToken}
 
 import scala.concurrent.duration._
 import ru.pavkin.ihavemoney.domain.fortune.FortuneId
 import ru.pavkin.ihavemoney.domain.query._
+import ru.pavkin.ihavemoney.domain.user.UserId
+import ru.pavkin.ihavemoney.protocol.{FailedRequest, Transaction}
 import ru.pavkin.ihavemoney.protocol.readfront._
+import ru.pavkin.ihavemoney.auth.JWTTokenFactory
+import ru.pavkin.ihavemoney.domain.fortune.FortuneProtocol.{FortuneIncreased, FortuneSpent}
+
+import scala.concurrent.Future
 
 object ReadFrontend extends App with CirceSupport {
 
@@ -33,11 +41,55 @@ object ReadFrontend extends App with CirceSupport {
 
   val writeFrontURL = s"http://${config.getString("write-frontend.host")}:${config.getString("write-frontend.port")}"
 
+  val tokenFactory: JWTTokenFactory = new JWTTokenFactory(config.getString("app.secret-key"))
+
+  val authenticator: (Option[HttpCredentials]) ⇒ Future[AuthenticationResult[UserId]] = (credentials: Option[HttpCredentials]) ⇒ Future {
+    credentials.flatMap {
+      case token: OAuth2BearerToken ⇒
+        tokenFactory.authenticate(token.token)
+      case _ ⇒ None
+    } match {
+      case Some(userId) ⇒ Right(userId)
+      case None ⇒ Left(HttpChallenge("Bearer", "ihavemoney", Map("error" → "invalid_token")))
+    }
+  }
+
+  def toFrontendTransactions(r: TransactionLogQueryResult): FrontendTransactions = FrontendTransactions(
+    r.id.value,
+    r.events
+      .sortBy(-_.metadata.date.toEpochSecond)
+      .collect {
+        case e: FortuneIncreased ⇒ Transaction(e.user.value, e.amount, e.currency, e.category.name, e.initializer, e.metadata.date.toLocalDate, e.comment)
+        case e: FortuneSpent ⇒ Transaction(e.user.value, -e.amount, e.currency, e.category.name, e.initializer, e.metadata.date.toLocalDate, e.comment)
+      }
+  )
+
   def sendQuery(q: Query) =
-    readBack.query(q).recover {
-      case timeout: AskTimeoutException ⇒
-        RequestTimeout → QueryFailed(q.id, s"Query ${q.id} timed out")
-    }.map(kv ⇒ kv._1 → conversions.toFrontendFormat(kv._2))
+    readBack.query(q)
+      .map(kv ⇒ kv._2 match {
+        case FortunesQueryResult(id, fortunes) ⇒
+          kv._1 → (FrontendFortunes(id.value, fortunes): FrontendQueryResult).asJson
+        case CategoriesQueryResult(id, inc, exp) ⇒
+          kv._1 → (FrontendCategories(id.value, inc.map(_.name), exp.map(_.name)): FrontendQueryResult).asJson
+        case r@TransactionLogQueryResult(id, events) ⇒
+          kv._1 → (toFrontendTransactions(r): FrontendQueryResult).asJson
+        case MoneyBalanceQueryResult(id, balance) ⇒
+          kv._1 → (FrontendMoneyBalance(id.value, balance): FrontendQueryResult).asJson
+        case LiabilitiesQueryResult(id, liabilities) =>
+          kv._1 → (FrontendLiabilities(id.value, liabilities): FrontendQueryResult).asJson
+        case AssetsQueryResult(id, assets) =>
+          kv._1 → (FrontendAssets(id.value, assets): FrontendQueryResult).asJson
+        case e: AccessDenied ⇒
+          kv._1 → FailedRequest(e.id.value.toString, e.error).asJson
+        case e: EntityNotFound ⇒
+          kv._1 → FailedRequest(e.id.value.toString, e.error).asJson
+        case e: QueryFailed ⇒
+          kv._1 → FailedRequest(e.id.value.toString, e.error).asJson
+      })
+      .recover {
+        case timeout: AskTimeoutException ⇒
+          RequestTimeout → FailedRequest(q.id.toString, s"Query ${q.id} timed out").asJson
+      }
 
   val routes = {
     logRequestResult("i-have-money-read-frontend") {
@@ -48,25 +100,44 @@ object ReadFrontend extends App with CirceSupport {
           }
         }
       } ~
-        pathPrefix(JavaUUID.map(i ⇒ FortuneId(i.toString))) { fortuneId: FortuneId ⇒
-          get {
-            path("balance") {
+        authenticateOrRejectWithChallenge(authenticator) { userId ⇒
+          path("fortunes") {
+            get {
               complete {
-                sendQuery(MoneyBalance(QueryId(UUID.randomUUID.toString), fortuneId))
+                sendQuery(Fortunes(QueryId(UUID.randomUUID.toString), userId))
               }
-            } ~
-              path("assets") {
-                complete {
-                  sendQuery(Assets(QueryId(UUID.randomUUID.toString), fortuneId))
-                }
-              } ~
-              path("liabilities") {
-                complete {
-                  sendQuery(Liabilities(QueryId(UUID.randomUUID.toString), fortuneId))
-                }
-              }
+            }
+          } ~
+            pathPrefix("fortune" / JavaUUID.map(i ⇒ FortuneId(i.toString))) { fortuneId: FortuneId ⇒
+              get {
+                path("categories") {
+                  complete {
+                    sendQuery(Categories(QueryId(UUID.randomUUID.toString), userId, fortuneId))
+                  }
+                } ~
+                  path("balance") {
+                    complete {
+                      sendQuery(MoneyBalance(QueryId(UUID.randomUUID.toString), userId, fortuneId))
+                    }
+                  } ~
+                  path("assets") {
+                    complete {
+                      sendQuery(Assets(QueryId(UUID.randomUUID.toString), userId, fortuneId))
+                    }
+                  } ~
+                  path("liabilities") {
+                    complete {
+                      sendQuery(Liabilities(QueryId(UUID.randomUUID.toString), userId, fortuneId))
+                    }
+                  } ~
+                  path("log") {
+                    complete {
+                      sendQuery(TransactionLog(QueryId(UUID.randomUUID.toString), userId, fortuneId))
+                    }
+                  }
 
-          }
+              }
+            }
         } ~
         get {
           pathSingleSlash {

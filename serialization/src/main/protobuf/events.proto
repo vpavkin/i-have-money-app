@@ -114,6 +114,7 @@ message PBConfirmationEmailSent {
 }
 
 message PBUserLoggedIn {
+	string display_name = 1;
 	PBMetadata metadata = 14;
 }
 

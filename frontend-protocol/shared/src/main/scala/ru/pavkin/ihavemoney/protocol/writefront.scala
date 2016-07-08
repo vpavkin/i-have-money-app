@@ -54,15 +54,7 @@ object writefront extends SharedProtocol {
   case class ConfirmEmailRequest(email: String, confirmationCode: String) extends WriteFrontRequest
   case class LogInRequest(email: String, password: String) extends WriteFrontRequest
   case class ResendConfirmationEmailRequest(email: String) extends WriteFrontRequest
-
-  // misc
-  case class RequestResult[T](commandId: String, success: Boolean, result: Option[T], error: Option[String] = None)
-
-  object RequestResult {
-    def success[T](commandId: String, result: T) = RequestResult(commandId, success = true, Some(result))
-    def justSuccess(commandId: String) = RequestResult[String](commandId, success = true, None)
-    def failure(commandId: String, error: String) = RequestResult[String](commandId, success = false, None, Some(error))
-  }
+  case class AddEditorRequest(email: String) extends WriteFrontRequest
 
   implicit val riEncoder: Encoder[ReceiveIncomeRequest] = deriveEncoder[ReceiveIncomeRequest]
   implicit val riDecoder: Decoder[ReceiveIncomeRequest] = deriveDecoder[ReceiveIncomeRequest]
@@ -103,11 +95,15 @@ object writefront extends SharedProtocol {
   implicit val resendEmailEncoder: Encoder[ResendConfirmationEmailRequest] = deriveEncoder[ResendConfirmationEmailRequest]
   implicit val resendEmailDecoder: Decoder[ResendConfirmationEmailRequest] = deriveDecoder[ResendConfirmationEmailRequest]
 
+  implicit val addEditorEncoder: Encoder[AddEditorRequest] = deriveEncoder[AddEditorRequest]
+  implicit val addEditorDecoder: Decoder[AddEditorRequest] = deriveDecoder[AddEditorRequest]
+
   implicit val reqEncoder: Encoder[WriteFrontRequest] = deriveEncoder[WriteFrontRequest]
   implicit val reqDecoder: Decoder[WriteFrontRequest] = deriveDecoder[WriteFrontRequest]
 
+  implicit val cpEncoder: Encoder[CommandProcessed] = deriveEncoder[CommandProcessed]
+  implicit val cpDecoder: Decoder[CommandProcessed] = deriveDecoder[CommandProcessed]
 
-  implicit def resEncoder[T: Encoder]: Encoder[RequestResult[T]] = deriveEncoder[RequestResult[T]]
-  implicit def resDecoder[T: Decoder]: Decoder[RequestResult[T]] = deriveDecoder[RequestResult[T]]
-
+  implicit def cprEncoder[T: Encoder]: Encoder[CommandProcessedWithResult[T]] = deriveEncoder[CommandProcessedWithResult[T]]
+  implicit def cprDecoder[T: Decoder]: Decoder[CommandProcessedWithResult[T]] = deriveDecoder[CommandProcessedWithResult[T]]
 }

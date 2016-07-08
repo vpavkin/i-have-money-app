@@ -4,16 +4,22 @@ import cats.Eq
 import ru.pavkin.ihavemoney.domain._
 import ru.pavkin.utils.enum._
 
-sealed trait Currency {
-  self ⇒
+sealed trait Currency {self ⇒
   def code: String = self.toString
+  def sign: String
 }
 
 object Currency {
 
-  case object USD extends Currency
-  case object RUR extends Currency
-  case object EUR extends Currency
+  case object USD extends Currency{
+    def sign: String = "$"
+  }
+  case object RUR extends Currency{
+    def sign: String = "\u20BD"
+  }
+  case object EUR extends Currency{
+    def sign: String = "€"
+  }
 
   val values: Set[Currency] = Values
 

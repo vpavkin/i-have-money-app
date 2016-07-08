@@ -12,4 +12,4 @@ docker run -i --net=host \
 -e ihavemoney_readback_db_name=ihavemoney-read \
 -e ihavemoney_readback_host=$HOST_IP \
 -e ihavemoney_readback_port=9201 \
---name readback -a stdin ihavemoney/read-backend
+--name readback -a stdin vpavkin/ihavemoney-read-backend

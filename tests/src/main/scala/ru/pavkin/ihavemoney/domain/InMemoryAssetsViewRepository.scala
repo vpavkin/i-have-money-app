@@ -1,7 +1,7 @@
 package ru.pavkin.ihavemoney.domain
 
 import ru.pavkin.ihavemoney.domain.fortune.{Asset, AssetId, Currency, FortuneId}
-import ru.pavkin.ihavemoney.readback.repo.AssetsViewRepository
+import ru.pavkin.ihavemoney.readback.repo.{AssetsViewRepository, InMemoryRepository}
 
 import scala.concurrent.{ExecutionContext, Future}
 
