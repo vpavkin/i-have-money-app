@@ -23,7 +23,7 @@ object IncomeC extends CommonTransactionC {
       BigDecimal(state.amount),
       Currency.unsafeFromCode(state.currency),
       state.category,
-      initializer = false,
+      initializer = state.initializer,
       notEmpty(state.comment)
     ))
 

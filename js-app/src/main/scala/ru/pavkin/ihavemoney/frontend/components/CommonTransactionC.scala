@@ -6,7 +6,8 @@ import diode.react.ModelProxy
 import japgolly.scalajs.react.vdom.all._
 import japgolly.scalajs.react.{Callback, _}
 import ru.pavkin.ihavemoney.domain.fortune.Currency
-import ru.pavkin.ihavemoney.frontend.bootstrap.{Button, FormGroup}
+import ru.pavkin.ihavemoney.frontend.bootstrap.{Button, Checkbox, FormGroup}
+import ru.pavkin.ihavemoney.frontend.bootstrap.attributes._
 import ru.pavkin.ihavemoney.frontend.redux.AppCircuit
 import ru.pavkin.ihavemoney.frontend.redux.actions.LoadCategories
 import ru.pavkin.ihavemoney.frontend.redux.model.Categories
@@ -22,7 +23,8 @@ abstract class CommonTransactionC(implicit ec: ExecutionContext) {
       currency: String,
       amount: String,
       category: String,
-      comment: String)
+      comment: String,
+      initializer: Boolean = false)
 
   case class Props(categories: ModelProxy[Pot[Categories]])
 
@@ -96,8 +98,17 @@ abstract class CommonTransactionC(implicit ec: ExecutionContext) {
             onChange ==> onTextChange((s, v) ⇒ s.copy(comment = v))
           ))
         ),
+        if (AppCircuit.fortune.initializationMode)
+          FormGroup(div(grid.columnOffsetAll(HorizontalForm.LABEL_WIDTH),
+            Checkbox(isChecked ⇒ $.modState(_.copy(initializer = isChecked)), state.initializer,
+              dataToggle := "tooltip",
+              dataPlacement := "right",
+              title := "Initializer transactions are for initial fortune setup. They don't appear in transaction log and statistics.",
+              "Initializer")
+          ))
+        else EmptyTag,
         FormGroup(
-          div(grid.columnOffsetAll(2), grid.columnAll(10),
+          div(grid.columnOffsetAll(HorizontalForm.LABEL_WIDTH), grid.columnAll(10),
             renderSubmitButton(pr, state)
           )
         )

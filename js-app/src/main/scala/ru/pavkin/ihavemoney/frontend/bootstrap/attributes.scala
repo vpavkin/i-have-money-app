@@ -9,4 +9,5 @@ object attributes {
   val dataRide = "data-ride".reactAttr
   val dataSlide = "data-slide".reactAttr
   val dataDismiss = "data-dismiss".reactAttr
+  val dataPlacement = "data-placement".reactAttr
 }
