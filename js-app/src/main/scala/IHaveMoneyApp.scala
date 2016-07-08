@@ -20,7 +20,8 @@ object IHaveMoneyApp extends JSApp {
   val routerConfig = RouterConfigDsl[Route].buildConfig { dsl ⇒
     import dsl._
 
-    def renderAddTransactions = render(connectors.categories(c ⇒ AddTransactionsC(c)))
+    def renderExpenses = render(connectors.categories(c ⇒ ExpensesC(c)))
+    def renderIncome = render(connectors.categories(c ⇒ IncomeC(c)))
     def renderInitializer = renderR(InitializerC(_))
     def renderBalance = render(connectors.balances(b ⇒
       connectors.assets(a ⇒
@@ -43,18 +44,19 @@ object IHaveMoneyApp extends JSApp {
     (trimSlashes
         | staticRoute(root, Route.Initializer) ~> renderInitializer
         | staticRoute("#nofortune", Route.NoFortunes) ~> renderR(ctl ⇒ NoFortuneC.component(ctl))
-        | staticRoute("#transactions", Route.AddTransactions) ~> renderAddTransactions
+        | staticRoute("#expenses", Route.Expenses) ~> renderExpenses
+        | staticRoute("#income", Route.Income) ~> renderIncome
         | staticRoute("#balance", Route.BalanceView) ~> renderBalance
         | staticRoute("#settings", Route.FortuneSettingsView) ~> renderFortuneSettings
         | staticRoute("#log", Route.TransactionLogView) ~> render(connectors.log(b ⇒ TransactionLogC.component(TransactionLogC.Props(b))))
         | staticRoute("#login", Route.Login) ~> renderR(ctl ⇒ LoginC.component(ctl)))
-        .notFound(redirectToPage(Route.AddTransactions)(Redirect.Replace))
+        .notFound(redirectToPage(Route.Expenses)(Redirect.Replace))
         .renderWith(layout)
         .onPostRender((prev, next) => Callback {
           println(s"Page changing from $prev to $next.")
           storeRedirectToRoute(prev, next)
         })
-        .verify(Route.AddTransactions, Route.BalanceView)
+        .verify(Route.Expenses, Route.BalanceView)
   }
 
   def layout(c: RouterCtl[Route], r: Resolution[Route]) = div(

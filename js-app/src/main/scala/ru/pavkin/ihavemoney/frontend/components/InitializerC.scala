@@ -27,7 +27,7 @@ object InitializerC {
             if (x.isEmpty)
               pr.router.set(Route.NoFortunes).runNow()
             else
-              pr.router.set(AppCircuit.state.initializerRedirectsTo.getOrElse(Route.AddTransactions)).runNow()
+              pr.router.set(AppCircuit.state.initializerRedirectsTo.getOrElse(Route.Expenses)).runNow()
           case Failed(HTTPError(401, _, _)) ⇒
             unsubscribe()
             pr.router.set(Route.Login).runNow()

@@ -46,7 +46,8 @@ object NavigationBar {
           div(id := "navbar", common.navbarCollapse,
             aria.expanded := "false",
             ul(common.navbarSection,
-              routeLink("Add Transactions", AddTransactions),
+              routeLink("Expenses", Expenses),
+              routeLink("Income", Income),
               routeLink("Balance View", BalanceView),
               routeLink("TransactionLog", TransactionLogView),
               routeLink("Settings", FortuneSettingsView)

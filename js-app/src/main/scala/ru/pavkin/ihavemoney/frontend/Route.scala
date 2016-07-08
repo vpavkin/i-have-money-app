@@ -6,7 +6,8 @@ object Route {
   case object Initializer extends Route
   case object Login extends Route
   case object NoFortunes extends Route
-  case object AddTransactions extends Route
+  case object Income extends Route
+  case object Expenses extends Route
   case object BalanceView extends Route
   case object TransactionLogView extends Route
   case object FortuneSettingsView extends Route
