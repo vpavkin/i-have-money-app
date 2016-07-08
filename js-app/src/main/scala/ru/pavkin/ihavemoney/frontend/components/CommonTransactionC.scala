@@ -37,6 +37,13 @@ abstract class CommonTransactionC(implicit ec: ExecutionContext) {
       applyStateChange(change)(newValue)
     }
 
+    def amountCurrencyHelper(oldState: State, newAmount: String): State = newAmount match {
+      case s if s.endsWith("e") || s.endsWith("€") ⇒ oldState.copy(Currency.EUR.code, s.init)
+      case s if s.endsWith("$") || s.endsWith("d") ⇒ oldState.copy(Currency.USD.code, s.init)
+      case s if s.endsWith("r") ⇒ oldState.copy(Currency.RUR.code, s.init)
+      case _ ⇒ oldState.copy(amount = newAmount)
+    }
+
     def applyStateChange(change: (State, String) ⇒ State)(newValue: String): Callback =
       $.modState(change(_, newValue))
 
@@ -74,7 +81,7 @@ abstract class CommonTransactionC(implicit ec: ExecutionContext) {
             common.formControl,
             placeholder := "Amount",
             value := state.amount,
-            onChange ==> onTextChange((s, v) ⇒ s.copy(amount = v))
+            onChange ==> onTextChange((s, v) ⇒ amountCurrencyHelper(s, v))
           )),
           div(grid.columnAll(1), select(
             required := true,
