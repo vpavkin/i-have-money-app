@@ -7,6 +7,7 @@ import ru.pavkin.ihavemoney.frontend.Route
 import ru.pavkin.ihavemoney.frontend.Route._
 import ru.pavkin.ihavemoney.frontend.bootstrap.attributes._
 import ru.pavkin.ihavemoney.frontend.bootstrap.{Button, Dropdown}
+import ru.pavkin.ihavemoney.frontend.gravatar.GravatarAPI
 import ru.pavkin.ihavemoney.frontend.redux.AppCircuit
 import ru.pavkin.ihavemoney.frontend.redux.actions.LoggedOut
 import ru.pavkin.ihavemoney.frontend.styles.Global._
@@ -20,8 +21,8 @@ object NavigationBar {
   class Backend($: BackendScope[RouterCtl[Route], State]) {
 
     def logOut(router: RouterCtl[Route])(e: ReactEventI) = e.preventDefaultCB >>
-      Callback(AppCircuit.dispatch(LoggedOut)) >>
-      router.set(Route.Login)
+        Callback(AppCircuit.dispatch(LoggedOut)) >>
+        router.set(Route.Login)
 
     def render(ctl: RouterCtl[Route], s: State) = {
       def routeLink(name: String, target: Route) =
@@ -54,7 +55,11 @@ object NavigationBar {
             ),
             ul(common.navbarSection, common.navbarRight,
               Dropdown.component.withKey("loggedInAs")(Dropdown.Props(
-                span("Logged in as", br(), strong(AppCircuit.auth.map(_.displayName).getOrElse(""): String)), li, showCaret = false, addStyles = Seq(navbarTwoLineItem, loggedInAsNavbarItem)),
+                table(tbody(tr(
+                  td(img(className := "img-circle", paddingRight := 10, src := GravatarAPI.img(AppCircuit.auth.map(_.email).getOrElse(""), 42))),
+                  td(span("Logged in as", br(), strong(AppCircuit.auth.map(_.displayName).getOrElse(""): String)))
+                ))),
+                li, showCaret = false, addStyles = Seq(navbarTwoLineItem, loggedInAsNavbarItem)),
                 li(a("Log out", onClick ==> logOut(ctl)))
               )
             )
@@ -65,7 +70,7 @@ object NavigationBar {
   }
 
   val component = ReactComponentB[RouterCtl[Route]]("Menu")
-    .initialState(State(""))
-    .renderBackend[Backend]
-    .build
+      .initialState(State(""))
+      .renderBackend[Backend]
+      .build
 }

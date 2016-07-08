@@ -454,7 +454,10 @@ lazy val jsApp = project.in(file("js-app"))
 
         "org.webjars" % "bootstrap" % "3.3.6" / "bootstrap.js"
             minified "bootstrap.min.js"
-            dependsOn "jquery.js"
+            dependsOn "jquery.js",
+
+        "org.webjars.bower" % "md5" % "0.3.0" / "src/md5.js"
+            minified "build/md5.min.js"
       ),
       persistLauncher in Compile := true
     )
