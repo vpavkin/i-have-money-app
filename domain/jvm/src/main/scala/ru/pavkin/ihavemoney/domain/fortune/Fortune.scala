@@ -97,6 +97,18 @@ case class Fortune(id: FortuneId,
         BalanceIsNotEnough(this.amount(cmd.fromCurrency), cmd.fromCurrency)
     }
 
+  def cantAdjustWithANegativeValue = action[Fortune]
+    .rejectCommand {
+      case cmd: Spend if cmd.amount <= 0 ⇒ NegativeAmount
+      case cmd: ReceiveIncome if cmd.amount <= 0 ⇒ NegativeAmount
+      case cmd: ExchangeCurrency if cmd.fromAmount <= 0 || cmd.toAmount <= 0 ⇒ NegativeAmount
+      case cmd: CorrectBalances if cmd.realBalances.values.exists(_ < 0) ⇒ NegativeAmount
+      case cmd: BuyAsset if cmd.asset.worth.amount < 0 ⇒ NegativeAmount
+      case cmd: ReevaluateAsset if cmd.newPrice < 0 ⇒ NegativeAmount
+      case cmd: TakeOnLiability if cmd.liability.worth.amount < 0 ⇒ NegativeAmount
+      case cmd: PayLiabilityOff if cmd.byAmount < 0 ⇒ NegativeAmount
+    }
+
   def cantAcquireAssetWithNotEnoughMoney = action[Fortune]
     .rejectCommand {
       case cmd: BuyAsset if !cmd.initializer && this.amount(cmd.asset.currency) < cmd.asset.price ⇒
@@ -318,6 +330,7 @@ object Fortune {
         fortune.cantManipulateAssetThatDoesNotExist ++
         fortune.cantManipulateLiabilityThatDoesNotExist ++
         fortune.cantHaveNegativeBalance ++
+        fortune.cantAdjustWithANegativeValue ++
         fortune.ownerCanAddEditors ++
         fortune.editorsCanFinishInitialization ++
         fortune.editorsCanBuyAssets ++

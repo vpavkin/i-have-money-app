@@ -35,16 +35,15 @@ class FortuneProtocolSpec extends IHaveMoneySpec with ScalaFutures {
     def configure(backend: InMemoryBackend): Unit =
       backend.configure {
         aggregate[Fortune](Fortune.behavior)
-      }
-        .configure {
-          projection(
-            query = QueryByTag(Fortune.tag),
-            projection = new MoneyViewProjection(moneyRepo, assetsRepo, liabRepo)
+      }.configure {
+        projection(
+          query = QueryByTag(Fortune.tag),
+          projection = new MoneyViewProjection(moneyRepo, assetsRepo, liabRepo)
               .andThen(new AssetsViewProjection(assetsRepo))
               .andThen(new LiabilitiesViewProjection(liabRepo)),
-            name = "ViewProjection"
-          )
-        }
+          name = "ViewProjection"
+        )
+      }
 
     def ref(id: FortuneId) = aggregateRef[Fortune](id)
   }
@@ -121,6 +120,17 @@ class FortuneProtocolSpec extends IHaveMoneySpec with ScalaFutures {
       money(Currency.USD) shouldBe BigDecimal(103.12)
     }
   }
+
+  test("Can't increase of decrease by zero or negative value") {
+
+    new FortuneInMemoryTest {
+      intercept[NegativeAmount.type](fortune ! ReceiveIncome(owner, BigDecimal(-1), Currency.USD, IncomeCategory("salary")))
+      intercept[NegativeAmount.type](fortune ! ReceiveIncome(owner, BigDecimal(0), Currency.USD, IncomeCategory("salary")))
+      intercept[NegativeAmount.type](fortune ! Spend(owner, BigDecimal(-1), Currency.USD, ExpenseCategory("food")))
+      intercept[NegativeAmount.type](fortune ! Spend(owner, BigDecimal(0), Currency.USD, ExpenseCategory("food")))
+    }
+  }
+
 
   test("Editing not initialized fortune produces an error") {
 
