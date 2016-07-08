@@ -44,4 +44,12 @@ object Global extends StyleSheet.Inline {
     borderBottomLeftRadius(0 px),
     borderTopLeftRadius(0 px)
   )
+  val logNegAmount = style(
+    fontWeight.bold,
+    color(common.colorDanger)
+  )
+  val logPosAmount = style(
+    fontWeight.bold,
+    color(common.colorSuccess)
+  )
 }

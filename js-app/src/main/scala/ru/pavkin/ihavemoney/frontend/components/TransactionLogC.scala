@@ -5,9 +5,14 @@ import diode.react.ModelProxy
 import diode.react.ReactPot._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.all._
+import ru.pavkin.ihavemoney.frontend.gravatar.GravatarAPI
 import ru.pavkin.ihavemoney.frontend.redux.AppCircuit
 import ru.pavkin.ihavemoney.frontend.redux.actions.LoadTransactionLog
 import ru.pavkin.ihavemoney.protocol.Transaction
+import ru.pavkin.ihavemoney.frontend.styles.Global._
+import ru.pavkin.utils.date._
+
+import scalacss.ScalaCssReact._
 
 object TransactionLogC {
 
@@ -19,6 +24,10 @@ object TransactionLogC {
       AppCircuit.dispatch(LoadTransactionLog())
     }
 
+    def amountStyle(amount: BigDecimal) =
+      if (amount >= 0) logPosAmount
+      else logNegAmount
+
     def render(pr: Props) = {
       div(
         pr.log().renderEmpty("Loading..."),
@@ -26,11 +35,16 @@ object TransactionLogC {
         pr.log().renderReady(log ⇒
           div(
             table(className := "table table-striped table-hover table-condensed",
-              thead(tr(th("Date"), th("Category"), th("Editor"), th("Currency"), th("Amount"))),
+              thead(tr(th(""), th("Date"), th("Category"), th("Amount"), th("Comment"))),
               tbody(
-                log.map(t ⇒
-                  tr(td(t.date.toString), td(t.category), td(t.user), td(t.currency.code), td(t.amount.toString))
-                )
+                log.map(t ⇒ tr(
+                  td(width := "30px", paddingTop := "0", paddingBottom := "0", verticalAlign := "middle",
+                    img(src := GravatarAPI.img(t.user, 20), className := "img-circle", title := t.user)),
+                  td(t.date.ddmmyyyy),
+                  td(t.category),
+                  td(amountStyle(t.amount), t.amount.toString + t.currency.sign),
+                  td(t.comment.getOrElse(""): String)
+                ))
               )
             )
           )
@@ -40,7 +54,7 @@ object TransactionLogC {
   }
 
   val component = ReactComponentB[Props]("LogComponent")
-    .renderBackend[Backend]
-    .componentDidMount(s ⇒ s.backend.loadTransactionLog(s.props))
-    .build
+      .renderBackend[Backend]
+      .componentDidMount(s ⇒ s.backend.loadTransactionLog(s.props))
+      .build
 }
