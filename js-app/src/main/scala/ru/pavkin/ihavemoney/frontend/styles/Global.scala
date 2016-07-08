@@ -35,4 +35,13 @@ object Global extends StyleSheet.Inline {
     backgroundColor(common.colorPrimary).important
   )
   val horizontalFormStaticControl = common.formControlStatic + style(paddingBottom(0 px))
+
+  val addonMainInput = style(
+    height(48 px)
+  )
+  val inputCurrencyAddon = style(
+    marginLeft(-1 px),
+    borderBottomLeftRadius(0 px),
+    borderTopLeftRadius(0 px)
+  )
 }

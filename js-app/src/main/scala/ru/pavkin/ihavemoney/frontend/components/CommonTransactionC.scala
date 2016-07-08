@@ -12,6 +12,7 @@ import ru.pavkin.ihavemoney.frontend.redux.AppCircuit
 import ru.pavkin.ihavemoney.frontend.redux.actions.LoadCategories
 import ru.pavkin.ihavemoney.frontend.redux.model.Categories
 import ru.pavkin.ihavemoney.frontend.styles.Global.{style ⇒ _, _}
+
 import scalacss.ScalaCssReact._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
@@ -20,7 +21,7 @@ import diode.react.ReactPot._
 abstract class CommonTransactionC(implicit ec: ExecutionContext) {
 
   case class State(
-      currency: String,
+      currency: Currency,
       amount: String,
       category: String,
       comment: String,
@@ -38,13 +39,13 @@ abstract class CommonTransactionC(implicit ec: ExecutionContext) {
     }
 
     def amountCurrencyHelper(oldState: State, newAmount: String): State = newAmount match {
-      case s if s.endsWith("e") || s.endsWith("€") ⇒ oldState.copy(Currency.EUR.code, s.init)
-      case s if s.endsWith("$") || s.endsWith("d") ⇒ oldState.copy(Currency.USD.code, s.init)
-      case s if s.endsWith("r") ⇒ oldState.copy(Currency.RUR.code, s.init)
+      case s if s.endsWith("e") || s.endsWith("€") ⇒ oldState.copy(Currency.EUR, s.init)
+      case s if s.endsWith("$") || s.endsWith("d") ⇒ oldState.copy(Currency.USD, s.init)
+      case s if s.endsWith("r") ⇒ oldState.copy(Currency.RUR, s.init)
       case _ ⇒ oldState.copy(amount = newAmount)
     }
 
-    def applyStateChange(change: (State, String) ⇒ State)(newValue: String): Callback =
+    def applyStateChange[T](change: (State, T) ⇒ State)(newValue: T): Callback =
       $.modState(change(_, newValue))
 
     def onFormSubmit(e: ReactEventI) = e.preventDefaultCB
@@ -59,7 +60,6 @@ abstract class CommonTransactionC(implicit ec: ExecutionContext) {
 
     def isValid(s: State) =
       Try(BigDecimal(s.amount)).isSuccess &&
-          Currency.isCurrency(s.currency) &&
           s.category.nonEmpty
 
     def init: Callback = Callback {
@@ -75,24 +75,28 @@ abstract class CommonTransactionC(implicit ec: ExecutionContext) {
         onSubmit ==> onFormSubmit,
         FormGroup(
           HorizontalForm.Label("Amount", "amountInput"),
-          div(grid.columnAll(2), input.text(
-            id := "amountInput",
-            required := true,
-            common.formControl,
-            placeholder := "Amount",
-            value := state.amount,
-            onChange ==> onTextChange((s, v) ⇒ amountCurrencyHelper(s, v))
-          )),
-          div(grid.columnAll(1), select(
-            required := true,
-            common.formControl,
-            id := "currencyInput",
-            value := state.currency,
-            onChange ==> onTextChange((s, v) ⇒ s.copy(currency = v)),
-            List("USD", "EUR", "RUR").map(option(_))
-          )),
+          div(grid.columnAll(8),
+            div(className := "input-group",
+              input.text(
+                id := "amountInput",
+                required := true,
+                common.formControl,
+                addonMainInput,
+                increasedFontSize, rightMargin,
+                placeholder := "Amount",
+                value := state.amount,
+                onChange ==> onTextChange((s, v) ⇒ amountCurrencyHelper(s, v))
+              ),
+              div(className := "input-group-btn",
+                CurrencySelector(
+                  state.currency,
+                  c ⇒ applyStateChange[Currency]((st, v) ⇒ st.copy(currency = v))(c),
+                  addStyles = Seq(increasedFontSize, inputCurrencyAddon))
+              )
+            )
+          ),
           pr.categories().renderReady(categories ⇒
-            div(grid.columnAll(2), renderCategoriesSelector(pr, state)(categories))
+            renderCategoriesSelector(pr, state)(categories)
           )
         ),
         FormGroup(
@@ -100,6 +104,7 @@ abstract class CommonTransactionC(implicit ec: ExecutionContext) {
           div(HorizontalForm.input, input.text(
             common.formControl,
             id := "commentInput",
+            increasedFontSize, addonMainInput,
             placeholder := "Comment",
             value := state.comment,
             onChange ==> onTextChange((s, v) ⇒ s.copy(comment = v))
@@ -109,6 +114,7 @@ abstract class CommonTransactionC(implicit ec: ExecutionContext) {
           FormGroup(div(grid.columnOffsetAll(HorizontalForm.LABEL_WIDTH),
             Checkbox(isChecked ⇒ $.modState(_.copy(initializer = isChecked)), state.initializer,
               dataToggle := "tooltip",
+              increasedFontSize,
               dataPlacement := "right",
               title := "Initializer transactions are for initial fortune setup. They don't appear in transaction log and statistics.",
               "Initializer")

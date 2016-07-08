@@ -10,7 +10,7 @@ import ru.pavkin.ihavemoney.frontend.bootstrap.Button
 import ru.pavkin.ihavemoney.frontend.redux.model.Categories
 import ru.pavkin.ihavemoney.frontend.styles.Global._
 import ru.pavkin.utils.option._
-
+import scalacss.ScalaCssReact._
 import scala.scalajs.concurrent.JSExecutionContext.Implicits.queue
 
 object ExpensesC extends CommonTransactionC {
@@ -21,7 +21,7 @@ object ExpensesC extends CommonTransactionC {
 
     def onExpenseSubmit(state: State): Callback = genSubmit(state)(api.addExpense(
       BigDecimal(state.amount),
-      Currency.unsafeFromCode(state.currency),
+      state.currency,
       state.category,
       initializer = state.initializer,
       notEmpty(state.comment)
@@ -30,21 +30,23 @@ object ExpensesC extends CommonTransactionC {
     def renderSubmitButton(pr: Props, state: State): ReactElement =
       Button(onExpenseSubmit(state),
         style = common.context.danger,
-        addAttributes = Seq(disabled := (!isValid(state)))
+        addAttributes = Seq(disabled := (!isValid(state))),
+        addStyles = Seq(increasedFontSize)
       )("Add Expense")
 
     def renderCategoriesSelector(pr: Props, state: State): Categories ⇒ ReactElement = categories ⇒
-      StringValueSelector(
+      div(StringValueSelector(
         state.category,
-        s ⇒ applyStateChange((st, v) ⇒ st.copy(category = v))(s),
+        s ⇒ applyStateChange[String]((st, v) ⇒ st.copy(category = v))(s),
         enrich(categories.expense).toList,
         addStyles = Seq(increasedFontSize))
+      )
 
     def render(pr: Props, state: State) = renderForm(pr, state)
   }
 
   val component = ReactComponentB[Props]("AddExpensesComponent")
-      .initialState(State("EUR", "", "Groceries", ""))
+      .initialState(State(Currency.EUR, "", "Groceries", ""))
       .renderBackend[Backend]
       .componentDidMount(s ⇒ s.backend.init)
       .build

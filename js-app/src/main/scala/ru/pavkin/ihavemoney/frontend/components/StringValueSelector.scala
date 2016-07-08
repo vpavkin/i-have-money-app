@@ -21,7 +21,7 @@ object StringValueSelector {
 
   val component = ReactComponentB[Props]("StringValueSelector")
       .renderPC((_, p, c) =>
-        Dropdown(p.selected, div, Some(p.contextStyle), addStyles = p.addStyles)(
+        Dropdown(p.selected, a, Some(p.contextStyle), addStyles = p.addStyles)(
           p.elements.sorted.map(renderElement(p))
         )
       ).build
