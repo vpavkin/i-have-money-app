@@ -20,7 +20,7 @@ object IHaveMoneyApp extends JSApp {
   val routerConfig = RouterConfigDsl[Route].buildConfig { dsl ⇒
     import dsl._
 
-    def renderAddTransactions = render(AddTransactionsC.component())
+    def renderAddTransactions = render(connectors.categories(c ⇒ AddTransactionsC(c)))
     def renderInitializer = renderR(InitializerC(_))
     def renderBalance = render(connectors.balances(b ⇒
       connectors.assets(a ⇒

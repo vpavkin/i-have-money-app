@@ -8,6 +8,7 @@ import japgolly.scalajs.react.extra.router.BaseUrl
 import ru.pavkin.ihavemoney.domain.fortune.{Asset, Currency, FortuneInfo, Liability}
 import ru.pavkin.ihavemoney.frontend.ajax.AjaxExtensions._
 import ru.pavkin.ihavemoney.frontend.redux.AppCircuit
+import ru.pavkin.ihavemoney.frontend.redux.model.Categories
 import ru.pavkin.ihavemoney.protocol._
 import ru.pavkin.ihavemoney.protocol.readfront._
 import ru.pavkin.ihavemoney.protocol.writefront._
@@ -41,6 +42,7 @@ object api {
     def getTransactionLog(fortuneId: String) = readFortune / fortuneId / "log"
     def getAssets(fortuneId: String) = readFortune / fortuneId / "assets"
     def getLiabilities(fortuneId: String) = readFortune / fortuneId / "liabilities"
+    def getCategories(fortuneId: String) = readFortune / fortuneId / "categories"
   }
 
   def authHeader = "Authorization" → s"Bearer ${AppCircuit.auth.map(_.token).getOrElse("")}"
@@ -113,6 +115,11 @@ object api {
   def fortunes(implicit ec: ExecutionContext): Future[Xor[RequestError, List[FortuneInfo]]] = query(routes.getFortunes, {
     case FrontendFortunes(_, fortunes) ⇒ fortunes
   })
+
+  def getCategories(implicit ec: ExecutionContext): Future[RequestError Xor Categories] =
+    query(routes.getCategories(AppCircuit.fortuneId), {
+      case FrontendCategories(_, income, expenses) ⇒ Categories(income, expenses)
+    })
 
   def getBalances(implicit ec: ExecutionContext): Future[RequestError Xor Map[Currency, BigDecimal]] =
     query(routes.getBalances(AppCircuit.fortuneId), {

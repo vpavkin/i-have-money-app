@@ -1,12 +1,17 @@
 package ru.pavkin.ihavemoney.frontend.components
 
 import cats.data.Xor
+import diode.data.Pot
+import diode.react.ModelProxy
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.all._
 import org.scalajs.dom.raw.HTMLInputElement
 import ru.pavkin.ihavemoney.domain.fortune.Currency
 import ru.pavkin.ihavemoney.frontend.api
 import ru.pavkin.ihavemoney.frontend.bootstrap.{Button, FormGroup}
+import ru.pavkin.ihavemoney.frontend.redux.AppCircuit
+import ru.pavkin.ihavemoney.frontend.redux.actions.LoadCategories
+import ru.pavkin.ihavemoney.frontend.redux.model.Categories
 import ru.pavkin.utils.option._
 
 import scala.scalajs.concurrent.JSExecutionContext.Implicits.queue
@@ -18,11 +23,15 @@ import scalacss.ScalaCssReact._
 
 object AddTransactionsC {
 
-  case class State(currency: String,
-                   amount: String,
-                   category: String,
-                   comment: String)
-  class Backend($: BackendScope[Unit, State]) {
+  case class State(
+      currency: String,
+      amount: String,
+      category: String,
+      comment: String)
+
+  case class Props(categories: ModelProxy[Pot[Categories]])
+
+  class Backend($: BackendScope[Props, State]) {
 
     val amountInput = Ref[HTMLInputElement]("amountInput")
     val currencyInput = Ref[HTMLInputElement]("currencyInput")
@@ -62,10 +71,14 @@ object AddTransactionsC {
 
     def isValid(s: State) =
       Try(BigDecimal(s.amount)).isSuccess &&
-        Currency.isCurrency(s.currency) &&
-        s.category.nonEmpty
+          Currency.isCurrency(s.currency) &&
+          s.category.nonEmpty
 
-    def render(state: State) = {
+    def init: Callback = Callback {
+      AppCircuit.dispatch(LoadCategories())
+    }
+
+    def render(pr: Props, state: State) = {
       val valid = isValid(state)
       form(
         common.formHorizontal,
@@ -135,8 +148,11 @@ object AddTransactionsC {
       )
     }
   }
-  val component = ReactComponentB[Unit]("AddTransactionsComponent")
-    .initialState(State("USD", "1000", "Salary", ""))
-    .renderBackend[Backend]
-    .build
+  val component = ReactComponentB[Props]("AddTransactionsComponent")
+      .initialState(State("USD", "1000", "Salary", ""))
+      .renderBackend[Backend]
+      .componentDidMount(s ⇒ s.backend.init)
+      .build
+
+  def apply(categories: ModelProxy[Pot[Categories]]) = component(Props(categories))
 }

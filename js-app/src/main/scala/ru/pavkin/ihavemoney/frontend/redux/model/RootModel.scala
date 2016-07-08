@@ -9,6 +9,7 @@ import ru.pavkin.ihavemoney.protocol.{Auth, Transaction}
 case class RootModel(
     auth: Option[Auth],
     fortunes: Pot[List[FortuneInfo]] = Pot.empty,
+    categories: Pot[Categories] = Pot.empty,
     balances: Pot[Map[Currency, BigDecimal]] = Pot.empty,
     assets: Pot[Map[String, Asset]] = Pot.empty,
     liabilities: Pot[Map[String, Liability]] = Pot.empty,
@@ -21,4 +22,5 @@ case class RootModel(
   def fortuneId: String = fortuneInfo.id
 }
 
+case class Categories(income: List[String], expense: List[String])
 
