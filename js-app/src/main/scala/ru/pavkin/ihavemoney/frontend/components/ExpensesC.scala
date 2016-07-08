@@ -44,7 +44,7 @@ object ExpensesC extends CommonTransactionC {
   }
 
   val component = ReactComponentB[Props]("AddExpensesComponent")
-      .initialState(State("EUR", "", defaultCategories.toList.sorted.head, ""))
+      .initialState(State("EUR", "", "Groceries", ""))
       .renderBackend[Backend]
       .componentDidMount(s ⇒ s.backend.init)
       .build
