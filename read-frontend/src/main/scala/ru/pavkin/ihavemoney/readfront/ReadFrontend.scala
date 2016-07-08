@@ -56,10 +56,12 @@ object ReadFrontend extends App with CirceSupport {
 
   def toFrontendTransactions(r: TransactionLogQueryResult): FrontendTransactions = FrontendTransactions(
     r.id.value,
-    r.events.collect {
-      case e: FortuneIncreased ⇒ Transaction(e.user.value, e.amount, e.currency, e.category.name, e.initializer, e.metadata.date.toLocalDate, e.comment)
-      case e: FortuneSpent ⇒ Transaction(e.user.value, -e.amount, e.currency, e.category.name, e.initializer, e.metadata.date.toLocalDate, e.comment)
-    }
+    r.events
+      .sortBy(-_.metadata.date.toEpochSecond)
+      .collect {
+        case e: FortuneIncreased ⇒ Transaction(e.user.value, e.amount, e.currency, e.category.name, e.initializer, e.metadata.date.toLocalDate, e.comment)
+        case e: FortuneSpent ⇒ Transaction(e.user.value, -e.amount, e.currency, e.category.name, e.initializer, e.metadata.date.toLocalDate, e.comment)
+      }
   )
 
   def sendQuery(q: Query) =
