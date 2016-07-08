@@ -38,7 +38,7 @@ object TransactionLogC {
               thead(tr(th(""), th("Date"), th("Category"), th("Amount"), th("Comment"))),
               tbody(
                 log.map(t ⇒ tr(
-                  td(width := "30px", paddingTop := "0", paddingBottom := "0", verticalAlign := "middle",
+                  td(width := "30px", paddingTop := "0px", paddingBottom := "0px", verticalAlign := "middle",
                     img(src := GravatarAPI.img(t.user, 20), className := "img-circle", title := t.user)),
                   td(t.date.ddmmyyyy),
                   td(t.category),

@@ -111,7 +111,7 @@ abstract class CommonTransactionC(implicit ec: ExecutionContext) {
           ))
         ),
         if (AppCircuit.fortune.initializationMode)
-          FormGroup(div(grid.columnOffsetAll(HorizontalForm.LABEL_WIDTH),
+          FormGroup(div(grid.columnOffsetAll(HorizontalForm.LABEL_WIDTH), HorizontalForm.input,
             Checkbox(isChecked ⇒ $.modState(_.copy(initializer = isChecked)), state.initializer,
               dataToggle := "tooltip",
               increasedFontSize,
