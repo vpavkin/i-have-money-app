@@ -7,14 +7,14 @@ import ru.pavkin.ihavemoney.domain.fortune.FortuneId
 import ru.pavkin.ihavemoney.domain.fortune.FortuneProtocol.{FortuneEvent, FortuneIncreased, FortuneSpent}
 
 class FortuneAdjustmentsProjection(val id: FortuneId, override val source: EventsSourceProvider)
-                                  (override implicit val actorContext: ActorContext) extends CollectProjection[FortuneEvent] {
+    (override implicit val actorContext: ActorContext) extends CollectProjection[FortuneEvent] {
 
 
   override implicit val materializer: Materializer = ActorMaterializer()
 
   def collector: PartialFunction[Any, FortuneEvent] = {
-    case e: FortuneIncreased if e.aggregateId == id ⇒ e
-    case e: FortuneSpent if e.aggregateId == id ⇒ e
+    case e: FortuneIncreased if e.aggregateId == id && !e.initializer ⇒ e
+    case e: FortuneSpent if e.aggregateId == id && !e.initializer ⇒ e
   }
 
 }
