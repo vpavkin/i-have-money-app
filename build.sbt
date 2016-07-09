@@ -366,7 +366,7 @@ lazy val readFrontend = project.in(file("read-frontend"))
         "io.circe" %% "circe-core" % circeVersion,
         "io.circe" %% "circe-generic" % circeVersion,
         "io.circe" %% "circe-parser" % circeVersion,
-        "de.heikoseeberger" %% "akka-http-circe" % "1.5.3"
+        "de.heikoseeberger" %% "akka-http-circe" % "1.7.0"
       ),
       testDependencies
     )
@@ -428,8 +428,8 @@ lazy val jsApp = project.in(file("js-app"))
     .enablePlugins(ScalaJSPlugin)
     .settings(
       libraryDependencies ++= Seq(
-        "com.github.japgolly.scalajs-react" %%% "core" % "0.11.0",
-        "com.github.japgolly.scalajs-react" %%% "extra" % "0.11.0",
+        "com.github.japgolly.scalajs-react" %%% "core" % "0.11.1",
+        "com.github.japgolly.scalajs-react" %%% "extra" % "0.11.1",
         "com.github.japgolly.scalacss" %%% "core" % "0.4.1",
         "com.github.japgolly.scalacss" %%% "ext-react" % "0.4.1",
         "me.chrons" %%% "diode" % "1.0.0",
