@@ -41,3 +41,8 @@ message PBLiability {
 		PBLoan liability2 = 2;
 	}
 }
+
+message PBWorth {
+	string amount = 1;
+	string currency = 2;
+}

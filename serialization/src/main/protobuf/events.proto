@@ -122,3 +122,10 @@ message PBUserFailedToLogIn {
 	string invalid_password = 1;
 	PBMetadata metadata = 14;
 }
+
+message PBLimitsUpdated {
+	string userId = 1;
+	map<string, PBWorth> weekly = 2;
+	map<string, PBWorth> monthly = 3;
+	PBMetadata metadata = 14;
+}

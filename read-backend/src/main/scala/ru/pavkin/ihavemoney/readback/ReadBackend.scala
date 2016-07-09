@@ -6,7 +6,6 @@ import io.funcqrs.akka.EventsSourceProvider
 import io.funcqrs.akka.backend.AkkaBackend
 import io.funcqrs.backend.{Query, QueryByTag}
 import io.funcqrs.config.api._
-import ru.pavkin.ihavemoney.domain.fortune.FortuneProtocol.{ExpenseCategory, IncomeCategory}
 import ru.pavkin.ihavemoney.domain.fortune._
 import ru.pavkin.ihavemoney.domain.user.UserId
 import ru.pavkin.ihavemoney.readback.projections._
