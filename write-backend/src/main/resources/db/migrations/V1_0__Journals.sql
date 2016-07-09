@@ -1,4 +1,7 @@
+DROP TABLE IF EXISTS public.journal;
 CREATE TABLE IF NOT EXISTS public.journal (
+  ordering        BIGSERIAL,
+  deleted         BOOLEAN      DEFAULT FALSE,
   persistence_id  VARCHAR(255) NOT NULL,
   sequence_number BIGINT       NOT NULL,
   created         BIGINT       NOT NULL,
@@ -7,11 +10,13 @@ CREATE TABLE IF NOT EXISTS public.journal (
   PRIMARY KEY (persistence_id, sequence_number)
 );
 
+DROP TABLE IF EXISTS public.deleted_to;
 CREATE TABLE IF NOT EXISTS public.deleted_to (
   persistence_id VARCHAR(255) NOT NULL,
   deleted_to     BIGINT       NOT NULL
 );
 
+DROP TABLE IF EXISTS public.snapshot;
 CREATE TABLE IF NOT EXISTS public.snapshot (
   persistence_id  VARCHAR(255) NOT NULL,
   sequence_number BIGINT       NOT NULL,

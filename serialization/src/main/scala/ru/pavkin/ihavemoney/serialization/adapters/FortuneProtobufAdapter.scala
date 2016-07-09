@@ -1,4 +1,4 @@
-package ru.pavkin.ihavemoney.readback.sources
+package ru.pavkin.ihavemoney.serialization.adapters
 
 import ru.pavkin.ihavemoney.proto.events.{PBCurrencyExchanged, _}
 import ru.pavkin.ihavemoney.serialization.ProtobufSuite.syntax._

@@ -37,13 +37,13 @@ lazy val baseSettings = Seq(
 lazy val allSettings = buildSettings ++ baseSettings
 
 lazy val postgreSQLVersion = "9.4-1206-jdbc42"
-lazy val funCQRSVersion = "0.4.3"
-lazy val shapelessVersion = "2.3.0"
-lazy val catsVersion = "0.4.1"
-lazy val circeVersion = "0.3.0"
-lazy val akkaVersion = "2.4.2"
-lazy val akkaPersistenceJDBCVersion = "2.2.15"
-lazy val akkaHttpCorsVersion = "0.1.2"
+lazy val funCQRSVersion = "0.4.6"
+lazy val shapelessVersion = "2.3.1"
+lazy val catsVersion = "0.5.0"
+lazy val circeVersion = "0.4.1"
+lazy val akkaVersion = "2.4.7"
+lazy val akkaPersistenceJDBCVersion = "2.5.2"
+lazy val akkaHttpCorsVersion = "0.1.4"
 lazy val scalaCheckVersion = "1.12.5"
 lazy val scalaTestVersion = "2.2.6"
 
@@ -102,7 +102,7 @@ lazy val domain = crossProject.in(file("domain"))
     .jvmSettings(libraryDependencies ++= Seq(
       "io.strongtyped" %% "fun-cqrs-core" % funCQRSVersion,
       "com.github.t3hnar" %% "scala-bcrypt" % "2.6",
-      "com.pauldijou" %% "jwt-circe" % "0.7.1"
+      "com.pauldijou" %% "jwt-circe" % "0.8.0"
     ))
     .jvmSettings(testDependencies)
 
@@ -214,7 +214,7 @@ lazy val writeFrontend = project.in(file("write-frontend"))
         "io.circe" %% "circe-core" % circeVersion,
         "io.circe" %% "circe-generic" % circeVersion,
         "io.circe" %% "circe-parser" % circeVersion,
-        "de.heikoseeberger" %% "akka-http-circe" % "1.5.3"
+        "de.heikoseeberger" %% "akka-http-circe" % "1.7.0"
       )
     )
     .settings(testDependencies)
@@ -366,7 +366,7 @@ lazy val readFrontend = project.in(file("read-frontend"))
         "io.circe" %% "circe-core" % circeVersion,
         "io.circe" %% "circe-generic" % circeVersion,
         "io.circe" %% "circe-parser" % circeVersion,
-        "de.heikoseeberger" %% "akka-http-circe" % "1.5.3"
+        "de.heikoseeberger" %% "akka-http-circe" % "1.7.0"
       ),
       testDependencies
     )
@@ -428,8 +428,8 @@ lazy val jsApp = project.in(file("js-app"))
     .enablePlugins(ScalaJSPlugin)
     .settings(
       libraryDependencies ++= Seq(
-        "com.github.japgolly.scalajs-react" %%% "core" % "0.11.0",
-        "com.github.japgolly.scalajs-react" %%% "extra" % "0.11.0",
+        "com.github.japgolly.scalajs-react" %%% "core" % "0.11.1",
+        "com.github.japgolly.scalajs-react" %%% "extra" % "0.11.1",
         "com.github.japgolly.scalacss" %%% "core" % "0.4.1",
         "com.github.japgolly.scalacss" %%% "ext-react" % "0.4.1",
         "me.chrons" %%% "diode" % "1.0.0",
