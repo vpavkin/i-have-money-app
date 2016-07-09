@@ -49,6 +49,7 @@ object NavigationBar {
             ul(common.navbarSection,
               routeLink("Expenses", Expenses),
               routeLink("Income", Income),
+              routeLink("Exchange", Exchange),
               routeLink("Balance View", BalanceView),
               routeLink("TransactionLog", TransactionLogView),
               routeLink("Settings", FortuneSettingsView)

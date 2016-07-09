@@ -103,7 +103,7 @@ object WriteFrontend extends App with CirceSupport with CorsDirectives {
                 }
               } ~
                 pathPrefix(JavaUUID.map(i ⇒ FortuneId(i.toString))) { fortuneId: FortuneId ⇒
-                  (path("currency-exchange") & post & entity(as[ExchangeCurrencyRequest])) { req ⇒
+                  (path("exchange") & post & entity(as[ExchangeCurrencyRequest])) { req ⇒
                     complete {
                       writeBack.sendCommandAndIgnoreResult(fortuneId, ExchangeCurrency(
                         userId,
