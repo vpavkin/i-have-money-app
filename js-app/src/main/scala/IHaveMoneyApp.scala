@@ -20,6 +20,7 @@ object IHaveMoneyApp extends JSApp {
   val routerConfig = RouterConfigDsl[Route].buildConfig { dsl ⇒
     import dsl._
 
+    def renderExchange = render(ExchangeC())
     def renderExpenses = render(connectors.categories(c ⇒ ExpensesC(c)))
     def renderIncome = render(connectors.categories(c ⇒ IncomeC(c)))
     def renderInitializer = renderR(InitializerC(_))
@@ -46,6 +47,7 @@ object IHaveMoneyApp extends JSApp {
         | staticRoute("#nofortune", Route.NoFortunes) ~> renderR(ctl ⇒ NoFortuneC.component(ctl))
         | staticRoute("#expenses", Route.Expenses) ~> renderExpenses
         | staticRoute("#income", Route.Income) ~> renderIncome
+        | staticRoute("#exchange", Route.Exchange) ~> renderExchange
         | staticRoute("#balance", Route.BalanceView) ~> renderBalance
         | staticRoute("#settings", Route.FortuneSettingsView) ~> renderFortuneSettings
         | staticRoute("#log", Route.TransactionLogView) ~> render(connectors.log(b ⇒ TransactionLogC.component(TransactionLogC.Props(b))))

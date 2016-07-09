@@ -35,6 +35,7 @@ object api {
     def finishInit(fortuneId: String) = fortune / fortuneId / "finish-initialization"
     def addIncome(fortuneId: String) = fortune / fortuneId / "income"
     def addExpense(fortuneId: String) = fortune / fortuneId / "spend"
+    def exchange(fortuneId: String) = fortune / fortuneId / "exchange"
     def assets(fortuneId: String) = fortune / fortuneId / "assets"
 
     def readFortune = readFrontBaseUrl / "fortune"
@@ -80,6 +81,18 @@ object api {
       (implicit ec: ExecutionContext): Future[Xor[RequestError, Unit]] =
     postJson(routes.addExpense(AppCircuit.fortuneId).value,
       SpendRequest(amount, currency, category, initializer, comment),
+      headers = Map(authHeader)
+    ).map(_.map(_ ⇒ ()))
+
+  def exchange(
+      fromAmount: BigDecimal,
+      fromCurrency: Currency,
+      toAmount: BigDecimal,
+      toCurrency: Currency,
+      comment: Option[String])
+      (implicit ec: ExecutionContext): Future[Xor[RequestError, Unit]] =
+    postJson(routes.exchange(AppCircuit.fortuneId).value,
+      ExchangeCurrencyRequest(fromAmount, fromCurrency, toAmount, toCurrency, comment),
       headers = Map(authHeader)
     ).map(_.map(_ ⇒ ()))
 
