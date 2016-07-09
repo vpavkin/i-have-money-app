@@ -14,9 +14,6 @@ object FortuneId {
 
 object FortuneProtocol extends ProtocolLike {
 
-  case class ExpenseCategory(name: String)
-  case class IncomeCategory(name: String)
-
   /*-------------------Commands---------------------*/
   sealed trait FortuneCommand extends ProtocolCommand
 
