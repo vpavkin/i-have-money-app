@@ -15,7 +15,7 @@ import com.typesafe.config.ConfigFactory
 import de.heikoseeberger.akkahttpcirce.CirceSupport
 import io.circe.syntax._
 import ru.pavkin.ihavemoney.domain.fortune.FortuneProtocol._
-import ru.pavkin.ihavemoney.domain.fortune.{AssetId, FortuneId, LiabilityId}
+import ru.pavkin.ihavemoney.domain.fortune.{AssetId, FortuneId, LiabilityId, ExpenseCategory, IncomeCategory}
 import ru.pavkin.ihavemoney.domain.unexpected
 import ru.pavkin.ihavemoney.domain.user.UserId
 import ru.pavkin.ihavemoney.domain.user.UserProtocol._
@@ -155,6 +155,15 @@ object WriteFrontend extends App with CirceSupport with CorsDirectives {
                           ExpenseCategory(req.category),
                           req.initializer,
                           req.comment
+                        ))
+                      }
+                    } ~
+                    (path("limit") & post & entity(as[UpdateLimitsRequest])) { req ⇒
+                      complete {
+                        writeBack.sendCommandAndIgnoreResult(fortuneId, UpdateLimits(
+                          userId,
+                          req.weekly,
+                          req.monthly
                         ))
                       }
                     } ~

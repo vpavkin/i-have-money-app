@@ -5,7 +5,7 @@ import io.circe.Decoder
 import io.circe.syntax._
 import japgolly.scalajs.react.Callback
 import japgolly.scalajs.react.extra.router.BaseUrl
-import ru.pavkin.ihavemoney.domain.fortune.{Asset, Currency, FortuneInfo, Liability}
+import ru.pavkin.ihavemoney.domain.fortune._
 import ru.pavkin.ihavemoney.frontend.ajax.AjaxExtensions._
 import ru.pavkin.ihavemoney.frontend.redux.AppCircuit
 import ru.pavkin.ihavemoney.frontend.redux.model.Categories
@@ -31,6 +31,7 @@ object api {
     def register = writeFrontBaseUrl / "signIn"
     def fortune = writeFrontBaseUrl / "fortune"
     def editors(fortuneId: String) = fortune / fortuneId / "editors"
+    def limit(fortuneId: String) = fortune / fortuneId / "limit"
     def finishInit(fortuneId: String) = fortune / fortuneId / "finish-initialization"
     def addIncome(fortuneId: String) = fortune / fortuneId / "income"
     def addExpense(fortuneId: String) = fortune / fortuneId / "spend"
@@ -89,6 +90,12 @@ object api {
       (implicit ec: ExecutionContext): Future[Xor[RequestError, Unit]] =
     postJson(routes.assets(AppCircuit.fortuneId).value,
       BuyAssetRequest(asset, initializer, comment),
+      headers = Map(authHeader)
+    ).map(_.map(_ ⇒ ()))
+
+  def updateLimits(weekly: Map[ExpenseCategory, Worth], monthly: Map[ExpenseCategory, Worth])(implicit ec: ExecutionContext): Future[Xor[RequestError, Unit]] =
+    postJson(routes.limit(AppCircuit.fortuneId).value,
+      UpdateLimitsRequest(weekly, monthly),
       headers = Map(authHeader)
     ).map(_.map(_ ⇒ ()))
 

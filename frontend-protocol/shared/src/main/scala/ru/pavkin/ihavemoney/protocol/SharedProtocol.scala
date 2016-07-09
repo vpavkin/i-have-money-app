@@ -6,15 +6,12 @@ import cats.data.Xor
 import io.circe.syntax._
 import io.circe._
 import io.circe.generic.auto._
-import ru.pavkin.ihavemoney.domain.fortune.{Asset, Currency, FortuneInfo, Liability}
+import ru.pavkin.ihavemoney.domain.fortune._
 
 trait SharedProtocol {
 
   implicit val decodeCurrency: Decoder[Currency] =
-    Decoder.decodeString.emap(s ⇒ Currency.fromCode(s) match {
-      case Some(c) ⇒ Xor.Right(c)
-      case None ⇒ Xor.Left(s"$s is not a valid currency")
-    })
+    Decoder.decodeString.emap(s ⇒ Xor.fromOption(Currency.fromCode(s), s"$s is not a valid currency"))
 
   implicit val encodeCurrency: Encoder[Currency] =
     Encoder.instance(c ⇒ Json.fromString(c.code))
@@ -27,6 +24,9 @@ trait SharedProtocol {
 
   implicit val currencyKeyEncoder: KeyEncoder[Currency] = KeyEncoder.instance(_.code)
   implicit val currencyKeyDecoder: KeyDecoder[Currency] = KeyDecoder.instance(Currency.fromCode)
+
+  implicit val expenseCategoryKeyEncoder: KeyEncoder[ExpenseCategory] = KeyEncoder.instance(_.name)
+  implicit val expenseCategoryKeyDecoder: KeyDecoder[ExpenseCategory] = KeyDecoder.instance(s ⇒ Some(ExpenseCategory(s)))
 
   implicit final val decodeLocalDateDefault: Decoder[LocalDate] = Decoder.instance { c =>
     c.as[String].flatMap { s =>
@@ -47,6 +47,12 @@ trait SharedProtocol {
 
   implicit val decoderTransaction = Decoder[Transaction]
   implicit val encoderTransaction = Encoder[Transaction]
+
+  implicit val decoderWorth = Decoder[Worth]
+  implicit val encoderWorth = Encoder[Worth]
+
+  implicit val decoderExpenseCategory = Decoder[ExpenseCategory]
+  implicit val encoderExpenseCategory = Encoder[ExpenseCategory]
 
   implicit val decoderFortuneInfo = Decoder[FortuneInfo]
   implicit val encoderFortuneInfo = Encoder[FortuneInfo]

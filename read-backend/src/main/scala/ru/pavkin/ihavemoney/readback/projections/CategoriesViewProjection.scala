@@ -1,7 +1,7 @@
 package ru.pavkin.ihavemoney.readback.projections
 
 import io.funcqrs.{HandleEvent, Projection}
-import ru.pavkin.ihavemoney.domain.fortune.FortuneId
+import ru.pavkin.ihavemoney.domain.fortune.{ExpenseCategory, FortuneId, IncomeCategory}
 import ru.pavkin.ihavemoney.domain.fortune.FortuneProtocol._
 import ru.pavkin.ihavemoney.readback.repo.Repository
 

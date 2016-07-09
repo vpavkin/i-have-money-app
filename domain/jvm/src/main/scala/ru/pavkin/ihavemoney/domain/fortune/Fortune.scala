@@ -5,13 +5,16 @@ import io.funcqrs.behavior._
 import ru.pavkin.ihavemoney.domain.errors.{BalanceIsNotEnough, _}
 import ru.pavkin.ihavemoney.domain.user.UserId
 
-case class Fortune(id: FortuneId,
-                   balances: Map[Currency, BigDecimal],
-                   assets: Map[AssetId, Asset],
-                   liabilities: Map[LiabilityId, Liability],
-                   owner: UserId,
-                   editors: Set[UserId],
-                   initializationMode: Boolean = true) extends AggregateLike {
+case class Fortune(
+    id: FortuneId,
+    balances: Map[Currency, BigDecimal],
+    assets: Map[AssetId, Asset],
+    liabilities: Map[LiabilityId, Liability],
+    owner: UserId,
+    editors: Set[UserId],
+    weeklyLimits: Map[ExpenseCategory, Worth],
+    monthlyLimits: Map[ExpenseCategory, Worth],
+    initializationMode: Boolean = true) extends AggregateLike {
 
   type Id = FortuneId
   type Protocol = FortuneProtocol.type
@@ -72,102 +75,128 @@ case class Fortune(id: FortuneId,
     Fortune.metadata(id, cmd)
 
   def cantSendInitializationCommandsAfterInitializationIsComplete = action[Fortune]
-    .rejectCommand {
-      case cmd: FortuneAdjustmentCommand if cmd.initializer && !initializationMode ⇒
-        FortuneAlreadyInitialized(id)
-    }
+      .rejectCommand {
+        case cmd: FortuneAdjustmentCommand if cmd.initializer && !initializationMode ⇒
+          FortuneAlreadyInitialized(id)
+      }
 
   def unauthorizedUserCanNotAdjustFortune = action[Fortune]
-    .rejectCommand {
-      case cmd: FortuneAdjustmentCommand if !this.canBeAdjustedBy(cmd.user) ⇒
-        InsufficientAccessRights(cmd.user, this.id)
-    }
+      .rejectCommand {
+        case cmd: FortuneAdjustmentCommand if !this.canBeAdjustedBy(cmd.user) ⇒
+          InsufficientAccessRights(cmd.user, this.id)
+      }
 
   def onlyOwnerCanAddEditors = action[Fortune]
-    .rejectCommand {
-      case cmd: AddEditor if this.owner != cmd.user ⇒
-        InsufficientAccessRights(cmd.user, this.id)
-    }
+      .rejectCommand {
+        case cmd: AddEditor if this.owner != cmd.user ⇒
+          InsufficientAccessRights(cmd.user, this.id)
+      }
 
   def cantHaveNegativeBalance = action[Fortune]
-    .rejectCommand {
-      case cmd: Spend if this.amount(cmd.currency) < cmd.amount ⇒
-        BalanceIsNotEnough(this.amount(cmd.currency), cmd.currency)
-      case cmd: ExchangeCurrency if this.amount(cmd.fromCurrency) < cmd.fromAmount ⇒
-        BalanceIsNotEnough(this.amount(cmd.fromCurrency), cmd.fromCurrency)
-    }
+      .rejectCommand {
+        case cmd: Spend if this.amount(cmd.currency) < cmd.amount ⇒
+          BalanceIsNotEnough(this.amount(cmd.currency), cmd.currency)
+        case cmd: ExchangeCurrency if this.amount(cmd.fromCurrency) < cmd.fromAmount ⇒
+          BalanceIsNotEnough(this.amount(cmd.fromCurrency), cmd.fromCurrency)
+      }
+
+  def cantAdjustWithANegativeValue = action[Fortune]
+      .rejectCommand {
+        case cmd: Spend if cmd.amount <= 0 ⇒ NegativeAmount
+        case cmd: ReceiveIncome if cmd.amount <= 0 ⇒ NegativeAmount
+        case cmd: ExchangeCurrency if cmd.fromAmount <= 0 || cmd.toAmount <= 0 ⇒ NegativeAmount
+        case cmd: CorrectBalances if cmd.realBalances.values.exists(_ < 0) ⇒ NegativeAmount
+        case cmd: BuyAsset if cmd.asset.worth.amount < 0 ⇒ NegativeAmount
+        case cmd: ReevaluateAsset if cmd.newPrice < 0 ⇒ NegativeAmount
+        case cmd: TakeOnLiability if cmd.liability.worth.amount < 0 ⇒ NegativeAmount
+        case cmd: PayLiabilityOff if cmd.byAmount < 0 ⇒ NegativeAmount
+        case cmd: UpdateLimits if cmd.weekly.values.exists(_.amount < 0) || cmd.monthly.values.exists(_.amount < 0) ⇒ NegativeAmount
+      }
 
   def cantAcquireAssetWithNotEnoughMoney = action[Fortune]
-    .rejectCommand {
-      case cmd: BuyAsset if !cmd.initializer && this.amount(cmd.asset.currency) < cmd.asset.price ⇒
-        BalanceIsNotEnough(this.amount(cmd.asset.currency), cmd.asset.currency)
-    }
+      .rejectCommand {
+        case cmd: BuyAsset if !cmd.initializer && this.amount(cmd.asset.currency) < cmd.asset.price ⇒
+          BalanceIsNotEnough(this.amount(cmd.asset.currency), cmd.asset.currency)
+      }
 
   def cantManipulateAssetThatDoesNotExist = action[Fortune]
-    .rejectCommand {
-      case cmd: AssetManipulationCommand if !this.assets.contains(cmd.assetId) ⇒
-        AssetNotFound(cmd.assetId)
-    }
+      .rejectCommand {
+        case cmd: AssetManipulationCommand if !this.assets.contains(cmd.assetId) ⇒
+          AssetNotFound(cmd.assetId)
+      }
 
   def cantManipulateLiabilityThatDoesNotExist = action[Fortune]
-    .rejectCommand {
-      case cmd: LiabilityManipulationCommand if !this.liabilities.contains(cmd.liabilityId) ⇒
-        LiabilityNotFound(cmd.liabilityId)
-    }
+      .rejectCommand {
+        case cmd: LiabilityManipulationCommand if !this.liabilities.contains(cmd.liabilityId) ⇒
+          LiabilityNotFound(cmd.liabilityId)
+      }
 
   def ownerCanAddEditors = action[Fortune]
-    .handleCommand {
-      cmd: AddEditor ⇒ EditorAdded(cmd.editor, metadata(cmd))
-    }
-    .handleEvent {
-      evt: EditorAdded ⇒ this.addEditor(evt.editor)
-    }
+      .handleCommand {
+        cmd: AddEditor ⇒ EditorAdded(cmd.editor, metadata(cmd))
+      }
+      .handleEvent {
+        evt: EditorAdded ⇒ this.addEditor(evt.editor)
+      }
 
   def editorsCanFinishInitialization = action[Fortune]
-    .handleCommand {
-      cmd: FinishInitialization ⇒ FortuneInitializationFinished(cmd.user, metadata(cmd))
-    }
-    .handleEvent {
-      evt: FortuneInitializationFinished ⇒ copy(initializationMode = false)
-    }
+      .handleCommand {
+        cmd: FinishInitialization ⇒ FortuneInitializationFinished(cmd.user, metadata(cmd))
+      }
+      .handleEvent {
+        evt: FortuneInitializationFinished ⇒ copy(initializationMode = false)
+      }
+
+  def editorsCanUpdateLimits = action[Fortune]
+      .handleCommand {
+        cmd: UpdateLimits ⇒ LimitsUpdated(
+          cmd.user,
+          cmd.weekly,
+          cmd.monthly,
+          metadata(cmd)
+        )
+      }
+      .handleEvent {
+        evt: LimitsUpdated ⇒ this.copy(weeklyLimits = evt.weekly, monthlyLimits = evt.monthly)
+      }
 
   def editorsCanExchangeCurrency = action[Fortune]
-    .handleCommand {
-      cmd: ExchangeCurrency ⇒ CurrencyExchanged(
-        cmd.user,
-        cmd.fromAmount, cmd.fromCurrency,
-        cmd.toAmount, cmd.toCurrency,
-        metadata(cmd),
-        cmd.comment
-      )
-    }
-    .handleEvent {
-      evt: CurrencyExchanged ⇒ this.exchange(Worth(evt.fromAmount, evt.fromCurrency), Worth(evt.toAmount, evt.toCurrency))
-    }
+      .handleCommand {
+        cmd: ExchangeCurrency ⇒ CurrencyExchanged(
+          cmd.user,
+          cmd.fromAmount, cmd.fromCurrency,
+          cmd.toAmount, cmd.toCurrency,
+          metadata(cmd),
+          cmd.comment
+        )
+      }
+      .handleEvent {
+        evt: CurrencyExchanged ⇒ this.exchange(Worth(evt.fromAmount, evt.fromCurrency), Worth(evt.toAmount, evt.toCurrency))
+      }
 
   def editorsCanPerformCorrections = action[Fortune]
-    .handleCommand.manyEvents {
+      .handleCommand.manyEvents {
     cmd: CorrectBalances ⇒
       cmd.realBalances
-        .map {
-          case (curr, realAmount) ⇒ curr → (realAmount - this.amount(curr))
-        }
-        .filter(_._2 != BigDecimal(0))
-        .map {
-          case (curr, correction) ⇒
-            if (correction > BigDecimal(0)) FortuneIncreased(cmd.user, correction, curr, IncomeCategory("Correction"), initializer = false, metadata(cmd))
-            else FortuneSpent(cmd.user, -correction, curr, ExpenseCategory("Correction"), initializer = false, metadata(cmd))
-        }.toList
+          .map {
+            case (curr, realAmount) ⇒ curr → (realAmount - this.amount(curr))
+          }
+          .filter(_._2 != BigDecimal(0))
+          .map {
+            case (curr, correction) ⇒
+              if (correction > BigDecimal(0)) FortuneIncreased(cmd.user, correction, curr, IncomeCategory("Correction"), initializer = false, metadata(cmd))
+              else FortuneSpent(cmd.user, -correction, curr, ExpenseCategory("Correction"), initializer = false, metadata(cmd))
+          }.toList
   }
-    .handleEvent {
-      evt: FortuneIncreased ⇒ this.increase(Worth(evt.amount, evt.currency))
-    }
-    .handleEvent {
-      evt: FortuneSpent ⇒ this.decrease(Worth(evt.amount, evt.currency))
-    }
+      .handleEvent {
+        evt: FortuneIncreased ⇒ this.increase(Worth(evt.amount, evt.currency))
+      }
+      .handleEvent {
+        evt: FortuneSpent ⇒ this.decrease(Worth(evt.amount, evt.currency))
+      }
 
   def editorsCanBuyAssets = action[Fortune]
-    .handleCommand.manyEvents[BuyAsset, FortuneEvent] {
+      .handleCommand.manyEvents[BuyAsset, FortuneEvent] {
     cmd: BuyAsset ⇒
       val assetId = AssetId.generate
       println(s"Creating new asset with id $assetId")
@@ -190,101 +219,101 @@ case class Fortune(id: FortuneId,
       )
       else List(assetAcquired)
   }
-    .handleEvent {
-      evt: FortuneIncreased ⇒ this.increase(Worth(evt.amount, evt.currency))
-    }
-    .handleEvent {
-      evt: AssetAcquired ⇒
-        addAsset(evt.assetId, evt.asset)
-          .decrease(evt.asset.worth)
-    }
+      .handleEvent {
+        evt: FortuneIncreased ⇒ this.increase(Worth(evt.amount, evt.currency))
+      }
+      .handleEvent {
+        evt: AssetAcquired ⇒
+          addAsset(evt.assetId, evt.asset)
+              .decrease(evt.asset.worth)
+      }
 
   def editorsCanSellAssets = action[Fortune]
-    .handleCommand {
-      cmd: SellAsset ⇒
-        AssetSold(cmd.user, cmd.assetId, metadata(cmd), cmd.comment)
-    }
-    .handleEvent {
-      evt: AssetSold ⇒
-        val asset = assets(evt.assetId)
-        removeAsset(evt.assetId)
-          .increase(asset.worth)
-    }
+      .handleCommand {
+        cmd: SellAsset ⇒
+          AssetSold(cmd.user, cmd.assetId, metadata(cmd), cmd.comment)
+      }
+      .handleEvent {
+        evt: AssetSold ⇒
+          val asset = assets(evt.assetId)
+          removeAsset(evt.assetId)
+              .increase(asset.worth)
+      }
 
   def editorsCanReevaluateAssets = action[Fortune]
-    .handleCommand {
-      cmd: ReevaluateAsset ⇒
-        AssetWorthChanged(cmd.user, cmd.assetId, cmd.newPrice, metadata(cmd), cmd.comment)
-    }
-    .handleEvent {
-      evt: AssetWorthChanged ⇒
-        changeAssetWorth(evt.assetId, evt.newAmount)
-    }
+      .handleCommand {
+        cmd: ReevaluateAsset ⇒
+          AssetWorthChanged(cmd.user, cmd.assetId, cmd.newPrice, metadata(cmd), cmd.comment)
+      }
+      .handleEvent {
+        evt: AssetWorthChanged ⇒
+          changeAssetWorth(evt.assetId, evt.newAmount)
+      }
 
   def editorsCanTakeOnLiabilities = action[Fortune]
-    .handleCommand {
-      cmd: TakeOnLiability ⇒
-        val liabilityId = LiabilityId.generate
-        println(s"Creating new liability with id $liabilityId")
-        LiabilityTaken(
+      .handleCommand {
+        cmd: TakeOnLiability ⇒
+          val liabilityId = LiabilityId.generate
+          println(s"Creating new liability with id $liabilityId")
+          LiabilityTaken(
+            cmd.user,
+            liabilityId,
+            cmd.liability,
+            cmd.initializer,
+            metadata(cmd),
+            cmd.comment
+          )
+      }
+      .handleEvent {
+        evt: LiabilityTaken ⇒
+          addLiability(evt.liabilityId, evt.liability)
+              .increase(evt.liability.worth)
+      }
+
+  def editorsCanPayOffLiabilities = action[Fortune]
+      .handleCommand {
+        cmd: PayLiabilityOff ⇒ LiabilityPaidOff(
           cmd.user,
-          liabilityId,
-          cmd.liability,
-          cmd.initializer,
+          cmd.liabilityId,
+          cmd.byAmount,
           metadata(cmd),
           cmd.comment
         )
-    }
-    .handleEvent {
-      evt: LiabilityTaken ⇒
-        addLiability(evt.liabilityId, evt.liability)
-          .increase(evt.liability.worth)
-    }
-
-  def editorsCanPayOffLiabilities = action[Fortune]
-    .handleCommand {
-      cmd: PayLiabilityOff ⇒ LiabilityPaidOff(
-        cmd.user,
-        cmd.liabilityId,
-        cmd.byAmount,
-        metadata(cmd),
-        cmd.comment
-      )
-    }
-    .handleEvent {
-      evt: LiabilityPaidOff ⇒
-        payLiabilityOff(evt.liabilityId, evt.amount)
-    }
+      }
+      .handleEvent {
+        evt: LiabilityPaidOff ⇒
+          payLiabilityOff(evt.liabilityId, evt.amount)
+      }
 
   def editorsCanIncreaseFortune = action[Fortune]
-    .handleCommand {
-      cmd: ReceiveIncome ⇒ FortuneIncreased(
-        cmd.user,
-        cmd.amount,
-        cmd.currency,
-        cmd.category,
-        cmd.initializer,
-        metadata(cmd),
-        cmd.comment)
-    }
-    .handleEvent {
-      evt: FortuneIncreased ⇒ this.increase(Worth(evt.amount, evt.currency))
-    }
+      .handleCommand {
+        cmd: ReceiveIncome ⇒ FortuneIncreased(
+          cmd.user,
+          cmd.amount,
+          cmd.currency,
+          cmd.category,
+          cmd.initializer,
+          metadata(cmd),
+          cmd.comment)
+      }
+      .handleEvent {
+        evt: FortuneIncreased ⇒ this.increase(Worth(evt.amount, evt.currency))
+      }
 
   def editorsCanDecreaseFortune = action[Fortune]
-    .handleCommand {
-      cmd: Spend ⇒ FortuneSpent(
-        cmd.user,
-        cmd.amount,
-        cmd.currency,
-        cmd.category,
-        cmd.initializer,
-        metadata(cmd),
-        cmd.comment)
-    }
-    .handleEvent {
-      evt: FortuneSpent ⇒ this.decrease(Worth(evt.amount, evt.currency))
-    }
+      .handleCommand {
+        cmd: Spend ⇒ FortuneSpent(
+          cmd.user,
+          cmd.amount,
+          cmd.currency,
+          cmd.category,
+          cmd.initializer,
+          metadata(cmd),
+          cmd.comment)
+      }
+      .handleEvent {
+        evt: FortuneSpent ⇒ this.decrease(Worth(evt.amount, evt.currency))
+      }
 }
 
 object Fortune {
@@ -299,12 +328,12 @@ object Fortune {
 
   def createFortune(fortuneId: FortuneId) =
     actions[Fortune]
-      .handleCommand {
-        cmd: CreateFortune ⇒ FortuneCreated(cmd.owner, metadata(fortuneId, cmd))
-      }
-      .handleEvent {
-        evt: FortuneCreated ⇒ Fortune(fortuneId, Map.empty, Map.empty, Map.empty, evt.owner, Set.empty)
-      }
+        .handleCommand {
+          cmd: CreateFortune ⇒ FortuneCreated(cmd.owner, metadata(fortuneId, cmd))
+        }
+        .handleEvent {
+          evt: FortuneCreated ⇒ Fortune(fortuneId, Map.empty, Map.empty, Map.empty, evt.owner, Set.empty, Map.empty, Map.empty)
+        }
 
   def behavior(fortuneId: FortuneId): Behavior[Fortune] = {
 
@@ -312,22 +341,24 @@ object Fortune {
 
     case Initialized(fortune) ⇒
       fortune.unauthorizedUserCanNotAdjustFortune ++
-        fortune.onlyOwnerCanAddEditors ++
-        fortune.cantSendInitializationCommandsAfterInitializationIsComplete ++
-        fortune.cantAcquireAssetWithNotEnoughMoney ++
-        fortune.cantManipulateAssetThatDoesNotExist ++
-        fortune.cantManipulateLiabilityThatDoesNotExist ++
-        fortune.cantHaveNegativeBalance ++
-        fortune.ownerCanAddEditors ++
-        fortune.editorsCanFinishInitialization ++
-        fortune.editorsCanBuyAssets ++
-        fortune.editorsCanSellAssets ++
-        fortune.editorsCanTakeOnLiabilities ++
-        fortune.editorsCanPayOffLiabilities ++
-        fortune.editorsCanReevaluateAssets ++
-        fortune.editorsCanPerformCorrections ++
-        fortune.editorsCanExchangeCurrency ++
-        fortune.editorsCanIncreaseFortune ++
-        fortune.editorsCanDecreaseFortune
+          fortune.onlyOwnerCanAddEditors ++
+          fortune.cantSendInitializationCommandsAfterInitializationIsComplete ++
+          fortune.cantAcquireAssetWithNotEnoughMoney ++
+          fortune.cantManipulateAssetThatDoesNotExist ++
+          fortune.cantManipulateLiabilityThatDoesNotExist ++
+          fortune.cantHaveNegativeBalance ++
+          fortune.cantAdjustWithANegativeValue ++
+          fortune.ownerCanAddEditors ++
+          fortune.editorsCanFinishInitialization ++
+          fortune.editorsCanUpdateLimits ++
+          fortune.editorsCanBuyAssets ++
+          fortune.editorsCanSellAssets ++
+          fortune.editorsCanTakeOnLiabilities ++
+          fortune.editorsCanPayOffLiabilities ++
+          fortune.editorsCanReevaluateAssets ++
+          fortune.editorsCanPerformCorrections ++
+          fortune.editorsCanExchangeCurrency ++
+          fortune.editorsCanIncreaseFortune ++
+          fortune.editorsCanDecreaseFortune
   }
 }

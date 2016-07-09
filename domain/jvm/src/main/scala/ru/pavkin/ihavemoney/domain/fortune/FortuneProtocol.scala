@@ -14,17 +14,17 @@ object FortuneId {
 
 object FortuneProtocol extends ProtocolLike {
 
-  case class ExpenseCategory(name: String)
-  case class IncomeCategory(name: String)
-
   /*-------------------Commands---------------------*/
-  sealed trait FortuneCommand extends ProtocolCommand
+  sealed trait FortuneCommand extends ProtocolCommand {
+    def user: UserId
+  }
 
-  case class CreateFortune(owner: UserId) extends FortuneCommand
+  case class CreateFortune(owner: UserId) extends FortuneCommand {
+    def user: UserId = owner
+  }
   case class AddEditor(user: UserId, editor: UserId) extends FortuneCommand
 
   sealed trait FortuneAdjustmentCommand extends FortuneCommand {
-    def user: UserId
     def initializer: Boolean
   }
 
@@ -36,45 +36,51 @@ object FortuneProtocol extends ProtocolLike {
     def initializer = false
   }
 
-  case class Spend(user: UserId,
-                   amount: BigDecimal,
-                   currency: Currency,
-                   category: ExpenseCategory,
-                   initializer: Boolean = false,
-                   comment: Option[String] = None) extends FortuneAdjustmentCommand
+  case class Spend(
+      user: UserId,
+      amount: BigDecimal,
+      currency: Currency,
+      category: ExpenseCategory,
+      initializer: Boolean = false,
+      comment: Option[String] = None) extends FortuneAdjustmentCommand
 
-  case class ReceiveIncome(user: UserId,
-                           amount: BigDecimal,
-                           currency: Currency,
-                           category: IncomeCategory,
-                           initializer: Boolean = false,
-                           comment: Option[String] = None) extends FortuneAdjustmentCommand
+  case class ReceiveIncome(
+      user: UserId,
+      amount: BigDecimal,
+      currency: Currency,
+      category: IncomeCategory,
+      initializer: Boolean = false,
+      comment: Option[String] = None) extends FortuneAdjustmentCommand
 
-  case class ExchangeCurrency(user: UserId,
-                              fromAmount: BigDecimal,
-                              fromCurrency: Currency,
-                              toAmount: BigDecimal,
-                              toCurrency: Currency,
-                              comment: Option[String] = None) extends InitializedFortuneAdjustmentCommand {
+  case class ExchangeCurrency(
+      user: UserId,
+      fromAmount: BigDecimal,
+      fromCurrency: Currency,
+      toAmount: BigDecimal,
+      toCurrency: Currency,
+      comment: Option[String] = None) extends InitializedFortuneAdjustmentCommand {
     require(fromCurrency != toCurrency)
   }
 
   // issues correction events with a special category
-  case class CorrectBalances(user: UserId,
-                             realBalances: Map[Currency, BigDecimal],
-                             comment: Option[String] = None) extends InitializedFortuneAdjustmentCommand
+  case class CorrectBalances(
+      user: UserId,
+      realBalances: Map[Currency, BigDecimal],
+      comment: Option[String] = None) extends InitializedFortuneAdjustmentCommand
 
-  case class BuyAsset(user: UserId,
-                      asset: Asset,
-                      initializer: Boolean = false,
-                      comment: Option[String] = None) extends FortuneAdjustmentCommand
+  case class BuyAsset(
+      user: UserId,
+      asset: Asset,
+      initializer: Boolean = false,
+      comment: Option[String] = None) extends FortuneAdjustmentCommand
 
   sealed trait AssetManipulationCommand extends InitializedFortuneAdjustmentCommand {
     def assetId: AssetId
   }
-  case class SellAsset(user: UserId,
-                       assetId: AssetId,
-                       comment: Option[String] = None) extends AssetManipulationCommand
+  case class SellAsset(
+      user: UserId,
+      assetId: AssetId,
+      comment: Option[String] = None) extends AssetManipulationCommand
   // todo: implement later
   //  case class BuyMoreStocks(user: UserId,
   //                           assetId: AssetId,
@@ -87,73 +93,89 @@ object FortuneProtocol extends ProtocolLike {
   //                            comment: Option[String] = None) extends AssetManipulationCommand
 
   /* Reevaluate per-stock worth for stocks, whole asset worth otherwise*/
-  case class ReevaluateAsset(user: UserId,
-                             assetId: AssetId,
-                             newPrice: BigDecimal,
-                             comment: Option[String] = None) extends AssetManipulationCommand
+  case class ReevaluateAsset(
+      user: UserId,
+      assetId: AssetId,
+      newPrice: BigDecimal,
+      comment: Option[String] = None) extends AssetManipulationCommand
 
-  case class TakeOnLiability(user: UserId,
-                             liability: Liability,
-                             initializer: Boolean = false,
-                             comment: Option[String] = None) extends FortuneAdjustmentCommand
+  case class TakeOnLiability(
+      user: UserId,
+      liability: Liability,
+      initializer: Boolean = false,
+      comment: Option[String] = None) extends FortuneAdjustmentCommand
 
   sealed trait LiabilityManipulationCommand extends InitializedFortuneAdjustmentCommand {
     def liabilityId: LiabilityId
   }
 
-  case class PayLiabilityOff(user: UserId,
-                             liabilityId: LiabilityId,
-                             byAmount: BigDecimal,
-                             comment: Option[String] = None) extends LiabilityManipulationCommand
+  case class PayLiabilityOff(
+      user: UserId,
+      liabilityId: LiabilityId,
+      byAmount: BigDecimal,
+      comment: Option[String] = None) extends LiabilityManipulationCommand
+
+  case class UpdateLimits(
+      user: UserId,
+      weekly: Map[ExpenseCategory, Worth],
+      monthly: Map[ExpenseCategory, Worth]) extends FortuneCommand
 
   /*-------------------Events---------------------*/
   sealed trait FortuneEvent extends ProtocolEvent with MetadataFacet[FortuneMetadata]
 
-  case class FortuneCreated(owner: UserId,
-                            metadata: FortuneMetadata) extends FortuneEvent
+  case class FortuneCreated(
+      owner: UserId,
+      metadata: FortuneMetadata) extends FortuneEvent
 
-  case class EditorAdded(editor: UserId,
-                         metadata: FortuneMetadata) extends FortuneEvent
+  case class EditorAdded(
+      editor: UserId,
+      metadata: FortuneMetadata) extends FortuneEvent
 
-  case class FortuneIncreased(user: UserId,
-                              amount: BigDecimal,
-                              currency: Currency,
-                              category: IncomeCategory,
-                              initializer: Boolean = false,
-                              metadata: FortuneMetadata,
-                              comment: Option[String] = None) extends FortuneEvent
-  case class FortuneSpent(user: UserId,
-                          amount: BigDecimal,
-                          currency: Currency,
-                          category: ExpenseCategory,
-                          initializer: Boolean = false,
-                          metadata: FortuneMetadata,
-                          comment: Option[String] = None) extends FortuneEvent
+  case class FortuneIncreased(
+      user: UserId,
+      amount: BigDecimal,
+      currency: Currency,
+      category: IncomeCategory,
+      initializer: Boolean = false,
+      metadata: FortuneMetadata,
+      comment: Option[String] = None) extends FortuneEvent
+  case class FortuneSpent(
+      user: UserId,
+      amount: BigDecimal,
+      currency: Currency,
+      category: ExpenseCategory,
+      initializer: Boolean = false,
+      metadata: FortuneMetadata,
+      comment: Option[String] = None) extends FortuneEvent
 
-  case class CurrencyExchanged(user: UserId,
-                               fromAmount: BigDecimal,
-                               fromCurrency: Currency,
-                               toAmount: BigDecimal,
-                               toCurrency: Currency,
-                               metadata: FortuneMetadata,
-                               comment: Option[String] = None) extends FortuneEvent {
+  case class CurrencyExchanged(
+      user: UserId,
+      fromAmount: BigDecimal,
+      fromCurrency: Currency,
+      toAmount: BigDecimal,
+      toCurrency: Currency,
+      metadata: FortuneMetadata,
+      comment: Option[String] = None) extends FortuneEvent {
     require(fromCurrency != toCurrency)
   }
 
-  case class FortuneInitializationFinished(user: UserId,
-                                           metadata: FortuneMetadata) extends FortuneEvent
+  case class FortuneInitializationFinished(
+      user: UserId,
+      metadata: FortuneMetadata) extends FortuneEvent
 
-  case class AssetAcquired(user: UserId,
-                           assetId: AssetId,
-                           asset: Asset,
-                           initializer: Boolean = false,
-                           metadata: FortuneMetadata,
-                           comment: Option[String] = None) extends FortuneEvent
+  case class AssetAcquired(
+      user: UserId,
+      assetId: AssetId,
+      asset: Asset,
+      initializer: Boolean = false,
+      metadata: FortuneMetadata,
+      comment: Option[String] = None) extends FortuneEvent
 
-  case class AssetSold(user: UserId,
-                       assetId: AssetId,
-                       metadata: FortuneMetadata,
-                       comment: Option[String] = None) extends FortuneEvent
+  case class AssetSold(
+      user: UserId,
+      assetId: AssetId,
+      metadata: FortuneMetadata,
+      comment: Option[String] = None) extends FortuneEvent
 
   // todo: implement later
   //  case class AdditionalStocksAcquired(user: UserId,
@@ -169,31 +191,41 @@ object FortuneProtocol extends ProtocolLike {
   //                                 comment: Option[String] = None) extends FortuneEvent
 
   /* Reevaluate per-stock worth for stocks, whole asset worth otherwise*/
-  case class AssetWorthChanged(user: UserId,
-                               assetId: AssetId,
-                               newAmount: BigDecimal,
-                               metadata: FortuneMetadata,
-                               comment: Option[String] = None) extends FortuneEvent
+  case class AssetWorthChanged(
+      user: UserId,
+      assetId: AssetId,
+      newAmount: BigDecimal,
+      metadata: FortuneMetadata,
+      comment: Option[String] = None) extends FortuneEvent
 
-  case class LiabilityTaken(user: UserId,
-                            liabilityId: LiabilityId,
-                            liability: Liability,
-                            initializer: Boolean = false,
-                            metadata: FortuneMetadata,
-                            comment: Option[String] = None) extends FortuneEvent
+  case class LiabilityTaken(
+      user: UserId,
+      liabilityId: LiabilityId,
+      liability: Liability,
+      initializer: Boolean = false,
+      metadata: FortuneMetadata,
+      comment: Option[String] = None) extends FortuneEvent
 
-  case class LiabilityPaidOff(user: UserId,
-                              liabilityId: LiabilityId,
-                              amount: BigDecimal,
-                              metadata: FortuneMetadata,
-                              comment: Option[String] = None) extends FortuneEvent
+  case class LiabilityPaidOff(
+      user: UserId,
+      liabilityId: LiabilityId,
+      amount: BigDecimal,
+      metadata: FortuneMetadata,
+      comment: Option[String] = None) extends FortuneEvent
+
+  case class LimitsUpdated(
+      user: UserId,
+      weekly: Map[ExpenseCategory, Worth],
+      monthly: Map[ExpenseCategory, Worth],
+      metadata: FortuneMetadata) extends FortuneEvent
 
   /*-------------------Metadata---------------------*/
-  case class FortuneMetadata(aggregateId: FortuneId,
-                             commandId: CommandId,
-                             eventId: EventId = EventId(),
-                             date: OffsetDateTime = OffsetDateTime.now(),
-                             tags: Set[Tag] = Set()) extends Metadata with JavaTime {
+  case class FortuneMetadata(
+      aggregateId: FortuneId,
+      commandId: CommandId,
+      eventId: EventId = EventId(),
+      date: OffsetDateTime = OffsetDateTime.now(),
+      tags: Set[Tag] = Set()) extends Metadata with JavaTime {
     type Id = FortuneId
   }
 }

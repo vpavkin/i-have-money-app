@@ -23,6 +23,7 @@ trait FortuneProtobufAdapter {
     case p: PBLiabilityTaken ⇒ p.decode
     case p: PBLiabilityPaidOff ⇒ p.decode
     case p: PBCurrencyExchanged ⇒ p.decode
+    case p: PBLimitsUpdated ⇒ p.decode
     case p ⇒
       println("Received Event that is not handled by adapter")
       e

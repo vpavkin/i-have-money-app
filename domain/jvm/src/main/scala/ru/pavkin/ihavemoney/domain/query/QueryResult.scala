@@ -1,6 +1,6 @@
 package ru.pavkin.ihavemoney.domain.query
 
-import ru.pavkin.ihavemoney.domain.fortune.FortuneProtocol.{ExpenseCategory, FortuneEvent, IncomeCategory}
+import ru.pavkin.ihavemoney.domain.fortune.FortuneProtocol.FortuneEvent
 import ru.pavkin.ihavemoney.domain.fortune._
 import ru.pavkin.ihavemoney.domain.user.UserId
 

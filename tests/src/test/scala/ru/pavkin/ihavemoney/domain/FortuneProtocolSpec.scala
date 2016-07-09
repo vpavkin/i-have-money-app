@@ -5,23 +5,26 @@ import io.funcqrs.backend.QueryByTag
 import io.funcqrs.config.Api._
 import io.funcqrs.test.InMemoryTestSupport
 import io.funcqrs.test.backend.InMemoryBackend
+import org.scalatest.OptionValues
 import org.scalatest.concurrent.ScalaFutures
 import ru.pavkin.ihavemoney.domain.errors._
 import ru.pavkin.ihavemoney.domain.fortune.FortuneProtocol._
 import ru.pavkin.ihavemoney.domain.fortune._
 import ru.pavkin.ihavemoney.domain.user.UserId
-import ru.pavkin.ihavemoney.readback.projections.{AssetsViewProjection, LiabilitiesViewProjection, MoneyViewProjection}
+import ru.pavkin.ihavemoney.readback.projections.{AssetsViewProjection, FortuneInfoProjection, LiabilitiesViewProjection, MoneyViewProjection}
+import ru.pavkin.ihavemoney.readback.repo.InMemoryRepository
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class FortuneProtocolSpec extends IHaveMoneySpec with ScalaFutures {
+class FortuneProtocolSpec extends IHaveMoneySpec with ScalaFutures with OptionValues {
 
   class FortuneInMemoryTestBase extends InMemoryTestSupport {
 
     val moneyRepo = new InMemoryMoneyViewRepository
     val assetsRepo = new InMemoryAssetsViewRepository
     val liabRepo = new InMemoryLiabilitiesViewRepository
+    val fortuneInfoRepo = new InMemoryRepository[FortuneId, FortuneInfo] {}
     val owner = UserId("owner@example.org")
     val id = FortuneId.generate
 
@@ -35,16 +38,16 @@ class FortuneProtocolSpec extends IHaveMoneySpec with ScalaFutures {
     def configure(backend: InMemoryBackend): Unit =
       backend.configure {
         aggregate[Fortune](Fortune.behavior)
-      }
-        .configure {
-          projection(
-            query = QueryByTag(Fortune.tag),
-            projection = new MoneyViewProjection(moneyRepo, assetsRepo, liabRepo)
+      }.configure {
+        projection(
+          query = QueryByTag(Fortune.tag),
+          projection = new MoneyViewProjection(moneyRepo, assetsRepo, liabRepo)
               .andThen(new AssetsViewProjection(assetsRepo))
-              .andThen(new LiabilitiesViewProjection(liabRepo)),
-            name = "ViewProjection"
-          )
-        }
+              .andThen(new LiabilitiesViewProjection(liabRepo))
+              .andThen(new FortuneInfoProjection(fortuneInfoRepo)),
+          name = "ViewProjection"
+        )
+      }
 
     def ref(id: FortuneId) = aggregateRef[Fortune](id)
   }
@@ -119,6 +122,35 @@ class FortuneProtocolSpec extends IHaveMoneySpec with ScalaFutures {
       expectEvent { case FortuneSpent(_, amount, Currency.USD, _, _, _, None) if amount.toDouble == 20.0 ⇒ () }
 
       money(Currency.USD) shouldBe BigDecimal(103.12)
+    }
+  }
+
+  test("Can't increase of decrease by zero or negative value") {
+
+    new FortuneInMemoryTest {
+      intercept[NegativeAmount.type](fortune ! ReceiveIncome(owner, BigDecimal(-1), Currency.USD, IncomeCategory("salary")))
+      intercept[NegativeAmount.type](fortune ! ReceiveIncome(owner, BigDecimal(0), Currency.USD, IncomeCategory("salary")))
+      intercept[NegativeAmount.type](fortune ! Spend(owner, BigDecimal(-1), Currency.USD, ExpenseCategory("food")))
+      intercept[NegativeAmount.type](fortune ! Spend(owner, BigDecimal(0), Currency.USD, ExpenseCategory("food")))
+    }
+  }
+
+  test("Update Limits completely rewrites previous limits") {
+    new FortuneInMemoryTest {
+      val l1 = Map(ExpenseCategory("food") → Worth(100, Currency.USD))
+      val l2 = Map(ExpenseCategory("games") → Worth(100, Currency.USD))
+      fortune ! UpdateLimits(owner, l1, l2)
+
+      expectEvent { case LimitsUpdated(_, l1, l2, _) ⇒ () }
+
+      val info = fortuneInfoRepo.byId(id).futureValue.value
+      info.monthlyLimits shouldBe l2
+      info.weeklyLimits shouldBe l1
+
+      fortune ! UpdateLimits(owner, l2, Map.empty)
+      val info2 = fortuneInfoRepo.byId(id).futureValue.value
+      info2.monthlyLimits shouldBe Map.empty
+      info2.weeklyLimits shouldBe l2
     }
   }
 
