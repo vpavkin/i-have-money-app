@@ -4,7 +4,7 @@ import java.time.LocalDate
 
 import cats.data.Xor
 import io.circe.syntax._
-import io.circe.{Decoder, DecodingFailure, Encoder, Json}
+import io.circe._
 import io.circe.generic.auto._
 import ru.pavkin.ihavemoney.domain.fortune.{Asset, Currency, FortuneInfo, Liability}
 
@@ -17,7 +17,7 @@ trait SharedProtocol {
     })
 
   implicit val encodeCurrency: Encoder[Currency] =
-    Encoder.instance(c ⇒ Json.string(c.code))
+    Encoder.instance(c ⇒ Json.fromString(c.code))
 
   implicit val assetEncoder = Encoder[Asset]
   implicit val assetDecoder = Decoder[Asset]
@@ -25,20 +25,8 @@ trait SharedProtocol {
   implicit val liabilityEncoder = Encoder[Liability]
   implicit val liabilityDecoder = Decoder[Liability]
 
-  implicit def currencyMapEncoder[T: Encoder]: Encoder[Map[Currency, T]] = Encoder.instance(_.map { case (k, v) ⇒ k.code -> v }.asJson)
-
-  implicit def currencyMapDecoder[T: Decoder]: Decoder[Map[Currency, T]] = Decoder.instance { c ⇒
-    Decoder.decodeMap[Map, T].apply(c)
-        .flatMap(_.foldLeft[Decoder.Result[Map[Currency, T]]](Xor.right(Map.empty[Currency, T])) {
-          case (m, (k, v)) ⇒ m.flatMap(mm ⇒
-            Currency.fromCode(k) match {
-              case Some(c) ⇒ Xor.right(mm + (c → v))
-              case None ⇒ Xor.left(DecodingFailure(s"$k is not a valid currency", Nil))
-            }
-          )
-        })
-  }
-
+  implicit val currencyKeyEncoder: KeyEncoder[Currency] = KeyEncoder.instance(_.code)
+  implicit val currencyKeyDecoder: KeyDecoder[Currency] = KeyDecoder.instance(Currency.fromCode)
 
   implicit final val decodeLocalDateDefault: Decoder[LocalDate] = Decoder.instance { c =>
     c.as[String].flatMap { s =>
@@ -52,7 +40,7 @@ trait SharedProtocol {
   }
 
   implicit final val encodeLocalDateDefault: Encoder[LocalDate] = Encoder.instance(time =>
-    Json.string(s"${p(time.getDayOfMonth)}-${p(time.getMonthValue)}-${time.getYear}")
+    Json.fromString(s"${p(time.getDayOfMonth)}-${p(time.getMonthValue)}-${time.getYear}")
   )
 
   private def p(s: Int) = "".padTo(2 - s.toString.length, "0").mkString + s.toString
