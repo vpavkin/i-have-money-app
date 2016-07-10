@@ -67,6 +67,7 @@ class Base(implicit r: mutable.Register) extends StyleSheet.Inline()(r) {
 
   val panelHeading = classNamesStyle("panel-heading")
   val panelBody = classNamesStyle("panel-body")
+  val panelTitle = classNamesStyle("panel-title")
 
   val dropdown = classNamesStyle("dropdown")
   val dropdownMenu = classNamesStyle("dropdown-menu")

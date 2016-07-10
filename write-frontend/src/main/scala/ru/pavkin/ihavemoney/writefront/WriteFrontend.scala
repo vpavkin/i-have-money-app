@@ -115,7 +115,7 @@ object WriteFrontend extends App with CirceSupport with CorsDirectives {
                       ))
                     }
                   } ~
-                    (path("correct-balances") & post & entity(as[CorrectBalancesRequest])) { req ⇒
+                    (path("correct") & post & entity(as[CorrectBalancesRequest])) { req ⇒
                       complete {
                         writeBack.sendCommandAndIgnoreResult(fortuneId, CorrectBalances(
                           userId,

@@ -108,7 +108,7 @@ object ExchangeC {
                 common.formControl,
                 addonMainInput,
                 increasedFontSize, rightMargin,
-                placeholder := "From",
+                placeholder := "To",
                 value := state.toAmount,
                 onChange ==> onTextChange { (s, v) ⇒
                   val (am, copt) = amountCurrencyHelper(v)
