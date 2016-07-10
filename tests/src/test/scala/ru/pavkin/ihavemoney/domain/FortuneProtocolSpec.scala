@@ -209,7 +209,7 @@ class FortuneProtocolSpec extends IHaveMoneySpec with ScalaFutures with OptionVa
   test("Buy Assets with initializer = true does not reduce fortune") {
     new FortuneInMemoryTest {
 
-      val asset = RealEstate("House", BigDecimal(100000), Currency.USD)
+      val asset = CountedAsset("House", BigDecimal(100000), Currency.USD, 1)
 
       fortune ! BuyAsset(owner, asset, initializer = true)
 
@@ -228,7 +228,7 @@ class FortuneProtocolSpec extends IHaveMoneySpec with ScalaFutures with OptionVa
   test("Buy Assets with initializer = false reduces fortune") {
     new FortuneInMemoryTest {
 
-      val asset = RealEstate("House", BigDecimal(100000), Currency.USD)
+      val asset = CountedAsset("House", BigDecimal(100000), Currency.USD, 1)
 
       intercept[BalanceIsNotEnough] {
         fortune ? BuyAsset(owner, asset, initializer = false)
@@ -251,11 +251,11 @@ class FortuneProtocolSpec extends IHaveMoneySpec with ScalaFutures with OptionVa
   test("Sell Assets") {
     new FortuneInMemoryTest {
 
-      val asset = RealEstate("House", BigDecimal(10000), Currency.USD)
+      val asset = CountedAsset("House", BigDecimal(10000), Currency.USD, BigDecimal(1))
       var assetId: AssetId = AssetId.generate
 
       fortune ! BuyAsset(owner, asset, initializer = true)
-      fortune ! BuyAsset(owner, Stocks("", BigDecimal(100), Currency.USD, BigDecimal(300)), initializer = true)
+      fortune ! BuyAsset(owner, CountedAsset("", BigDecimal(100), Currency.USD, BigDecimal(300)), initializer = true)
 
       expectEventType[FortuneIncreased]
       expectEvent { case AssetAcquired(_, assId, ass, true, _, _) if ass == asset ⇒ assetId = assId }
@@ -277,10 +277,10 @@ class FortuneProtocolSpec extends IHaveMoneySpec with ScalaFutures with OptionVa
     }
   }
 
-  test("Stocks special handling") {
+  test("Counted asset of count > 1 ") {
     new FortuneInMemoryTest {
 
-      val asset = Stocks("Apple", BigDecimal(432.15), Currency.USD, BigDecimal(250))
+      val asset = CountedAsset("Apple", BigDecimal(432.15), Currency.USD, BigDecimal(250))
       var assetId: AssetId = AssetId.generate
 
       fortune ! ReceiveIncome(owner, BigDecimal(3210), Currency.USD, IncomeCategory("salary"))
@@ -288,7 +288,7 @@ class FortuneProtocolSpec extends IHaveMoneySpec with ScalaFutures with OptionVa
 
       fortune ! BuyAsset(owner, asset, initializer = true)
 
-      expectEvent { case FortuneIncreased(_, amount, Currency.USD, _, _, _, _) if amount == asset.price ⇒ () }
+      expectEvent { case FortuneIncreased(_, amount, Currency.USD, _, _, _, _) if amount == asset.worth.amount ⇒ () }
       expectEvent { case AssetAcquired(_, assId, ass, _, _, _) if ass == asset ⇒ assetId = assId }
       assets.values.toList.head shouldBe asset
 
@@ -297,7 +297,7 @@ class FortuneProtocolSpec extends IHaveMoneySpec with ScalaFutures with OptionVa
       fortune ! SellAsset(owner, assetId)
       expectEvent { case AssetSold(_, assId, _, _) if assId == assetId ⇒ () }
 
-      money(Currency.USD) shouldBe (BigDecimal(3210) + asset.price)
+      money(Currency.USD) shouldBe (BigDecimal(3210) + asset.worth.amount)
       viewShouldBeEmpty(assets)
     }
   }
@@ -305,8 +305,11 @@ class FortuneProtocolSpec extends IHaveMoneySpec with ScalaFutures with OptionVa
   test("Reevaluate Assets") {
     new FortuneInMemoryTest {
 
-      val asset = RealEstate("House", BigDecimal(100000), Currency.USD)
+      val asset = CountedAsset("House", BigDecimal(100000), Currency.USD, 1)
       var assetId: AssetId = AssetId.generate
+
+      val stocks = CountedAsset("Apple", BigDecimal(10), Currency.USD, BigDecimal(250))
+      var stocksId: AssetId = AssetId.generate
 
       fortune ! BuyAsset(owner, asset, initializer = true)
 
@@ -314,10 +317,21 @@ class FortuneProtocolSpec extends IHaveMoneySpec with ScalaFutures with OptionVa
       expectEvent { case AssetAcquired(_, assId, ass, true, _, _) if ass == asset ⇒ assetId = assId }
 
       fortune ! ReevaluateAsset(owner, assetId, BigDecimal(50000))
-      expectEvent { case AssetWorthChanged(_, assId, amount, _, _) if amount == BigDecimal(50000) ⇒ () }
+      expectEvent { case AssetPriceChanged(_, assId, amount, _, _) if amount == BigDecimal(50000) ⇒ () }
 
       money(Currency.USD) shouldBe BigDecimal(0)
-      assets.values.toList.head.price shouldBe BigDecimal(50000)
+      assets.values.toList.head.worth.amount shouldBe BigDecimal(50000)
+
+      fortune ! BuyAsset(owner, stocks, initializer = true)
+
+      expectEventType[FortuneIncreased]
+      expectEvent { case AssetAcquired(_, assId, ass, true, _, _) if ass == stocks ⇒ stocksId = assId }
+
+      fortune ! ReevaluateAsset(owner, stocksId, BigDecimal(100))
+      expectEvent { case AssetPriceChanged(_, assId, amount, _, _) if amount == BigDecimal(100) ⇒ () }
+
+      money(Currency.USD) shouldBe BigDecimal(0)
+      assets.values.toList.tail.head.worth.amount shouldBe BigDecimal(25000)
     }
   }
 

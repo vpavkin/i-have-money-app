@@ -10,71 +10,40 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class DatabaseAssetsViewRepository(db: Database) extends AssetsViewRepository {
 
-  private def stocksFindQuery(id: AssetId) =
-    Stocks.table
-      .filter(_.assetId === id.value.toString)
+  private def findQuery(id: AssetId) =
+    Assets.table
+        .filter(_.assetId === id.value.toString)
 
-  private def realEstateFindQuery(id: AssetId) =
-    RealEstate.table
-      .filter(_.assetId === id.value.toString)
-
-  private def stocksRowToDomain(s: StocksRow) = domain.Stocks(s.name, s.price, s.currency, s.count)
-  private def realEstateRowToDomain(s: RealEstateRow) = domain.RealEstate(s.name, s.price, s.currency)
+  private def toDomain(s: AssetRow) = domain.CountedAsset(s.name, s.price, s.currency, s.count)
 
   private def find(id: AssetId)(implicit ec: ExecutionContext): Future[Option[Asset]] = db.run {
-    stocksFindQuery(id)
-      .take(1)
-      .result
-      .map(_.headOption.map(stocksRowToDomain))
-  }.flatMap {
-    case None ⇒ db.run {
-      realEstateFindQuery(id)
+    findQuery(id)
         .take(1)
         .result
-        .map(_.headOption.map(realEstateRowToDomain))
-    }
-    case Some(s) ⇒ Future.successful(Some(s))
+        .map(_.headOption.map(toDomain))
   }
 
   def byId(id: (AssetId, FortuneId))(implicit ec: ExecutionContext): Future[Option[Asset]] = find(id._1)
 
-  def findAll(id: FortuneId)(implicit ec: ExecutionContext): Future[Map[AssetId, Asset]] = {
-    val r1 = db.run {
-      RealEstate.table.filter(_.fortuneId === id.value).result.map(_.map(r ⇒ r.assetId → realEstateRowToDomain(r)))
-    }
-    val r2 = db.run {
-      Stocks.table.filter(_.fortuneId === id.value).result.map(_.map(r ⇒ r.assetId → stocksRowToDomain(r)))
-    }
-    r1.flatMap(s1 ⇒ r2.map(_ ++ s1)).map(_.toMap)
-  }
+  def findAll(id: FortuneId)(implicit ec: ExecutionContext): Future[Map[AssetId, Asset]] = db.run {
+    Assets.table.filter(_.fortuneId === id.value).result.map(_.map(r ⇒ r.assetId → toDomain(r)))
+  }.map(_.toMap)
 
   def replaceById(id: (AssetId, FortuneId), newRow: Asset)(implicit ec: ExecutionContext): Future[Unit] = newRow match {
-    case s: domain.Stocks =>
+    case s: domain.CountedAsset =>
       db.run {
-        stocksFindQuery(id._1).update(StocksRow(id._1, id._2, s.name, s.price, s.currency, s.count))
+        findQuery(id._1).update(AssetRow(id._1, id._2, s.name, s.price, s.currency, s.count))
       }.map(_ ⇒ ())
-    case r: domain.RealEstate =>
-      db.run {
-        realEstateFindQuery(id._1).update(RealEstateRow(id._1, id._2, r.name, r.price, r.currency))
-      }.map(_ ⇒ ())
-
   }
 
   def insert(id: (AssetId, FortuneId), row: Asset)(implicit ec: ExecutionContext): Future[Unit] = row match {
-    case s: domain.Stocks =>
+    case s: domain.CountedAsset =>
       db.run {
-        Stocks.table += StocksRow(id._1, id._2, s.name, s.price, s.currency, s.count)
-      }.map(_ ⇒ ())
-    case r: domain.RealEstate =>
-      db.run {
-        RealEstate.table += RealEstateRow(id._1, id._2, r.name, r.price, r.currency)
+        Assets.table += AssetRow(id._1, id._2, s.name, s.price, s.currency, s.count)
       }.map(_ ⇒ ())
   }
 
   def remove(id: (AssetId, FortuneId))(implicit ec: ExecutionContext): Future[Unit] = db.run {
-    for {
-      _ ← stocksFindQuery(id._1).delete
-      r ← realEstateFindQuery(id._1).delete
-    } yield r
+    findQuery(id._1).delete
   }.map(_ ⇒ ())
 }

@@ -1,6 +1,6 @@
 package ru.pavkin.ihavemoney.readback.repo
 
-import ru.pavkin.ihavemoney.domain.fortune.{RealEstate ⇒ _, Stocks ⇒ _, _}
+import ru.pavkin.ihavemoney.domain.fortune._
 import ru.pavkin.ihavemoney.domain.{fortune ⇒ domain}
 import ru.pavkin.ihavemoney.readback.db._
 import slick.driver.PostgresDriver.api.{Database, _}
