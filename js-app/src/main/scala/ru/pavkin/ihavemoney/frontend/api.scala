@@ -36,6 +36,7 @@ object api {
     def addIncome(fortuneId: String) = fortune / fortuneId / "income"
     def addExpense(fortuneId: String) = fortune / fortuneId / "spend"
     def exchange(fortuneId: String) = fortune / fortuneId / "exchange"
+    def correct(fortuneId: String) = fortune / fortuneId / "correct"
     def assets(fortuneId: String) = fortune / fortuneId / "assets"
 
     def readFortune = readFrontBaseUrl / "fortune"
@@ -81,6 +82,16 @@ object api {
       (implicit ec: ExecutionContext): Future[Xor[RequestError, Unit]] =
     postJson(routes.addExpense(AppCircuit.fortuneId).value,
       SpendRequest(amount, currency, category, initializer, comment),
+      headers = Map(authHeader)
+    ).map(_.map(_ ⇒ ()))
+
+  def correct(
+      newAmount: BigDecimal,
+      newCurrency: Currency,
+      comment: Option[String] = None)
+      (implicit ec: ExecutionContext): Future[Xor[RequestError, Unit]] =
+    postJson(routes.correct(AppCircuit.fortuneId).value,
+      CorrectBalancesRequest(Map(newCurrency → newAmount), comment),
       headers = Map(authHeader)
     ).map(_.map(_ ⇒ ()))
 
