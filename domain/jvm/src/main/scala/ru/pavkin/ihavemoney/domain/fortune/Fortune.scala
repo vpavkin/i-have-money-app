@@ -30,13 +30,11 @@ case class Fortune(
   def removeAsset(id: AssetId): Fortune =
     copy(assets = assets - id)
 
-  def changeAssetWorth(id: AssetId, newPrice: BigDecimal): Fortune =
+  def changeAssetPrice(id: AssetId, newPrice: BigDecimal): Fortune =
     copy(assets = assets.updated(id,
       assets(id) match {
-        case s: Stocks ⇒
-          s.copy(stockPrice = newPrice)
-        case r: RealEstate ⇒
-          r.copy(price = newPrice)
+        case s: CountedAsset ⇒
+          s.copy(price = newPrice)
       }
     ))
 
@@ -115,7 +113,7 @@ case class Fortune(
 
   def cantAcquireAssetWithNotEnoughMoney = action[Fortune]
       .rejectCommand {
-        case cmd: BuyAsset if !cmd.initializer && this.amount(cmd.asset.currency) < cmd.asset.price ⇒
+        case cmd: BuyAsset if !cmd.initializer && this.amount(cmd.asset.currency) < cmd.asset.worth.amount ⇒
           BalanceIsNotEnough(this.amount(cmd.asset.currency), cmd.asset.currency)
       }
 
@@ -210,7 +208,7 @@ case class Fortune(
       if (cmd.initializer) List(
         FortuneIncreased(
           cmd.user,
-          cmd.asset.price,
+          cmd.asset.worth.amount,
           cmd.asset.currency,
           IncomeCategory("auto_generated_income"),
           initializer = true,
@@ -243,11 +241,11 @@ case class Fortune(
   def editorsCanReevaluateAssets = action[Fortune]
       .handleCommand {
         cmd: ReevaluateAsset ⇒
-          AssetWorthChanged(cmd.user, cmd.assetId, cmd.newPrice, metadata(cmd), cmd.comment)
+          AssetPriceChanged(cmd.user, cmd.assetId, cmd.newPrice, metadata(cmd), cmd.comment)
       }
       .handleEvent {
-        evt: AssetWorthChanged ⇒
-          changeAssetWorth(evt.assetId, evt.newAmount)
+        evt: AssetPriceChanged ⇒
+          changeAssetPrice(evt.assetId, evt.newPrice)
       }
 
   def editorsCanTakeOnLiabilities = action[Fortune]

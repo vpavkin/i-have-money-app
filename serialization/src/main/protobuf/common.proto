@@ -2,23 +2,16 @@ syntax = "proto3";
 option java_package = "ru.pavkin.ihavemoney.proto";
 option optimize_for = SPEED;
 
-message PBStocks {
-	string stockName = 1;
-	string stockPrice = 2;
-	string stockCurrency = 3;
-	string count = 4;
-}
-
-message PBRealEstate {
+message PBCountedAsset {
 	string name = 1;
 	string price = 2;
 	string currency = 3;
+	string count = 4;
 }
 
 message PBAsset {
 	oneof asset {
-		PBStocks asset1 = 1;
-		PBRealEstate asset2 = 2;
+		PBCountedAsset asset1 = 1;
 	}
 }
 

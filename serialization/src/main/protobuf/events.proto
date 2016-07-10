@@ -63,7 +63,7 @@ message PBAssetSold {
 	string comment = 15;
 }
 
-message PBAssetWorthChanged {
+message PBAssetPriceChanged {
 	string userId = 1;
 	string assetId = 2;
 	string newPrice = 3;

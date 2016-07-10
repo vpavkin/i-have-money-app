@@ -19,7 +19,7 @@ trait FortuneProtobufAdapter {
     case p: PBUserFailedToLogIn ⇒ p.decode
     case p: PBAssetAcquired ⇒ p.decode
     case p: PBAssetSold ⇒ p.decode
-    case p: PBAssetWorthChanged ⇒ p.decode
+    case p: PBAssetPriceChanged ⇒ p.decode
     case p: PBLiabilityTaken ⇒ p.decode
     case p: PBLiabilityPaidOff ⇒ p.decode
     case p: PBCurrencyExchanged ⇒ p.decode

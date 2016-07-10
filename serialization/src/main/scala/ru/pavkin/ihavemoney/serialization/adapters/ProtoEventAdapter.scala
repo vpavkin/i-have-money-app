@@ -19,7 +19,7 @@ class ProtoEventAdapter extends EventAdapter with DomainEventTagAdapter with For
       case m: FortuneInitializationFinished ⇒ tag(m.encode, m.metadata)
       case m: AssetAcquired ⇒ tag(m.encode, m.metadata)
       case m: AssetSold ⇒ tag(m.encode, m.metadata)
-      case m: AssetWorthChanged ⇒ tag(m.encode, m.metadata)
+      case m: AssetPriceChanged ⇒ tag(m.encode, m.metadata)
       case m: LiabilityTaken ⇒ tag(m.encode, m.metadata)
       case m: LiabilityPaidOff ⇒ tag(m.encode, m.metadata)
       case m: CurrencyExchanged ⇒ tag(m.encode, m.metadata)

@@ -17,8 +17,8 @@ class AssetsViewProjection(assetRepo: AssetsViewRepository) extends Projection {
         assetRepo.insert(assetId → evt.aggregateId, asset)
       case AssetSold(user, assetId, metadata, comment) =>
         assetRepo.remove(assetId → evt.aggregateId)
-      case AssetWorthChanged(user, assetId, newAmount, metadata, comment) =>
-        assetRepo.updateById(assetId → evt.aggregateId, _.reevaluate(newAmount))
+      case AssetPriceChanged(user, assetId, newPrice, metadata, comment) =>
+        assetRepo.updateById(assetId → evt.aggregateId, _.reevaluate(newPrice))
       case _ ⇒ Future.successful(())
     }
   }

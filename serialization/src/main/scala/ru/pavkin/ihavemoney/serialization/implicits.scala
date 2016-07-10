@@ -61,13 +61,11 @@ object implicits {
     import PBAsset.Asset._
 
     def serialize(t: Asset): PBAsset = t match {
-      case s: Stocks ⇒ PBAsset(Asset1(s.serialize[PBStocks]))
-      case s: RealEstate ⇒ PBAsset(Asset2(s.serialize[PBRealEstate]))
+      case s: CountedAsset ⇒ PBAsset(Asset1(s.serialize[PBCountedAsset]))
     }
     def deserialize(t: PBAsset): Asset = t.asset match {
       case Empty ⇒ throw new Exception(s"Received empty asset")
-      case Asset1(value) ⇒ value.deserialize[Stocks]
-      case Asset2(value) ⇒ value.deserialize[RealEstate]
+      case Asset1(value) ⇒ value.deserialize[CountedAsset]
     }
   }
 
@@ -91,7 +89,7 @@ object implicits {
   implicit val currencyExchangedSuite: ProtobufSuite[CurrencyExchanged, PBCurrencyExchanged] = ProtobufSuite.iso[CurrencyExchanged, PBCurrencyExchanged]
   implicit val assetAcquiredSuite: ProtobufSuite[AssetAcquired, PBAssetAcquired] = ProtobufSuite.iso[AssetAcquired, PBAssetAcquired]
   implicit val assetSoldSuite: ProtobufSuite[AssetSold, PBAssetSold] = ProtobufSuite.iso[AssetSold, PBAssetSold]
-  implicit val assetWorthChangedSuite: ProtobufSuite[AssetWorthChanged, PBAssetWorthChanged] = ProtobufSuite.iso[AssetWorthChanged, PBAssetWorthChanged]
+  implicit val assetWorthChangedSuite: ProtobufSuite[AssetPriceChanged, PBAssetPriceChanged] = ProtobufSuite.iso[AssetPriceChanged, PBAssetPriceChanged]
   implicit val liabilityTakenSuite: ProtobufSuite[LiabilityTaken, PBLiabilityTaken] = ProtobufSuite.iso[LiabilityTaken, PBLiabilityTaken]
   implicit val liabilityPaidOffSuite: ProtobufSuite[LiabilityPaidOff, PBLiabilityPaidOff] = ProtobufSuite.iso[LiabilityPaidOff, PBLiabilityPaidOff]
   implicit val fortuneInitializationFinishedSuite: ProtobufSuite[FortuneInitializationFinished, PBFortuneInitializationFinished] = ProtobufSuite.iso[FortuneInitializationFinished, PBFortuneInitializationFinished]

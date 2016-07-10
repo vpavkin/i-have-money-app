@@ -191,10 +191,10 @@ object FortuneProtocol extends ProtocolLike {
   //                                 comment: Option[String] = None) extends FortuneEvent
 
   /* Reevaluate per-stock worth for stocks, whole asset worth otherwise*/
-  case class AssetWorthChanged(
+  case class AssetPriceChanged(
       user: UserId,
       assetId: AssetId,
-      newAmount: BigDecimal,
+      newPrice: BigDecimal,
       metadata: FortuneMetadata,
       comment: Option[String] = None) extends FortuneEvent
 
