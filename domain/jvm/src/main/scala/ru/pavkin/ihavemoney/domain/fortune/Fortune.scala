@@ -1,5 +1,7 @@
 package ru.pavkin.ihavemoney.domain.fortune
 
+import java.time.LocalDate
+
 import io.funcqrs._
 import io.funcqrs.behavior._
 import ru.pavkin.ihavemoney.domain.errors.{BalanceIsNotEnough, _}
@@ -183,7 +185,7 @@ case class Fortune(
           .map {
             case (curr, correction) ⇒
               if (correction > BigDecimal(0)) FortuneIncreased(cmd.user, correction, curr, IncomeCategory("Correction"), initializer = false, metadata(cmd))
-              else FortuneSpent(cmd.user, -correction, curr, ExpenseCategory("Correction"), initializer = false, metadata(cmd))
+              else FortuneSpent(cmd.user, -correction, curr, ExpenseCategory("Correction"), None, initializer = false, metadata(cmd))
           }.toList
   }
       .handleEvent {
@@ -305,6 +307,7 @@ case class Fortune(
           cmd.amount,
           cmd.currency,
           cmd.category,
+          cmd.overrideDate,
           cmd.initializer,
           metadata(cmd),
           cmd.comment)

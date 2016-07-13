@@ -44,6 +44,7 @@ message PBSpend {
 	string amount = 2;
 	string currency = 3;
 	string category = 4;
+	string overrideDate = 6;
 	bool initializer = 5;
 	string comment = 15;
 }

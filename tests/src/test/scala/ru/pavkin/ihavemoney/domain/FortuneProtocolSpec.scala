@@ -119,7 +119,7 @@ class FortuneProtocolSpec extends IHaveMoneySpec with ScalaFutures with OptionVa
       fortune ! Spend(owner, BigDecimal(20), Currency.USD, ExpenseCategory("food"))
 
       expectEvent { case FortuneIncreased(_, amount, Currency.USD, _, _, _, None) if amount.toDouble == 123.12 ⇒ () }
-      expectEvent { case FortuneSpent(_, amount, Currency.USD, _, _, _, None) if amount.toDouble == 20.0 ⇒ () }
+      expectEvent { case FortuneSpent(_, amount, Currency.USD, _, _, _, _, None) if amount.toDouble == 20.0 ⇒ () }
 
       money(Currency.USD) shouldBe BigDecimal(103.12)
     }
@@ -407,7 +407,7 @@ class FortuneProtocolSpec extends IHaveMoneySpec with ScalaFutures with OptionVa
       money(Currency.USD) shouldBe BigDecimal(150)
 
       fortune ! correction
-      expectEvent { case FortuneSpent(_, amount, Currency.USD, _, false, _, _) if amount == BigDecimal(50) ⇒ () }
+      expectEvent { case FortuneSpent(_, amount, Currency.USD, _, _, false, _, _) if amount == BigDecimal(50) ⇒ () }
 
       money(Currency.USD) shouldBe BigDecimal(100)
       money(Currency.RUR) shouldBe BigDecimal(2000)

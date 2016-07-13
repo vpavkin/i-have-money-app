@@ -9,22 +9,24 @@ import akka.http.scaladsl.model.headers.{HttpChallenge, HttpCredentials, Locatio
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.stream.ActorMaterializer
-import akka.util.Timeout
+import akka.stream.scaladsl.Framing
+import akka.util.{ByteString, Timeout}
 import ch.megard.akka.http.cors.{CorsDirectives, CorsSettings}
 import com.typesafe.config.ConfigFactory
 import de.heikoseeberger.akkahttpcirce.CirceSupport
 import io.circe.syntax._
 import ru.pavkin.ihavemoney.domain.fortune.FortuneProtocol._
-import ru.pavkin.ihavemoney.domain.fortune.{AssetId, FortuneId, LiabilityId, ExpenseCategory, IncomeCategory}
+import ru.pavkin.ihavemoney.domain.fortune.{AssetId, ExpenseCategory, FortuneId, IncomeCategory, LiabilityId}
 import ru.pavkin.ihavemoney.domain.unexpected
 import ru.pavkin.ihavemoney.domain.user.UserId
 import ru.pavkin.ihavemoney.domain.user.UserProtocol._
 import ru.pavkin.ihavemoney.protocol.writefront._
-import ru.pavkin.ihavemoney.protocol.{Auth, CommandProcessedWithResult, FailedRequest}
+import ru.pavkin.ihavemoney.protocol.{Auth, CommandProcessedWithResult, FailedRequest, TSVImportResult}
 import ru.pavkin.ihavemoney.auth.JWTTokenFactory
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
+import scala.util.Failure
 
 object WriteFrontend extends App with CirceSupport with CorsDirectives {
 
@@ -115,6 +117,32 @@ object WriteFrontend extends App with CirceSupport with CorsDirectives {
                       ))
                     }
                   } ~
+                    (path("import") & post) {
+                      fileUpload("transactions"){
+                        case (metadata, byteSource) =>
+                          val processingResult: Future[TSVImportResult] =
+                            byteSource.via(Framing.delimiter(ByteString("\n"), 100000))
+                                .mapConcat { line =>
+                                  TSVTransactionsParser.parseLine(userId)(line.utf8String) match {
+                                    case Failure(exception) =>
+                                      println(s"$exception for ${line.utf8String}")
+                                      Nil
+                                    case util.Success(value) => value
+                                  }
+                                }
+                                .mapAsync(4)(writeBack.sendCommandAndIgnoreResult(fortuneId, _))
+                                .runFold(TSVImportResult(0, 0)) {
+                                  case (acc, (code, _)) =>
+                                    if (code == OK) acc.copy(success = acc.success + 1)
+                                    else acc.copy(failure = acc.failure + 1)
+                                }
+
+                          complete(processingResult.map(r =>
+                            if (r.success > 0) OK -> r.asJson
+                            else BadRequest -> r.asJson
+                          ))
+                      }
+                    }~
                     (path("correct") & post & entity(as[CorrectBalancesRequest])) { req ⇒
                       complete {
                         writeBack.sendCommandAndIgnoreResult(fortuneId, CorrectBalances(
@@ -153,6 +181,7 @@ object WriteFrontend extends App with CirceSupport with CorsDirectives {
                           req.amount,
                           req.currency,
                           ExpenseCategory(req.category),
+                          None,
                           req.initializer,
                           req.comment
                         ))
