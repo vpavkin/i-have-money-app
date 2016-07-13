@@ -57,39 +57,40 @@ object ReadFrontend extends App with CirceSupport {
   def toFrontendTransactions(r: TransactionLogQueryResult): FrontendTransactions = FrontendTransactions(
     r.id.value,
     r.events
-      .sortBy(-_.metadata.date.toEpochSecond)
-      .collect {
-        case e: FortuneIncreased ⇒ Transaction(e.user.value, e.amount, e.currency, e.category.name, e.initializer, e.date.toLocalDate, e.comment)
-        case e: FortuneSpent ⇒ Transaction(e.user.value, -e.amount, e.currency, e.category.name, e.initializer, e.overrideDate.getOrElse(e.date.toLocalDate), e.comment)
-      }
+        .sortBy(-_.metadata.date.toEpochSecond)
+        .collect {
+          case e: FortuneIncreased ⇒ Transaction(e.user.value, e.amount, e.currency, e.category.name, e.initializer, e.date.toLocalDate, e.comment)
+          case e: FortuneSpent ⇒ Transaction(e.user.value, -e.amount, e.currency, e.category.name, e.initializer, e.overrideDate.getOrElse(e.date.toLocalDate), e.comment)
+        }
+        .sortBy(-_.date.toEpochDay)
   )
 
   def sendQuery(q: Query) =
     readBack.query(q)
-      .map(kv ⇒ kv._2 match {
-        case FortunesQueryResult(id, fortunes) ⇒
-          kv._1 → (FrontendFortunes(id.value, fortunes): FrontendQueryResult).asJson
-        case CategoriesQueryResult(id, inc, exp) ⇒
-          kv._1 → (FrontendCategories(id.value, inc.map(_.name), exp.map(_.name)): FrontendQueryResult).asJson
-        case r@TransactionLogQueryResult(id, events) ⇒
-          kv._1 → (toFrontendTransactions(r): FrontendQueryResult).asJson
-        case MoneyBalanceQueryResult(id, balance) ⇒
-          kv._1 → (FrontendMoneyBalance(id.value, balance): FrontendQueryResult).asJson
-        case LiabilitiesQueryResult(id, liabilities) =>
-          kv._1 → (FrontendLiabilities(id.value, liabilities): FrontendQueryResult).asJson
-        case AssetsQueryResult(id, assets) =>
-          kv._1 → (FrontendAssets(id.value, assets): FrontendQueryResult).asJson
-        case e: AccessDenied ⇒
-          kv._1 → FailedRequest(e.id.value.toString, e.error).asJson
-        case e: EntityNotFound ⇒
-          kv._1 → FailedRequest(e.id.value.toString, e.error).asJson
-        case e: QueryFailed ⇒
-          kv._1 → FailedRequest(e.id.value.toString, e.error).asJson
-      })
-      .recover {
-        case timeout: AskTimeoutException ⇒
-          RequestTimeout → FailedRequest(q.id.toString, s"Query ${q.id} timed out").asJson
-      }
+        .map(kv ⇒ kv._2 match {
+          case FortunesQueryResult(id, fortunes) ⇒
+            kv._1 → (FrontendFortunes(id.value, fortunes): FrontendQueryResult).asJson
+          case CategoriesQueryResult(id, inc, exp) ⇒
+            kv._1 → (FrontendCategories(id.value, inc.map(_.name), exp.map(_.name)): FrontendQueryResult).asJson
+          case r@TransactionLogQueryResult(id, events) ⇒
+            kv._1 → (toFrontendTransactions(r): FrontendQueryResult).asJson
+          case MoneyBalanceQueryResult(id, balance) ⇒
+            kv._1 → (FrontendMoneyBalance(id.value, balance): FrontendQueryResult).asJson
+          case LiabilitiesQueryResult(id, liabilities) =>
+            kv._1 → (FrontendLiabilities(id.value, liabilities): FrontendQueryResult).asJson
+          case AssetsQueryResult(id, assets) =>
+            kv._1 → (FrontendAssets(id.value, assets): FrontendQueryResult).asJson
+          case e: AccessDenied ⇒
+            kv._1 → FailedRequest(e.id.value.toString, e.error).asJson
+          case e: EntityNotFound ⇒
+            kv._1 → FailedRequest(e.id.value.toString, e.error).asJson
+          case e: QueryFailed ⇒
+            kv._1 → FailedRequest(e.id.value.toString, e.error).asJson
+        })
+        .recover {
+          case timeout: AskTimeoutException ⇒
+            RequestTimeout → FailedRequest(q.id.toString, s"Query ${q.id} timed out").asJson
+        }
 
   val routes = {
     logRequestResult("i-have-money-read-frontend") {
@@ -100,50 +101,50 @@ object ReadFrontend extends App with CirceSupport {
           }
         }
       } ~
-        authenticateOrRejectWithChallenge(authenticator) { userId ⇒
-          path("fortunes") {
-            get {
-              complete {
-                sendQuery(Fortunes(QueryId(UUID.randomUUID.toString), userId))
-              }
-            }
-          } ~
-            pathPrefix("fortune" / JavaUUID.map(i ⇒ FortuneId(i.toString))) { fortuneId: FortuneId ⇒
+          authenticateOrRejectWithChallenge(authenticator) { userId ⇒
+            path("fortunes") {
               get {
-                path("categories") {
-                  complete {
-                    sendQuery(Categories(QueryId(UUID.randomUUID.toString), userId, fortuneId))
-                  }
-                } ~
-                  path("balance") {
-                    complete {
-                      sendQuery(MoneyBalance(QueryId(UUID.randomUUID.toString), userId, fortuneId))
-                    }
-                  } ~
-                  path("assets") {
-                    complete {
-                      sendQuery(Assets(QueryId(UUID.randomUUID.toString), userId, fortuneId))
-                    }
-                  } ~
-                  path("liabilities") {
-                    complete {
-                      sendQuery(Liabilities(QueryId(UUID.randomUUID.toString), userId, fortuneId))
-                    }
-                  } ~
-                  path("log") {
-                    complete {
-                      sendQuery(TransactionLog(QueryId(UUID.randomUUID.toString), userId, fortuneId))
-                    }
-                  }
-
+                complete {
+                  sendQuery(Fortunes(QueryId(UUID.randomUUID.toString), userId))
+                }
               }
+            } ~
+                pathPrefix("fortune" / JavaUUID.map(i ⇒ FortuneId(i.toString))) { fortuneId: FortuneId ⇒
+                  get {
+                    path("categories") {
+                      complete {
+                        sendQuery(Categories(QueryId(UUID.randomUUID.toString), userId, fortuneId))
+                      }
+                    } ~
+                        path("balance") {
+                          complete {
+                            sendQuery(MoneyBalance(QueryId(UUID.randomUUID.toString), userId, fortuneId))
+                          }
+                        } ~
+                        path("assets") {
+                          complete {
+                            sendQuery(Assets(QueryId(UUID.randomUUID.toString), userId, fortuneId))
+                          }
+                        } ~
+                        path("liabilities") {
+                          complete {
+                            sendQuery(Liabilities(QueryId(UUID.randomUUID.toString), userId, fortuneId))
+                          }
+                        } ~
+                        path("log") {
+                          complete {
+                            sendQuery(TransactionLog(QueryId(UUID.randomUUID.toString), userId, fortuneId))
+                          }
+                        }
+
+                  }
+                }
+          } ~
+          get {
+            pathSingleSlash {
+              getFromResource("index.html")
             }
-        } ~
-        get {
-          pathSingleSlash {
-            getFromResource("index.html")
           }
-        }
     } ~ getFromResourceDirectory("")
   }
   Http().bindAndHandle(routes, config.getString("app.host"), config.getInt("app.http-port"))

@@ -37,14 +37,17 @@ object TransactionLogC {
             table(className := "table table-striped table-hover table-condensed",
               thead(tr(th(""), th("Date"), th("Category"), th("Amount"), th("Comment"))),
               tbody(
-                log.map(t ⇒ tr(
-                  td(width := "30px", paddingTop := "0px", paddingBottom := "0px", verticalAlign := "middle",
-                    img(src := GravatarAPI.img(t.user, 20), className := "img-circle", title := t.user)),
-                  td(t.date.ddmmyyyy),
-                  td(t.category),
-                  td(amountStyle(t.amount), t.amount.toString + t.currency.sign),
-                  td(t.comment.getOrElse(""): String)
-                ))
+                log.zipWithIndex.map {
+                  case (t, index) ⇒ tr(
+                    key := index.toString,
+                    td(width := "30px", paddingTop := "0px", paddingBottom := "0px", verticalAlign := "middle",
+                      img(src := GravatarAPI.img(t.user, 20), className := "img-circle", title := t.user)),
+                    td(t.date.ddmmyyyy),
+                    td(t.category),
+                    td(amountStyle(t.amount), t.amount.toString + t.currency.sign),
+                    td(t.comment.getOrElse(""): String)
+                  )
+                }
               )
             )
           )
