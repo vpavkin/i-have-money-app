@@ -1,6 +1,6 @@
 package ru.pavkin.ihavemoney.domain.fortune
 
-import java.time.OffsetDateTime
+import java.time.{LocalDate, OffsetDateTime}
 import java.util.UUID
 
 import io.funcqrs._
@@ -41,6 +41,7 @@ object FortuneProtocol extends ProtocolLike {
       amount: BigDecimal,
       currency: Currency,
       category: ExpenseCategory,
+      overrideDate: Option[LocalDate] = None,
       initializer: Boolean = false,
       comment: Option[String] = None) extends FortuneAdjustmentCommand
 
@@ -139,11 +140,13 @@ object FortuneProtocol extends ProtocolLike {
       initializer: Boolean = false,
       metadata: FortuneMetadata,
       comment: Option[String] = None) extends FortuneEvent
+
   case class FortuneSpent(
       user: UserId,
       amount: BigDecimal,
       currency: Currency,
       category: ExpenseCategory,
+      overrideDate: Option[LocalDate] = None,
       initializer: Boolean = false,
       metadata: FortuneMetadata,
       comment: Option[String] = None) extends FortuneEvent

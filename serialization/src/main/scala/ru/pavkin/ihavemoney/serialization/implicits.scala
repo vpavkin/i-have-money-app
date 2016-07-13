@@ -1,6 +1,6 @@
 package ru.pavkin.ihavemoney.serialization
 
-import java.time.OffsetDateTime
+import java.time.{LocalDate, OffsetDateTime}
 import java.util.UUID
 
 import com.trueaccord.scalapb.GeneratedMessageCompanion
@@ -36,8 +36,17 @@ object implicits {
     def deserialize(t: Seq[String]): Set[Tag] = t.toSet.map(Tags.aggregateTag)
   }
 
+  implicit val localDateIS: IsoSerializable[LocalDate, String] =
+    IsoSerializable.withString(_.toString, LocalDate.parse)
+
   implicit val offsetDateTimeIS: IsoSerializable[OffsetDateTime, String] =
     IsoSerializable.withString(_.toString, OffsetDateTime.parse)
+
+  implicit def optionToString[S](implicit IS: IsoSerializable[S, String]): IsoSerializable[Option[S], String] =
+    new IsoSerializable[Option[S], String] {
+      def serialize(t: Option[S]): String = t.map(IS.serialize).getOrElse("")
+      def deserialize(t: String): Option[S] = if (t == "") None else Some(IS.deserialize(t))
+    }
 
   implicit def unsafeOptionIS[S, R](implicit IS: IsoSerializable[S, R]): IsoSerializable[S, Option[R]] =
     new IsoSerializable[S, Option[R]] {
