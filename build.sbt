@@ -1,11 +1,25 @@
 import com.trueaccord.scalapb.{ScalaPbPlugin ⇒ Protobuf}
 import sbtdocker.Instructions._
+import ReleaseTransformations._
 
 lazy val buildSettings = Seq(
   organization := "ru.pavkin.ihavemoney",
   version := "0.1.0-SNAPSHOT",
   scalaVersion := "2.11.8"
 )
+
+lazy val releaseSettings = Seq(releaseProcess := Seq[ReleaseStep](
+  checkSnapshotDependencies,
+  inquireVersions,
+  runTest,
+  setReleaseVersion,
+  releaseStepCommand("dockerBuildAndPush"),
+  commitReleaseVersion,
+  tagRelease,
+  setNextVersion,
+  commitNextVersion,
+  pushChanges
+))
 
 lazy val compilerOptions = Seq(
   "-deprecation",
