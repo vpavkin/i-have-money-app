@@ -58,7 +58,13 @@ abstract class CommonTransactionC(implicit ec: ExecutionContext) {
         $.modState(_.copy(loading = true)) >>
             Callback.future(req.map {
               case Xor.Left(error) ⇒ Callback.alert(s"Error: $error")
-              case _ ⇒ $.modState(_.copy(loading = false))
+              case _ ⇒ $.modState(_.copy(
+                currency = Currency.EUR,
+                amount = "",
+                comment = "",
+                initializer = false,
+                loading = false
+              ))
             })
 
 
