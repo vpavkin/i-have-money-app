@@ -4,7 +4,6 @@ import ReleaseTransformations._
 
 lazy val buildSettings = Seq(
   organization := "ru.pavkin.ihavemoney",
-  version := "0.1.0-SNAPSHOT",
   scalaVersion := "2.11.8"
 )
 
