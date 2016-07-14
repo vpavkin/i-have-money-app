@@ -1,11 +1,28 @@
 import com.trueaccord.scalapb.{ScalaPbPlugin ⇒ Protobuf}
 import sbtdocker.Instructions._
+import ReleaseTransformations._
 
 lazy val buildSettings = Seq(
   organization := "ru.pavkin.ihavemoney",
   version := "0.1.0-SNAPSHOT",
   scalaVersion := "2.11.8"
 )
+
+lazy val releaseSettings = Seq(releaseProcess := Seq[ReleaseStep](
+  checkSnapshotDependencies,
+  inquireVersions,
+  runTest,
+  setReleaseVersion,
+  releaseStepCommand("writeBackend/dockerBuildAndPush"),
+  releaseStepCommand("readBackend/dockerBuildAndPush"),
+  releaseStepCommand("readFrontend/dockerBuildAndPush"),
+  releaseStepCommand("writeFrontend/dockerBuildAndPush"),
+  commitReleaseVersion,
+  tagRelease,
+  setNextVersion,
+  commitNextVersion,
+  pushChanges
+))
 
 lazy val compilerOptions = Seq(
   "-deprecation",
@@ -85,6 +102,7 @@ lazy val protobufSettings = Protobuf.protobufSettings ++
 
 lazy val iHaveMoney = project.in(file("."))
     .settings(buildSettings)
+    .settings(releaseSettings)
     .aggregate(domainJVM, serialization, writeBackend, writeFrontend, readBackend, frontendProtocolJVM, readFrontend, jsApp, tests)
 
 lazy val domain = crossProject.in(file("domain"))
@@ -426,6 +444,12 @@ lazy val jsApp = project.in(file("js-app"))
     )
     .settings(allSettings: _*)
     .enablePlugins(ScalaJSPlugin)
+    .settings(
+      persistLauncher in Test := false,
+      scalaJSStage in Test := FastOptStage,
+      scalaJSUseRhino in Global := false,
+      jsEnv := PhantomJSEnv().value
+    )
     .settings(
       libraryDependencies ++= Seq(
         "com.github.japgolly.scalajs-react" %%% "core" % "0.11.1",
