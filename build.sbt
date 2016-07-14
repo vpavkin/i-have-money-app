@@ -13,7 +13,10 @@ lazy val releaseSettings = Seq(releaseProcess := Seq[ReleaseStep](
   inquireVersions,
   runTest,
   setReleaseVersion,
-  releaseStepCommand("dockerBuildAndPush"),
+  releaseStepCommand("writeBackend/dockerBuildAndPush"),
+  releaseStepCommand("readBackend/dockerBuildAndPush"),
+  releaseStepCommand("readFrontend/dockerBuildAndPush"),
+  releaseStepCommand("writeFrontend/dockerBuildAndPush"),
   commitReleaseVersion,
   tagRelease,
   setNextVersion,
@@ -99,6 +102,7 @@ lazy val protobufSettings = Protobuf.protobufSettings ++
 
 lazy val iHaveMoney = project.in(file("."))
     .settings(buildSettings)
+    .settings(releaseSettings)
     .aggregate(domainJVM, serialization, writeBackend, writeFrontend, readBackend, frontendProtocolJVM, readFrontend, jsApp, tests)
 
 lazy val domain = crossProject.in(file("domain"))
