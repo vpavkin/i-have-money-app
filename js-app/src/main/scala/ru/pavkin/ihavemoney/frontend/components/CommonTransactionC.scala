@@ -25,7 +25,8 @@ abstract class CommonTransactionC(implicit ec: ExecutionContext) {
       amount: String,
       category: String,
       comment: String,
-      initializer: Boolean = false)
+      initializer: Boolean = false,
+      loading: Boolean = false)
 
   case class Props(categories: ModelProxy[Pot[Categories]])
 
@@ -53,10 +54,19 @@ abstract class CommonTransactionC(implicit ec: ExecutionContext) {
     def genSubmit[T](st: State)(req: ⇒ Future[T]): Callback =
       if (!isValid(st))
         Callback.alert("Invalid data")
-      else Callback.future(req.map {
-        case Xor.Left(error) ⇒ Callback.alert(s"Error: $error")
-        case _ ⇒ Callback.alert(s"Success")
-      })
+      else
+        $.modState(_.copy(loading = true)) >>
+            Callback.future(req.map {
+              case Xor.Left(error) ⇒ Callback.alert(s"Error: $error")
+              case _ ⇒ $.modState(_.copy(
+                currency = Currency.EUR,
+                amount = "",
+                comment = "",
+                initializer = false,
+                loading = false
+              ))
+            })
+
 
     def isValid(s: State) =
       Try(BigDecimal(s.amount)).isSuccess &&
@@ -69,7 +79,7 @@ abstract class CommonTransactionC(implicit ec: ExecutionContext) {
     def renderSubmitButton(pr: Props, state: State): ReactElement
     def renderCategoriesSelector(pr: Props, state: State): Categories ⇒ ReactElement
 
-    def renderForm(pr: Props, state: State) =
+    def renderForm(pr: Props, state: State) = div(
       form(
         common.formHorizontal,
         onSubmit ==> onFormSubmit,
@@ -125,7 +135,11 @@ abstract class CommonTransactionC(implicit ec: ExecutionContext) {
             renderSubmitButton(pr, state)
           )
         )
-      )
+      ),
+      if (state.loading)
+        PreloaderC(top := "-150px")
+      else EmptyTag
+    )
   }
 
 }

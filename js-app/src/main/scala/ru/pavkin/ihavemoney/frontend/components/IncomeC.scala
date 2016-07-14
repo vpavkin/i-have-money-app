@@ -30,7 +30,7 @@ object IncomeC extends CommonTransactionC {
     def renderSubmitButton(pr: Props, state: State): ReactElement =
       Button(onIncomeSubmit(state),
         style = common.context.success,
-        addAttributes = Seq(disabled := (!isValid(state))),
+        addAttributes = Seq(disabled := (!isValid(state) || state.loading)),
         addStyles = Seq(increasedFontSize)
       )("Add Income")
 

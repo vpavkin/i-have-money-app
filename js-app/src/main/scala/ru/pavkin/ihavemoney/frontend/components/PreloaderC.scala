@@ -5,9 +5,11 @@ import japgolly.scalajs.react.vdom.all._
 
 object PreloaderC {
 
-  val component = ReactComponentB[Unit]("Preloader")
-    .render(_ ⇒ div(className := "loader"))
-    .build
+  case class Props(addMod: TagMod*)
 
-  def apply() = component()
+  val component = ReactComponentB[Props]("Preloader")
+      .render_P(p ⇒ div(className := "loader", p.addMod))
+      .build
+
+  def apply(addMod: TagMod*) = component(Props(addMod))
 }
