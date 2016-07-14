@@ -211,7 +211,7 @@ lazy val writeBackend = project.in(file("write-backend"))
       },
       imageNames in docker := Seq(
         ImageName(s"vpavkin/ihavemoney-${name.value}:latest"),
-        ImageName(s"vpavkin/ihavemoney-${name.value}:${version.value}")
+        ImageName(s"vpavkin/ihavemoney-${name.value}:${(version in ThisBuild).value}")
       )
     ))
     .dependsOn(domainJVM, serialization)
@@ -271,7 +271,7 @@ lazy val writeFrontend = project.in(file("write-frontend"))
       },
       imageNames in docker := Seq(
         ImageName(s"vpavkin/ihavemoney-${name.value}:latest"),
-        ImageName(s"vpavkin/ihavemoney-${name.value}:${version.value}")
+        ImageName(s"vpavkin/ihavemoney-${name.value}:${(version in ThisBuild).value}")
       )
     ))
     .dependsOn(domainJVM, frontendProtocolJVM, serialization)
@@ -345,7 +345,7 @@ lazy val readBackend = project.in(file("read-backend"))
       },
       imageNames in docker := Seq(
         ImageName(s"vpavkin/ihavemoney-${name.value}:latest"),
-        ImageName(s"vpavkin/ihavemoney-${name.value}:${version.value}")
+        ImageName(s"vpavkin/ihavemoney-${name.value}:${(version in ThisBuild).value}")
       )
     ))
     .dependsOn(domainJVM, serialization)
@@ -424,7 +424,7 @@ lazy val readFrontend = project.in(file("read-frontend"))
       },
       imageNames in docker := Seq(
         ImageName(s"vpavkin/ihavemoney-${name.value}:latest"),
-        ImageName(s"vpavkin/ihavemoney-${name.value}:${version.value}")
+        ImageName(s"vpavkin/ihavemoney-${name.value}:${(version in ThisBuild).value}")
       )
     ))
     .settings(
