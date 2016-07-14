@@ -30,7 +30,7 @@ object ExpensesC extends CommonTransactionC {
     def renderSubmitButton(pr: Props, state: State): ReactElement =
       Button(onExpenseSubmit(state),
         style = common.context.danger,
-        addAttributes = Seq(disabled := (!isValid(state))),
+        addAttributes = Seq(disabled := (!isValid(state) || state.loading)),
         addStyles = Seq(increasedFontSize)
       )("Add Expense")
 
