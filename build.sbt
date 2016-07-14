@@ -445,6 +445,12 @@ lazy val jsApp = project.in(file("js-app"))
     .settings(allSettings: _*)
     .enablePlugins(ScalaJSPlugin)
     .settings(
+      persistLauncher in Test := false,
+      scalaJSStage in Test := FastOptStage,
+      scalaJSUseRhino in Global := false,
+      jsEnv := PhantomJSEnv().value
+    )
+    .settings(
       libraryDependencies ++= Seq(
         "com.github.japgolly.scalajs-react" %%% "core" % "0.11.1",
         "com.github.japgolly.scalajs-react" %%% "extra" % "0.11.1",
