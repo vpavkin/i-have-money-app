@@ -49,6 +49,7 @@ object IHaveMoneyApp extends JSApp {
         | staticRoute("#income", Route.Income) ~> renderIncome
         | staticRoute("#exchange", Route.Exchange) ~> renderExchange
         | staticRoute("#balance", Route.BalanceView) ~> renderBalance
+        | staticRoute("#stats", Route.StatsView) ~> render(connectors.log(b ⇒ StatsViewC.component(StatsViewC.Props(b))))
         | staticRoute("#settings", Route.FortuneSettingsView) ~> renderFortuneSettings
         | staticRoute("#log", Route.TransactionLogView) ~> render(connectors.log(b ⇒ TransactionLogC.component(TransactionLogC.Props(b))))
         | staticRoute("#login", Route.Login) ~> renderR(ctl ⇒ LoginC.component(ctl)))

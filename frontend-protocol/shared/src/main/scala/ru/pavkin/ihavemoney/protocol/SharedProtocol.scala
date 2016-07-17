@@ -45,8 +45,8 @@ trait SharedProtocol {
 
   private def p(s: Int) = "".padTo(2 - s.toString.length, "0").mkString + s.toString
 
-  implicit val decoderTransaction = Decoder[Transaction]
-  implicit val encoderTransaction = Encoder[Transaction]
+  implicit val decoderEvent = Decoder[Event]
+  implicit val encoderEvent = Encoder[Event]
 
   implicit val decoderWorth = Decoder[Worth]
   implicit val encoderWorth = Encoder[Worth]

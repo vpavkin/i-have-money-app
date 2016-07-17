@@ -42,7 +42,7 @@ object api {
     def readFortune = readFrontBaseUrl / "fortune"
     def getFortunes = readFrontBaseUrl / "fortunes"
     def getBalances(fortuneId: String) = readFortune / fortuneId / "balance"
-    def getTransactionLog(fortuneId: String) = readFortune / fortuneId / "log"
+    def getEventLog(fortuneId: String) = readFortune / fortuneId / "log"
     def getAssets(fortuneId: String) = readFortune / fortuneId / "assets"
     def getLiabilities(fortuneId: String) = readFortune / fortuneId / "liabilities"
     def getCategories(fortuneId: String) = readFortune / fortuneId / "categories"
@@ -167,8 +167,8 @@ object api {
       case FrontendLiabilities(_, liabilities) ⇒ liabilities
     })
 
-  def getTransactionLog(implicit ec: ExecutionContext): Future[RequestError Xor List[Transaction]] =
-    query(routes.getTransactionLog(AppCircuit.fortuneId), {
-      case FrontendTransactions(_, transactions) ⇒ transactions
+  def getEventLog(implicit ec: ExecutionContext): Future[RequestError Xor List[Event]] =
+    query(routes.getEventLog(AppCircuit.fortuneId), {
+      case FrontendEvents(_, transactions) ⇒ transactions
     })
 }

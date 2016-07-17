@@ -10,6 +10,7 @@ object Route {
   case object Expenses extends Route
   case object Exchange extends Route
   case object BalanceView extends Route
+  case object StatsView extends Route
   case object TransactionLogView extends Route
   case object FortuneSettingsView extends Route
 }
