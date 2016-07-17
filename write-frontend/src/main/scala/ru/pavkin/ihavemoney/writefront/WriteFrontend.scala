@@ -3,6 +3,7 @@ package ru.pavkin.ihavemoney.writefront
 import akka.actor.ActorSystem
 import akka.event.Logging
 import akka.http.scaladsl.Http
+import akka.http.scaladsl.marshalling.ToResponseMarshallable
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.headers.{HttpChallenge, HttpCredentials, Location, OAuth2BearerToken}
@@ -26,7 +27,7 @@ import ru.pavkin.ihavemoney.auth.JWTTokenFactory
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
-import scala.util.Failure
+import scala.util.{Failure, Try}
 
 object WriteFrontend extends App with CirceSupport with CorsDirectives {
 
@@ -52,11 +53,18 @@ object WriteFrontend extends App with CirceSupport with CorsDirectives {
     }
   }
 
+  val unsafeRoutesEnabled = Try(config.getBoolean("app.unsafe-routes-enabled")).getOrElse(false)
+
+  def safe(m: ToResponseMarshallable) = complete {
+    if (unsafeRoutesEnabled) m
+    else Future.successful(NotFound)
+  }
+
   val routes: Route =
     cors(CorsSettings.defaultSettings.copy(allowCredentials = false)) {
       logRequestResult("i-have-money-write-frontend", Logging.InfoLevel) {
         (path("signIn") & post & entity(as[CreateUserRequest])) { req ⇒
-          complete {
+          safe {
             writeBack.sendCommandAndIgnoreResult(UserId(req.email), CreateUser(req.password, req.displayName))
           }
         } ~
@@ -77,7 +85,7 @@ object WriteFrontend extends App with CirceSupport with CorsDirectives {
           } ~ path("confirmEmail") {
           get {
             parameters('email, 'code) { (email, code) =>
-              complete {
+              safe {
                 writeBack.sendCommandAndIgnoreResult(UserId(email), ConfirmEmail(code))
                   .map(_ ⇒
                     HttpResponse(
@@ -91,7 +99,7 @@ object WriteFrontend extends App with CirceSupport with CorsDirectives {
           }
         } ~
           (path("resendConfirmationEmail") & post & entity(as[ResendConfirmationEmailRequest])) { req ⇒
-            complete {
+            safe {
               writeBack.sendCommandAndIgnoreResult(UserId(req.email), ResendConfirmationEmail())
             }
           } ~ authenticateOrRejectWithChallenge(authenticator).optional {
