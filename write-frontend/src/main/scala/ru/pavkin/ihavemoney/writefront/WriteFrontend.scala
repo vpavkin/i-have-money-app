@@ -55,7 +55,7 @@ object WriteFrontend extends App with CirceSupport with CorsDirectives {
 
   val unsafeRoutesEnabled = Try(config.getBoolean("app.unsafe-routes-enabled")).getOrElse(false)
 
-  def safe(m: ToResponseMarshallable) = complete {
+  def safe(m: => ToResponseMarshallable) = complete {
     if (unsafeRoutesEnabled) m
     else Future.successful(NotFound)
   }
