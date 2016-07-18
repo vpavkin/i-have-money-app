@@ -30,7 +30,7 @@ object YearMonthSelector {
 
   val component = ReactComponentB[Props]("YearMonthSelector")
       .renderPC((_, p, c) =>
-        Dropdown(p.selected.mmyyyy, div, Some(common.context.info), addStyles = p.addStyles)(
+        Dropdown(p.selected.mmyyyy, a, Some(common.context.info), addStyles = p.addStyles)(
           (genElements(p.selected, p.monthsToPast, _.previous) ++
               genElements(p.selected, p.monthsToFuture, _.next).reverse)
               .map(renderElement(p))

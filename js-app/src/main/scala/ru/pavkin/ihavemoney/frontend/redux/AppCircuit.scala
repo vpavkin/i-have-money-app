@@ -6,6 +6,7 @@ import io.circe.parser._
 import io.circe.syntax._
 import japgolly.scalajs.react.ReactElement
 import org.scalajs.dom
+import ru.pavkin.ihavemoney.domain.fortune.Currency
 import ru.pavkin.ihavemoney.frontend.redux.actions.{HideModal, ShowModal}
 import ru.pavkin.ihavemoney.frontend.redux.handlers._
 import ru.pavkin.ihavemoney.frontend.redux.model.RootModel
@@ -51,7 +52,16 @@ object AppCircuit extends Circuit[RootModel] with ReactConnector[RootModel] {
   def fortunes = state.fortunes.get
   def fortune = fortunes.head
   def fortuneId = fortune.id
+  def exchangeRates = state.exchangeRates.get
+
 
   def showModal(modal: ReactElement) = dispatch(ShowModal(modal))
   def hideModal() = dispatch(HideModal)
+
+  def exchange(amount: BigDecimal, from: Currency, to: Currency): BigDecimal =
+    exchangeRates.find(r => r.from == from && r.to == to).map(_.rate * amount)
+        .orElse(exchangeRates.find(r =>
+          r.from == to && r.to == from
+        ).map(amount / _.rate)).get
+
 }

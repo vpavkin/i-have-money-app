@@ -21,6 +21,7 @@ object IHaveMoneyApp extends JSApp {
     import dsl._
 
     def renderExchange = render(ExchangeC())
+    def renderStats = render(connectors.log(b ⇒ StatsViewC.component(StatsViewC.Props(AppCircuit.fortune, b))))
     def renderExpenses = render(connectors.categories(c ⇒ ExpensesC(c)))
     def renderIncome = render(connectors.categories(c ⇒ IncomeC(c)))
     def renderInitializer = renderR(InitializerC(_))
@@ -49,7 +50,7 @@ object IHaveMoneyApp extends JSApp {
         | staticRoute("#income", Route.Income) ~> renderIncome
         | staticRoute("#exchange", Route.Exchange) ~> renderExchange
         | staticRoute("#balance", Route.BalanceView) ~> renderBalance
-        | staticRoute("#stats", Route.StatsView) ~> render(connectors.log(b ⇒ StatsViewC.component(StatsViewC.Props(b))))
+        | staticRoute("#stats", Route.StatsView) ~> renderStats
         | staticRoute("#settings", Route.FortuneSettingsView) ~> renderFortuneSettings
         | staticRoute("#log", Route.TransactionLogView) ~> render(connectors.log(b ⇒ TransactionLogC.component(TransactionLogC.Props(b))))
         | staticRoute("#login", Route.Login) ~> renderR(ctl ⇒ LoginC.component(ctl)))
