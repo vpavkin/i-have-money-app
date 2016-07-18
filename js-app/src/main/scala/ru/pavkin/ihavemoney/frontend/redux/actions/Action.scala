@@ -6,7 +6,7 @@ import japgolly.scalajs.react.ReactElement
 import ru.pavkin.ihavemoney.domain.fortune.{Asset, Currency, FortuneInfo, Liability}
 import ru.pavkin.ihavemoney.frontend.Route
 import ru.pavkin.ihavemoney.frontend.redux.model.Categories
-import ru.pavkin.ihavemoney.protocol.{Auth, RequestError, Transaction}
+import ru.pavkin.ihavemoney.protocol.{Auth, Event, RequestError}
 
 import scala.concurrent.Future
 
@@ -32,9 +32,9 @@ case class LoadLiabilities(potResult: Pot[Map[String, Liability]] = Pot.empty)
   def next(newResult: Pot[Map[String, Liability]]): LoadLiabilities = copy(potResult = newResult)
 }
 
-case class LoadTransactionLog(potResult: Pot[List[Transaction]] = Pot.empty)
-    extends Action with PotAction[List[Transaction], LoadTransactionLog] {
-  def next(newResult: Pot[List[Transaction]]): LoadTransactionLog = copy(potResult = newResult)
+case class LoadEventLog(potResult: Pot[List[Event]] = Pot.empty)
+    extends Action with PotAction[List[Event], LoadEventLog] {
+  def next(newResult: Pot[List[Event]]): LoadEventLog = copy(potResult = newResult)
 }
 
 case class LoadCategories(potResult: Pot[Categories] = Pot.empty)

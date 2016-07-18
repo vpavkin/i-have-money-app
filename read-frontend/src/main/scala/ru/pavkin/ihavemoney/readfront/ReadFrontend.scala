@@ -20,10 +20,11 @@ import scala.concurrent.duration._
 import ru.pavkin.ihavemoney.domain.fortune.FortuneId
 import ru.pavkin.ihavemoney.domain.query._
 import ru.pavkin.ihavemoney.domain.user.UserId
-import ru.pavkin.ihavemoney.protocol.{FailedRequest, Transaction}
+import ru.pavkin.ihavemoney.protocol.{Expense, FailedRequest, Income}
+import ru.pavkin.ihavemoney.protocol
 import ru.pavkin.ihavemoney.protocol.readfront._
 import ru.pavkin.ihavemoney.auth.JWTTokenFactory
-import ru.pavkin.ihavemoney.domain.fortune.FortuneProtocol.{FortuneIncreased, FortuneSpent}
+import ru.pavkin.ihavemoney.domain.fortune.FortuneProtocol.{CurrencyExchanged, FortuneIncreased, FortuneSpent}
 
 import scala.concurrent.Future
 
@@ -54,13 +55,14 @@ object ReadFrontend extends App with CirceSupport {
     }
   }
 
-  def toFrontendTransactions(r: TransactionLogQueryResult): FrontendTransactions = FrontendTransactions(
+  def toFrontendEvents(r: EventLogQueryResult): FrontendEvents = FrontendEvents(
     r.id.value,
     r.events
         .sortBy(-_.metadata.date.toEpochSecond)
         .collect {
-          case e: FortuneIncreased ⇒ Transaction(e.user.value, e.amount, e.currency, e.category.name, e.initializer, e.date.toLocalDate, e.comment)
-          case e: FortuneSpent ⇒ Transaction(e.user.value, -e.amount, e.currency, e.category.name, e.initializer, e.overrideDate.getOrElse(e.date.toLocalDate), e.comment)
+          case e: FortuneIncreased ⇒ Income(e.user.value, e.amount, e.currency, e.category.name, e.date.toLocalDate, e.comment)
+          case e: FortuneSpent ⇒ Expense(e.user.value, -e.amount, e.currency, e.category.name, e.overrideDate.getOrElse(e.date.toLocalDate), e.comment)
+          case e: CurrencyExchanged ⇒ protocol.CurrencyExchanged(e.user.value, e.fromAmount, e.fromCurrency, e.toAmount, e.toCurrency, e.date.toLocalDate, e.comment)
         }
         .sortBy(-_.date.toEpochDay)
   )
@@ -72,8 +74,8 @@ object ReadFrontend extends App with CirceSupport {
             kv._1 → (FrontendFortunes(id.value, fortunes): FrontendQueryResult).asJson
           case CategoriesQueryResult(id, inc, exp) ⇒
             kv._1 → (FrontendCategories(id.value, inc.map(_.name), exp.map(_.name)): FrontendQueryResult).asJson
-          case r@TransactionLogQueryResult(id, events) ⇒
-            kv._1 → (toFrontendTransactions(r): FrontendQueryResult).asJson
+          case r@EventLogQueryResult(id, events) ⇒
+            kv._1 → (toFrontendEvents(r): FrontendQueryResult).asJson
           case MoneyBalanceQueryResult(id, balance) ⇒
             kv._1 → (FrontendMoneyBalance(id.value, balance): FrontendQueryResult).asJson
           case LiabilitiesQueryResult(id, liabilities) =>

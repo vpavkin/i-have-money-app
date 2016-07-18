@@ -52,6 +52,7 @@ object NavigationBar {
               routeLink("Exchange", Exchange),
               routeLink("Balance View", BalanceView),
               routeLink("TransactionLog", TransactionLogView),
+              routeLink("Stats", StatsView),
               routeLink("Settings", FortuneSettingsView)
             ),
             ul(common.navbarSection, common.navbarRight,

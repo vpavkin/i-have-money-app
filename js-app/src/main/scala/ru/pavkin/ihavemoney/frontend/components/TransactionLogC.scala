@@ -7,8 +7,8 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.all._
 import ru.pavkin.ihavemoney.frontend.gravatar.GravatarAPI
 import ru.pavkin.ihavemoney.frontend.redux.AppCircuit
-import ru.pavkin.ihavemoney.frontend.redux.actions.LoadTransactionLog
-import ru.pavkin.ihavemoney.protocol.Transaction
+import ru.pavkin.ihavemoney.frontend.redux.actions.LoadEventLog
+import ru.pavkin.ihavemoney.protocol.{Event, Transaction}
 import ru.pavkin.ihavemoney.frontend.styles.Global._
 import ru.pavkin.utils.date._
 
@@ -16,12 +16,12 @@ import scalacss.ScalaCssReact._
 
 object TransactionLogC {
 
-  case class Props(log: ModelProxy[Pot[List[Transaction]]])
+  case class Props(log: ModelProxy[Pot[List[Event]]])
 
   class Backend($: BackendScope[Props, Unit]) {
 
     def loadTransactionLog(pr: Props) = Callback {
-      AppCircuit.dispatch(LoadTransactionLog())
+      AppCircuit.dispatch(LoadEventLog())
     }
 
     def amountStyle(amount: BigDecimal) =
@@ -32,12 +32,15 @@ object TransactionLogC {
       div(
         pr.log().renderEmpty("Loading..."),
         pr.log().renderPending(_ => div("Loading...")),
-        pr.log().renderReady(log ⇒
+        pr.log().renderReady { log ⇒
+          val transactions = log.collect {
+            case t: Transaction => t
+          }
           div(
             table(className := "table table-striped table-hover table-condensed",
               thead(tr(th(""), th("Date"), th("Category"), th("Amount"), th("Comment"))),
               tbody(
-                log.zipWithIndex.map {
+                transactions.zipWithIndex.map {
                   case (t, index) ⇒ tr(
                     key := index.toString,
                     td(width := "30px", paddingTop := "0px", paddingBottom := "0px", verticalAlign := "middle",
@@ -51,7 +54,7 @@ object TransactionLogC {
               )
             )
           )
-        )
+        }
       )
     }
   }

@@ -6,7 +6,7 @@ import ru.pavkin.ihavemoney.domain.fortune.FortuneId
 import ru.pavkin.ihavemoney.domain.fortune.FortuneProtocol.FortuneEvent
 import ru.pavkin.ihavemoney.domain.query._
 import ru.pavkin.ihavemoney.domain.user.UserId
-import ru.pavkin.ihavemoney.readback.projections.{CategoriesViewProjection, FortuneAdjustmentsProjection, FortuneInfoProjection, FortunesPerUserProjection}
+import ru.pavkin.ihavemoney.readback.projections.{CategoriesViewProjection, FortuneLogProjection, FortuneInfoProjection, FortunesPerUserProjection}
 import ru.pavkin.ihavemoney.readback.repo.{AssetsViewRepository, LiabilitiesViewRepository, MoneyViewRepository}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -31,7 +31,7 @@ class InterfaceActor(
       case false ⇒ Future.successful(AccessDenied(q.id, s"User ${q.user} doesn't have access to fortune ${q.fortuneId}"))
     }
 
-  def log(id: FortuneId): Future[List[FortuneEvent]] = new FortuneAdjustmentsProjection(id, fortuneEventsProvider).run
+  def log(id: FortuneId): Future[List[FortuneEvent]] = new FortuneLogProjection(id, fortuneEventsProvider).run
 
   def receive: Receive = {
     case query: Query ⇒
@@ -47,7 +47,7 @@ class InterfaceActor(
           }
 
         case q@TransactionLog(_, uid, fortuneId) ⇒ checkAccess(q,
-          log(fortuneId).map(TransactionLogQueryResult(fortuneId, _))
+          log(fortuneId).map(EventLogQueryResult(fortuneId, _))
         )
         case q@Categories(_, uid, fortuneId) ⇒ checkAccess(q,
           categoriesRepo.byId(fortuneId).map {

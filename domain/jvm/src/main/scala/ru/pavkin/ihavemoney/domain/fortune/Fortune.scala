@@ -212,7 +212,7 @@ case class Fortune(
           cmd.user,
           cmd.asset.worth.amount,
           cmd.asset.currency,
-          IncomeCategory("auto_generated_income"),
+          IncomeCategory("Auto generated income"),
           initializer = true,
           metadata(cmd)),
         assetAcquired
