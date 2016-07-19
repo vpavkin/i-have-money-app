@@ -57,12 +57,14 @@ object StatsViewC {
             .collect { case t: Expense => t }
             .groupBy(_.category)
 
-        val montlyExpensesAggregated =
+        val monthlyExpensesAggregated =
           monthlyExpensesByCategory
               .mapValues(_.map {
                 case e if e.currency == st.monthCurAgg => -e.amount
                 case e if e.currency != st.monthCurAgg => AppCircuit.exchange(-e.amount, e.currency, st.monthCurAgg)
               }.sum)
+
+        val monthlyWithTotal = monthlyExpensesAggregated.toList.sortBy(_._1) :+ (ExpenseCategory.total -> monthlyExpensesAggregated.values.sum)
 
         val weeklyExpensesByCategory = log
             .filter(e => {
@@ -78,6 +80,9 @@ object StatsViewC {
                 case e if e.currency == st.weekCurAgg => -e.amount
                 case e if e.currency != st.weekCurAgg => AppCircuit.exchange(-e.amount, e.currency, st.weekCurAgg)
               }.sum)
+
+        val weeklyWithTotal = weeklyExpensesAggregated.toList.sortBy(_._1) :+ (ExpenseCategory.total -> weeklyExpensesAggregated.values.sum)
+
         div(common.container,
           div(grid.columnAll(GRID_SIZE / 2),
             Panel(Some(div(
@@ -90,7 +95,7 @@ object StatsViewC {
               table(className := "table table-striped table-hover table-condensed",
                 thead(tr(th("Category"), th("Expense"), th("Limit"), th("+/-"))),
                 tbody(
-                  weeklyExpensesAggregated.map {
+                  weeklyWithTotal.map {
                     case (cat, exp) ⇒
                       val limitOpt = pr.fortune.weeklyLimits.get(ExpenseCategory(cat)).map(convertLimit(_, st.weekCurAgg))
                       val overExp = limitOpt.map(_ - exp)
@@ -98,9 +103,10 @@ object StatsViewC {
                         key := cat,
                         td(
                           if (overExp.exists(_ < 0)) span(className := "text-danger", Icon.exclamationTriangle, " ")
-                          else if (overExp.exists(_ < limitOpt.getOrElse(BigDecimal(0.0)) / 10)) span(className := "text-warning", Icon.exclamationTriangle, " ")
+                          else if (overExp.exists(_ < limitOpt.getOrElse(BigDecimal(0.0)) / 10))
+                            span(className := "text-warning", Icon.exclamationTriangle, " ")
                           else EmptyTag,
-                          cat
+                          if (cat == ExpenseCategory.total) strong(cat) else cat
                         ),
                         td(logNegAmount, renderAmount(exp) + st.weekCurAgg.sign),
                         td(limitOpt.map(l => renderAmount(l) + st.weekCurAgg.sign).getOrElse(" - "): String),
@@ -122,7 +128,7 @@ object StatsViewC {
               table(className := "table table-striped table-hover table-condensed",
                 thead(tr(th("Category"), th("Expense"), th("Limit"), th("+/-"))),
                 tbody(
-                  montlyExpensesAggregated.map {
+                  monthlyWithTotal.map {
                     case (cat, exp) ⇒
                       val limitOpt = pr.fortune.monthlyLimits.get(ExpenseCategory(cat)).map(convertLimit(_, st.monthCurAgg))
                       val overExp = limitOpt.map(_ - exp)
@@ -130,9 +136,10 @@ object StatsViewC {
                         key := cat,
                         td(
                           if (overExp.exists(_ < 0)) span(className := "text-danger", Icon.exclamationTriangle, " ")
-                          else if (overExp.exists(_ < limitOpt.getOrElse(BigDecimal(0.0)) / 10)) span(className := "text-warning", Icon.exclamationTriangle, " ")
+                          else if (overExp.exists(_ < limitOpt.getOrElse(BigDecimal(0.0)) / 10))
+                            span(className := "text-warning", Icon.exclamationTriangle, " ")
                           else EmptyTag,
-                          cat
+                          if (cat == ExpenseCategory.total) strong(cat) else cat
                         ),
                         td(logNegAmount, renderAmount(exp) + st.monthCurAgg.sign),
                         td(limitOpt.map(l => renderAmount(l) + st.monthCurAgg.sign).getOrElse(" - "): String),
