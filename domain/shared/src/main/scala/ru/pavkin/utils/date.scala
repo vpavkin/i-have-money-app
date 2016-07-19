@@ -12,6 +12,14 @@ object date {
     def ddmmyyyy: String = s"${p(m.getDayOfMonth)}-${p(m.getMonthValue)}-${m.getYear}"
     def dayOfWeekName = m.getDayOfWeek.name.toLowerCase.capitalize
     def toFullString = s"$dayOfWeekName, $ddmmyyyy"
+
+    def atStartOfWeek = m.minusDays(m.getDayOfWeek.getValue - 1L)
+
+    def isCurrentWeek = atStartOfWeek == LocalDate.now().atStartOfWeek
+    def isPreviousWeek = atStartOfWeek == LocalDate.now().atStartOfWeek.minusDays(7)
+    def isNextWeek = atStartOfWeek == LocalDate.now().atStartOfWeek.plusDays(7)
+
+    def toWeekString = s"${m.getDayOfMonth} - ${m.plusDays(6).ddmmyyyy}"
   }
 
   implicit class YearMonthUtilityOps(m: YearMonth) {

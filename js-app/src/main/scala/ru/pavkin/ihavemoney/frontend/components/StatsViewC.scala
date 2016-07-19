@@ -1,6 +1,6 @@
 package ru.pavkin.ihavemoney.frontend.components
 
-import java.time.{Year, YearMonth}
+import java.time.{LocalDate, Year, YearMonth}
 
 import diode.data.Pot
 import diode.react.ModelProxy
@@ -13,6 +13,7 @@ import ru.pavkin.ihavemoney.frontend.redux.AppCircuit
 import ru.pavkin.ihavemoney.frontend.redux.actions.LoadEventLog
 import ru.pavkin.ihavemoney.frontend.styles.Global._
 import ru.pavkin.ihavemoney.protocol.{Event, Expense}
+import ru.pavkin.utils.date._
 
 import scala.math.BigDecimal.RoundingMode
 import scalacss.ScalaCssReact._
@@ -24,6 +25,8 @@ object StatsViewC {
       log: ModelProxy[Pot[List[Event]]])
 
   case class State(
+      week: LocalDate,
+      weekCurAgg: Currency,
       month: YearMonth,
       monthCurAgg: Currency,
       year: Year)
@@ -50,8 +53,8 @@ object StatsViewC {
       pr.log().renderPending(_ => div(PreloaderC())),
       pr.log().renderReady { log ⇒
         val monthlyExpensesByCategory = log
-            .collect { case t: Expense => t }
             .filter(e => e.date.getMonth == st.month.getMonth && e.date.getYear == st.month.getYear)
+            .collect { case t: Expense => t }
             .groupBy(_.category)
 
         val montlyExpensesAggregated =
@@ -60,7 +63,54 @@ object StatsViewC {
                 case e if e.currency == st.monthCurAgg => -e.amount
                 case e if e.currency != st.monthCurAgg => AppCircuit.exchange(-e.amount, e.currency, st.monthCurAgg)
               }.sum)
+
+        val weeklyExpensesByCategory = log
+            .filter(e => {
+              println(s"${st.week.toEpochDay} ${e.date.toEpochDay} ${st.week.plusDays(6).toEpochDay}")
+              e.date.toEpochDay >= st.week.toEpochDay && e.date.toEpochDay <= st.week.plusDays(6).toEpochDay
+            })
+            .collect { case t: Expense => t }
+            .groupBy(_.category)
+
+        val weeklyExpensesAggregated =
+          weeklyExpensesByCategory
+              .mapValues(_.map {
+                case e if e.currency == st.weekCurAgg => -e.amount
+                case e if e.currency != st.weekCurAgg => AppCircuit.exchange(-e.amount, e.currency, st.weekCurAgg)
+              }.sum)
         div(common.container,
+          div(grid.columnAll(GRID_SIZE / 2),
+            Panel(Some(div(
+              h3(common.panelTitle, "Weekly stats",
+                CurrencySelector(st.weekCurAgg, onChange = c => $.modState(_.copy(weekCurAgg = c)), addStyles = Seq(common.pullRight)),
+                span(" "),
+                WeekSelector(st.week, onChange = w => $.modState(_.copy(week = w)), addStyles = Seq(common.pullRight, rightMargin))
+              ))),
+              common.context.default,
+              table(className := "table table-striped table-hover table-condensed",
+                thead(tr(th("Category"), th("Expense"), th("Limit"), th("+/-"))),
+                tbody(
+                  weeklyExpensesAggregated.map {
+                    case (cat, exp) ⇒
+                      val limitOpt = pr.fortune.weeklyLimits.get(ExpenseCategory(cat)).map(convertLimit(_, st.weekCurAgg))
+                      val overExp = limitOpt.map(_ - exp)
+                      tr(
+                        key := cat,
+                        td(
+                          if (overExp.exists(_ < 0)) span(className := "text-danger", Icon.exclamationTriangle, " ")
+                          else if (overExp.exists(_ < limitOpt.getOrElse(BigDecimal(0.0)) / 10)) span(className := "text-warning", Icon.exclamationTriangle, " ")
+                          else EmptyTag,
+                          cat
+                        ),
+                        td(logNegAmount, renderAmount(exp) + st.weekCurAgg.sign),
+                        td(limitOpt.map(l => renderAmount(l) + st.weekCurAgg.sign).getOrElse(" - "): String),
+                        td(overExp.map(amountStyle), overExp.map(o => renderAmount(o) + st.weekCurAgg.sign).getOrElse(" - "): String)
+                      )
+                  }
+                )
+              )
+            )
+          ),
           div(grid.columnAll(GRID_SIZE / 2),
             Panel(Some(div(
               h3(common.panelTitle, "Monthly stats",
@@ -99,7 +149,7 @@ object StatsViewC {
   }
 
   val component = ReactComponentB[Props]("StatsComponent")
-      .initialState(State(YearMonth.now, Currency.EUR, Year.now))
+      .initialState(State(LocalDate.now().atStartOfWeek, Currency.EUR, YearMonth.now, Currency.EUR, Year.now))
       .renderBackend[Backend]
       .componentDidMount(s ⇒ s.backend.loadTransactionLog(s.props))
       .build
