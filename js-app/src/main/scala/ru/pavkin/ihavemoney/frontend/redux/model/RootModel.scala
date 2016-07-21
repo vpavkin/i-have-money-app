@@ -23,5 +23,7 @@ case class RootModel(
   def fortuneId: String = fortuneInfo.id
 }
 
-case class Categories(income: List[String], expense: List[String])
+case class Categories(income: List[String], expense: List[String]) {
+  def expenseWithTotal = expense.sorted :+ "Total"
+}
 

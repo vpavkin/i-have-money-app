@@ -21,7 +21,11 @@ object IHaveMoneyApp extends JSApp {
     import dsl._
 
     def renderExchange = render(ExchangeC())
-    def renderStats = render(connectors.log(b ⇒ StatsViewC.component(StatsViewC.Props(AppCircuit.fortune, b))))
+    def renderStats = render(connectors.log(b ⇒
+      connectors.categories(c =>
+        StatsViewC.component(StatsViewC.Props(AppCircuit.fortune, c, b))
+      )
+    ))
     def renderExpenses = render(connectors.categories(c ⇒ ExpensesC(c)))
     def renderIncome = render(connectors.categories(c ⇒ IncomeC(c)))
     def renderInitializer = renderR(InitializerC(_))

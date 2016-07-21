@@ -10,7 +10,8 @@ import japgolly.scalajs.react.vdom.all._
 import ru.pavkin.ihavemoney.domain.fortune.{Currency, ExpenseCategory, FortuneInfo, Worth}
 import ru.pavkin.ihavemoney.frontend.bootstrap.{Icon, Panel}
 import ru.pavkin.ihavemoney.frontend.redux.AppCircuit
-import ru.pavkin.ihavemoney.frontend.redux.actions.LoadEventLog
+import ru.pavkin.ihavemoney.frontend.redux.actions.{LoadCategories, LoadEventLog}
+import ru.pavkin.ihavemoney.frontend.redux.model.Categories
 import ru.pavkin.ihavemoney.frontend.styles.Global._
 import ru.pavkin.ihavemoney.protocol.{Event, Expense}
 import ru.pavkin.utils.date._
@@ -22,6 +23,7 @@ object StatsViewC {
 
   case class Props(
       fortune: FortuneInfo,
+      categories: ModelProxy[Pot[Categories]],
       log: ModelProxy[Pot[List[Event]]])
 
   case class State(
@@ -34,8 +36,9 @@ object StatsViewC {
 
   class Backend($: BackendScope[Props, State]) {
 
-    def loadTransactionLog(pr: Props) = Callback {
+    def loadData(pr: Props) = Callback {
       AppCircuit.dispatch(LoadEventLog())
+      AppCircuit.dispatch(LoadCategories())
     }
 
     def amountStyle(amount: BigDecimal) =
@@ -112,24 +115,24 @@ object StatsViewC {
                 table(className := "table table-striped table-hover table-condensed",
                   thead(tr(th("Category"), th("Expense"), th("Limit"), th("+/-"))),
                   tbody(
-                    weeklyWithTotal.map {
-                      case (cat, exp) ⇒
-                        val limitOpt = pr.fortune.weeklyLimitsWithTotal.get(ExpenseCategory(cat)).map(convertLimit(_, st.weekCurAgg))
-                        val overExp = limitOpt.map(_ - exp)
-                        tr(
-                          key := cat,
-                          td(
-                            if (overExp.exists(_ < 0)) span(className := "text-danger", Icon.exclamationTriangle, " ")
-                            else if (overExp.exists(_ < limitOpt.getOrElse(BigDecimal(0.0)) / 10))
-                              span(className := "text-warning", Icon.exclamationTriangle, " ")
-                            else EmptyTag,
-                            if (cat == ExpenseCategory.total) strong(cat) else cat
-                          ),
-                          td(logNegAmount, renderAmount(exp) + st.weekCurAgg.sign),
-                          td(limitOpt.map(l => renderAmount(l) + st.weekCurAgg.sign).getOrElse(" - "): String),
-                          td(overExp.map(amountStyle), overExp.map(o => renderAmount(o) + st.weekCurAgg.sign).getOrElse(" - "): String)
-                        )
-                    }
+                    pr.categories().renderReady(cats => cats.expenseWithTotal.map { cat =>
+                      val exp = weeklyWithTotal.toMap.getOrElse(cat, BigDecimal(0.0))
+                      val limitOpt = pr.fortune.weeklyLimitsWithTotal.get(ExpenseCategory(cat)).map(convertLimit(_, st.weekCurAgg))
+                      val overExp = limitOpt.map(_ - exp)
+                      tr(
+                        key := cat,
+                        td(
+                          if (overExp.exists(_ < 0)) span(className := "text-danger", Icon.exclamationTriangle, " ")
+                          else if (overExp.exists(_ < limitOpt.getOrElse(BigDecimal(0.0)) / 10))
+                            span(className := "text-warning", Icon.exclamationTriangle, " ")
+                          else EmptyTag,
+                          if (cat == ExpenseCategory.total) strong(cat) else cat
+                        ),
+                        td(if (exp > 0) logNegAmount else EmptyTag, renderAmount(exp) + st.weekCurAgg.sign),
+                        td(limitOpt.map(l => renderAmount(l) + st.weekCurAgg.sign).getOrElse(" - "): String),
+                        td(overExp.map(amountStyle), overExp.map(o => renderAmount(o) + st.weekCurAgg.sign).getOrElse(" - "): String)
+                      )
+                    })
                   )
                 )
               )
@@ -143,16 +146,16 @@ object StatsViewC {
                 table(className := "table table-striped table-hover table-condensed",
                   thead(tr(th("Category"), th("Expense"))),
                   tbody(
-                    yearWithTotal.map {
-                      case (cat, exp) ⇒
-                        tr(
-                          key := cat,
-                          td(
-                            if (cat == ExpenseCategory.total) strong(cat) else cat
-                          ),
-                          td(logNegAmount, renderAmount(exp) + st.yearCurAgg.sign)
-                        )
-                    }
+                    pr.categories().renderReady(cats => cats.expenseWithTotal.map { cat =>
+                      val exp = yearWithTotal.toMap.getOrElse(cat, BigDecimal(0.0))
+                      tr(
+                        key := cat,
+                        td(
+                          if (cat == ExpenseCategory.total) strong(cat) else cat
+                        ),
+                        td(if (exp > 0) logNegAmount else EmptyTag, renderAmount(exp) + st.yearCurAgg.sign)
+                      )
+                    })
                   )
                 )
               )
@@ -169,24 +172,24 @@ object StatsViewC {
               table(className := "table table-striped table-hover table-condensed",
                 thead(tr(th("Category"), th("Expense"), th("Limit"), th("+/-"))),
                 tbody(
-                  monthlyWithTotal.map {
-                    case (cat, exp) ⇒
-                      val limitOpt = pr.fortune.monthlyLimitsWithTotal.get(ExpenseCategory(cat)).map(convertLimit(_, st.monthCurAgg))
-                      val overExp = limitOpt.map(_ - exp)
-                      tr(
-                        key := cat,
-                        td(
-                          if (overExp.exists(_ < 0)) span(className := "text-danger", Icon.exclamationTriangle, " ")
-                          else if (overExp.exists(_ < limitOpt.getOrElse(BigDecimal(0.0)) / 10))
-                            span(className := "text-warning", Icon.exclamationTriangle, " ")
-                          else EmptyTag,
-                          if (cat == ExpenseCategory.total) strong(cat) else cat
-                        ),
-                        td(logNegAmount, renderAmount(exp) + st.monthCurAgg.sign),
-                        td(limitOpt.map(l => renderAmount(l) + st.monthCurAgg.sign).getOrElse(" - "): String),
-                        td(overExp.map(amountStyle), overExp.map(o => renderAmount(o) + st.monthCurAgg.sign).getOrElse(" - "): String)
-                      )
-                  }
+                  pr.categories().renderReady(cats => cats.expenseWithTotal.map { cat =>
+                    val exp = monthlyWithTotal.toMap.getOrElse(cat, BigDecimal(0.0))
+                    val limitOpt = pr.fortune.monthlyLimitsWithTotal.get(ExpenseCategory(cat)).map(convertLimit(_, st.monthCurAgg))
+                    val overExp = limitOpt.map(_ - exp)
+                    tr(
+                      key := cat,
+                      td(
+                        if (overExp.exists(_ < 0)) span(className := "text-danger", Icon.exclamationTriangle, " ")
+                        else if (overExp.exists(_ < limitOpt.getOrElse(BigDecimal(0.0)) / 10))
+                          span(className := "text-warning", Icon.exclamationTriangle, " ")
+                        else EmptyTag,
+                        if (cat == ExpenseCategory.total) strong(cat) else cat
+                      ),
+                      td(if (exp > 0) logNegAmount else EmptyTag, renderAmount(exp) + st.monthCurAgg.sign),
+                      td(limitOpt.map(l => renderAmount(l) + st.monthCurAgg.sign).getOrElse(" - "): String),
+                      td(overExp.map(amountStyle), overExp.map(o => renderAmount(o) + st.monthCurAgg.sign).getOrElse(" - "): String)
+                    )
+                  })
                 )
               )
             )
@@ -199,6 +202,6 @@ object StatsViewC {
   val component = ReactComponentB[Props]("StatsComponent")
       .initialState(State(LocalDate.now().atStartOfWeek, Currency.EUR, YearMonth.now, Currency.EUR, Year.now, Currency.EUR))
       .renderBackend[Backend]
-      .componentDidMount(s ⇒ s.backend.loadTransactionLog(s.props))
+      .componentDidMount(s ⇒ s.backend.loadData(s.props))
       .build
 }
