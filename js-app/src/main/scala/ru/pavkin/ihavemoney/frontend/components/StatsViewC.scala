@@ -140,7 +140,7 @@ object StatsViewC {
             div(
               Panel(Some(div(
                 h3(common.panelTitle, "Current year stats",
-                  CurrencySelector(st.monthCurAgg, onChange = c => $.modState(_.copy(monthCurAgg = c)), addStyles = Seq(common.pullRight))
+                  CurrencySelector(st.yearCurAgg, onChange = c => $.modState(_.copy(yearCurAgg = c)), addStyles = Seq(common.pullRight))
                 ))),
                 common.context.default,
                 table(className := "table table-striped table-hover table-condensed",
