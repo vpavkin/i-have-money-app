@@ -26,6 +26,11 @@ object IHaveMoneyApp extends JSApp {
         StatsViewC.component(StatsViewC.Props(AppCircuit.fortune, c, b))
       )
     ))
+    def renderLog = render(connectors.log(b ⇒
+      connectors.categories(c =>
+        TransactionLogC.component(TransactionLogC.Props(b, c))
+      )
+    ))
     def renderExpenses = render(connectors.categories(c ⇒ ExpensesC(c)))
     def renderIncome = render(connectors.categories(c ⇒ IncomeC(c)))
     def renderInitializer = renderR(InitializerC(_))
@@ -56,7 +61,7 @@ object IHaveMoneyApp extends JSApp {
         | staticRoute("#balance", Route.BalanceView) ~> renderBalance
         | staticRoute("#stats", Route.StatsView) ~> renderStats
         | staticRoute("#settings", Route.FortuneSettingsView) ~> renderFortuneSettings
-        | staticRoute("#log", Route.TransactionLogView) ~> render(connectors.log(b ⇒ TransactionLogC.component(TransactionLogC.Props(b))))
+        | staticRoute("#log", Route.TransactionLogView) ~> renderLog
         | staticRoute("#login", Route.Login) ~> renderR(ctl ⇒ LoginC.component(ctl)))
         .notFound(redirectToPage(Route.Expenses)(Redirect.Replace))
         .renderWith(layout)
