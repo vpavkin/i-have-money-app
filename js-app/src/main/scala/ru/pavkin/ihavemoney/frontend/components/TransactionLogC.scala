@@ -1,5 +1,7 @@
 package ru.pavkin.ihavemoney.frontend.components
 
+import java.time.YearMonth
+
 import diode.data.Pot
 import diode.react.ModelProxy
 import diode.react.ReactPot._
@@ -23,7 +25,12 @@ object TransactionLogC {
       log: ModelProxy[Pot[List[Event]]],
       categories: ModelProxy[Pot[Categories]])
 
-  case class State(filterByCategory: Boolean = false, category: String = "Groceries")
+  case class State(
+      filterByCategory: Boolean = false,
+      category: String = "Groceries",
+      filterByMonth: Boolean = false,
+      month: YearMonth = YearMonth.now(),
+      textFilter: String = "")
 
   class Backend($: BackendScope[Props, State]) {
 
@@ -36,6 +43,14 @@ object TransactionLogC {
       if (amount >= 0) logPosAmount
       else logNegAmount
 
+    def onTextChange(change: (State, String) ⇒ State)(e: ReactEventI) = {
+      val newValue = e.target.value
+      applyStateChange(change)(newValue)
+    }
+
+    def applyStateChange[T](change: (State, T) ⇒ State)(newValue: T): Callback =
+      $.modState(change(_, newValue))
+
     def render(pr: Props, st: State) = div(common.container,
       div(grid.columnAll(2),
         Panel(Some(h3(common.panelTitle, "Filters")),
@@ -43,7 +58,14 @@ object TransactionLogC {
           Checkbox(isChecked ⇒ $.modState(_.copy(filterByCategory = isChecked)), st.filterByCategory, "By category"),
           pr.categories().renderReady(cats =>
             StringValueSelector(st.category, s => $.modState(_.copy(category = s)), cats.expense.sorted, common.context.info)
-          ))
+          ),
+          hr(),
+          Checkbox(isChecked ⇒ $.modState(_.copy(filterByMonth = isChecked)), st.filterByMonth, "By month"),
+          YearMonthSelector(st.month, onChange = ym => $.modState(_.copy(month = ym))),
+          hr(),
+          label("Text search:"),
+          input.text(common.formControl, value := st.textFilter, onChange ==> onTextChange((s, v) => s.copy(textFilter = v)))
+        )
       ),
       div(grid.columnAll(10),
         Panel(Some(h3(common.panelTitle, "Transactions")),
@@ -53,7 +75,11 @@ object TransactionLogC {
           pr.log().renderReady { log ⇒
             val transactions = log.collect {
               case t: Transaction => t
-            }.filter(t => if (st.filterByCategory) t.category == st.category else true)
+            }.filter(t =>
+              (!st.filterByCategory || t.category == st.category)
+                  && (!st.filterByMonth || (t.date.getMonth == st.month.getMonth && t.date.getYear == st.month.getYear))
+                  && (st.textFilter.isEmpty || t.comment.exists(_.toLowerCase.contains(st.textFilter.toLowerCase)))
+            )
 
             div(
               table(className := "table table-striped table-hover table-condensed",
