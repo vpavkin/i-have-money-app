@@ -19,7 +19,10 @@ object date {
     def isPreviousWeek = atStartOfWeek == LocalDate.now().atStartOfWeek.minusDays(7)
     def isNextWeek = atStartOfWeek == LocalDate.now().atStartOfWeek.plusDays(7)
 
-    def toWeekString = s"${m.getDayOfMonth} - ${m.plusDays(6).ddmmyyyy}"
+    def toWeekString = {
+      val end = m.plusDays(6)
+      s"${m.getDayOfMonth} ${m.getMonth.name.toLowerCase.capitalize} — ${end.getDayOfMonth} ${end.getMonth.name.toLowerCase.capitalize} ${end.getYear}"
+    }
   }
 
   implicit class YearMonthUtilityOps(m: YearMonth) {
