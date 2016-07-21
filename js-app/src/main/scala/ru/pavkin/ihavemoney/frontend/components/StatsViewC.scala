@@ -114,7 +114,7 @@ object StatsViewC {
                   tbody(
                     weeklyWithTotal.map {
                       case (cat, exp) ⇒
-                        val limitOpt = pr.fortune.weeklyLimits.get(ExpenseCategory(cat)).map(convertLimit(_, st.weekCurAgg))
+                        val limitOpt = pr.fortune.weeklyLimitsWithTotal.get(ExpenseCategory(cat)).map(convertLimit(_, st.weekCurAgg))
                         val overExp = limitOpt.map(_ - exp)
                         tr(
                           key := cat,
@@ -171,7 +171,7 @@ object StatsViewC {
                 tbody(
                   monthlyWithTotal.map {
                     case (cat, exp) ⇒
-                      val limitOpt = pr.fortune.monthlyLimits.get(ExpenseCategory(cat)).map(convertLimit(_, st.monthCurAgg))
+                      val limitOpt = pr.fortune.monthlyLimitsWithTotal.get(ExpenseCategory(cat)).map(convertLimit(_, st.monthCurAgg))
                       val overExp = limitOpt.map(_ - exp)
                       tr(
                         key := cat,
