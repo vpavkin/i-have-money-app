@@ -76,7 +76,7 @@ object BalanceViewC {
 
     def render(pr: Props, state: State) = div(
       div(common.container,
-        div(grid.columnAll(GRID_SIZE / 3),
+        div(grid.columnAll(2),
           Panel(Some(h3(common.panelTitle, "Money balance")),
             common.context.info,
             pr.balances().renderEmpty(PreloaderC()),
@@ -84,7 +84,6 @@ object BalanceViewC {
             pr.balances().renderReady(balances ⇒
               div(
                 table(className := "table table-striped table-hover table-condensed",
-                  thead(tr(th("Currency"), th("Amount"))),
                   tbody(
                     balances.map {
                       case (currency, amount) ⇒ tr(td(currency.code), td(amount.toString))
@@ -95,7 +94,7 @@ object BalanceViewC {
             )
           )
         ),
-        div(grid.columnAll(GRID_SIZE / 3),
+        div(grid.columnAll(5),
           Panel(Some(h3(common.panelTitle, "Assets")),
             common.context.success,
             pr.assets().renderEmpty(PreloaderC()),
@@ -104,13 +103,13 @@ object BalanceViewC {
               div(
                 table(className := "table table-striped table-hover table-condensed",
                   thead(tr(th("Asset"), th("Worth"))),
-                  tbody(assets.values.map(asset ⇒ tr(td(asset.name), td(asset.worth.toString))))
+                  tbody(assets.values.map(asset ⇒ tr(td(asset.name), td(asset.worth.toPrettyString))))
                 )
               )
             )
           )
         ),
-        div(grid.columnAll(GRID_SIZE / 3),
+        div(grid.columnAll(5),
           Panel(Some(h3(common.panelTitle, "Liabilities")),
             common.context.danger,
             pr.liabilities().renderEmpty(PreloaderC()),
@@ -119,7 +118,7 @@ object BalanceViewC {
               div(
                 table(className := "table table-striped table-hover table-condensed",
                   thead(tr(th("Liability"), th("Worth"))),
-                  tbody(liabilities.values.map(asset ⇒ tr(td(asset.name), td(asset.worth.toString))))
+                  tbody(liabilities.values.map(asset ⇒ tr(td(asset.name), td(asset.worth.toPrettyString))))
                 )
               )
             ))

@@ -1,7 +1,6 @@
 package ru.pavkin.ihavemoney.domain.fortune
 
 import cats.Eq
-import cats.data.Xor
 
 case class Worth(amount: BigDecimal, currency: Currency) {
   def +(other: Worth): Worth = {
@@ -12,6 +11,9 @@ case class Worth(amount: BigDecimal, currency: Currency) {
     copy(amount = amount * by)
 
   override def toString: String = f"$amount%1.2f ${currency.code}"
+
+  def amountStr = f"$amount%1.2f"
+  def toPrettyString: String = f"${amountStr.stripSuffix(".00")} ${currency.code}"
 }
 
 object Worth {
