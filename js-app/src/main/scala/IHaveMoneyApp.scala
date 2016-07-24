@@ -20,7 +20,7 @@ object IHaveMoneyApp extends JSApp {
   val routerConfig = RouterConfigDsl[Route].buildConfig { dsl ⇒
     import dsl._
 
-    def renderExchange = render(ExchangeC())
+    def renderExchange = render(connectors.log(l ⇒ ExchangeC(l)))
     def renderStats = render(connectors.log(b ⇒
       connectors.categories(c =>
         StatsViewC.component(StatsViewC.Props(AppCircuit.fortune, c, b))

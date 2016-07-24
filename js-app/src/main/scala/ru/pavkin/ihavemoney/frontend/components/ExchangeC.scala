@@ -1,18 +1,26 @@
 package ru.pavkin.ihavemoney.frontend.components
 
 import cats.data.Xor
+import diode.data.Pot
+import diode.react.ModelProxy
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.all._
-import ru.pavkin.ihavemoney.domain.fortune.Currency
+import ru.pavkin.ihavemoney.domain.fortune.{Currency, Worth}
 import ru.pavkin.ihavemoney.frontend.api
 import ru.pavkin.ihavemoney.frontend.bootstrap.{Button, FormGroup, Icon}
+import ru.pavkin.ihavemoney.frontend.redux.AppCircuit
+import ru.pavkin.ihavemoney.frontend.redux.actions.{LoadCategories, LoadEventLog}
 import ru.pavkin.ihavemoney.frontend.styles.Global._
+import ru.pavkin.ihavemoney.protocol.{CurrencyExchanged, Event, Transaction}
 import ru.pavkin.utils.option._
 
 import scala.concurrent.Future
 import scala.scalajs.concurrent.JSExecutionContext.Implicits.queue
 import scala.util.Try
 import scalacss.ScalaCssReact._
+import diode.react.ReactPot._
+import ru.pavkin.ihavemoney.frontend.gravatar.GravatarAPI
+import ru.pavkin.utils.date._
 
 object ExchangeC {
 
@@ -21,11 +29,16 @@ object ExchangeC {
       fromCurrency: Currency,
       toAmount: String,
       toCurrency: Currency,
-      comment: String)
+      comment: String,
+      loading: Boolean = false)
 
-  case class Props()
+  case class Props(log: ModelProxy[Pot[List[Event]]])
 
   class Backend($: BackendScope[Props, State]) {
+
+    def loadData(pr: Props) = Callback {
+      AppCircuit.dispatch(LoadEventLog())
+    }
 
     def onExchangeSubmit(state: State): Callback = genSubmit(state)(api.exchange(
       BigDecimal(state.fromAmount),
@@ -55,10 +68,20 @@ object ExchangeC {
     def genSubmit[T](st: State)(req: ⇒ Future[T]): Callback =
       if (!isValid(st))
         Callback.alert("Invalid data")
-      else Callback.future(req.map {
-        case Xor.Left(error) ⇒ Callback.alert(s"Error: $error")
-        case _ ⇒ Callback.alert(s"Success")
-      })
+      else
+        $.modState(_.copy(loading = true)) >>
+            Callback.future(req.map {
+              case Xor.Left(error) ⇒ Callback.alert(s"Error: $error")
+              case _ ⇒ $.modState(_.copy(
+                fromAmount = "",
+                toAmount = "",
+                comment = "",
+                fromCurrency = Currency.EUR,
+                toCurrency = Currency.EUR,
+                loading = false
+              ))
+            }) >>
+            $.props.flatMap(loadData).delayMs(500).void
 
     def isValid(s: State) =
       Try(BigDecimal(s.fromAmount)).isSuccess &&
@@ -72,7 +95,7 @@ object ExchangeC {
         f"${BigDecimal(s.toAmount) / BigDecimal(s.fromAmount)}%1.3f ${s.toCurrency.sign}/${s.fromCurrency.sign}"))
     )
 
-    def render(pr: Props, state: State) =
+    def render(pr: Props, state: State) = div(
       form(
         common.formHorizontal,
         onSubmit ==> onFormSubmit,
@@ -147,13 +170,43 @@ object ExchangeC {
             renderExchangeRate(state)
           else EmptyTag
         )
-      )
+      ),
+      if (state.loading)
+        PreloaderC(top := "-150px")
+      else EmptyTag,
+
+      if (!state.loading)
+        pr.log().renderReady { events =>
+          val conversions = events.collect {
+            case e: CurrencyExchanged => e
+          }
+          table(className := "table table-striped table-hover table-condensed",
+            thead(tr(th(""), th("Date"), th("From"), th("To"), th("Rate"), th("Comment"))),
+            tbody(
+              conversions.zipWithIndex.map {
+                case (t, index) ⇒ tr(
+                  key := index.toString,
+                  td(width := "30px", paddingTop := "0px", paddingBottom := "0px", verticalAlign := "middle",
+                    img(src := GravatarAPI.img(t.user, 20), className := "img-circle", title := t.user)),
+                  td(t.date.ddmmyyyy),
+                  td(Worth(t.fromAmount, t.fromCurrency).toPrettyString),
+                  td(Worth(t.toAmount, t.toCurrency).toPrettyString),
+                  td(f"${t.fromAmount / t.toAmount}%1.3f ${t.fromCurrency.sign}/${t.toCurrency.sign}, ${t.toAmount / t.fromAmount}%1.3f ${t.toCurrency.sign}/${t.fromCurrency.sign}"),
+                  td(t.comment.getOrElse(""): String)
+                )
+              }
+            )
+          )
+        }
+      else EmptyTag
+    )
   }
 
   val component = ReactComponentB[Props]("CurrencyExchangeComponent")
       .initialState(State("", Currency.EUR, "", Currency.RUR, ""))
       .renderBackend[Backend]
+      .componentDidMount(s ⇒ s.backend.loadData(s.props))
       .build
 
-  def apply() = component(Props())
+  def apply(log: ModelProxy[Pot[List[Event]]]) = component(Props(log))
 }
