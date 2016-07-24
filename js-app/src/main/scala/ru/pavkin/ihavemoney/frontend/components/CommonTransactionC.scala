@@ -1,22 +1,25 @@
 package ru.pavkin.ihavemoney.frontend.components
 
+import java.time.LocalDate
+
 import cats.data.Xor
 import diode.data.Pot
 import diode.react.ModelProxy
+import diode.react.ReactPot._
 import japgolly.scalajs.react.vdom.all._
 import japgolly.scalajs.react.{Callback, _}
 import ru.pavkin.ihavemoney.domain.fortune.Currency
-import ru.pavkin.ihavemoney.frontend.bootstrap.{Button, Checkbox, FormGroup}
 import ru.pavkin.ihavemoney.frontend.bootstrap.attributes._
+import ru.pavkin.ihavemoney.frontend.bootstrap.{Checkbox, FormGroup}
 import ru.pavkin.ihavemoney.frontend.redux.AppCircuit
 import ru.pavkin.ihavemoney.frontend.redux.actions.LoadCategories
 import ru.pavkin.ihavemoney.frontend.redux.model.Categories
-import ru.pavkin.ihavemoney.frontend.styles.Global.{style ⇒ _, _}
+import ru.pavkin.ihavemoney.frontend.styles.Global.{style => _, _}
+import ru.pavkin.utils.date._
 
-import scalacss.ScalaCssReact._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
-import diode.react.ReactPot._
+import scalacss.ScalaCssReact._
 
 abstract class CommonTransactionC(implicit ec: ExecutionContext) {
 
@@ -25,6 +28,7 @@ abstract class CommonTransactionC(implicit ec: ExecutionContext) {
       amount: String,
       category: String,
       comment: String,
+      transactionDate: String = LocalDate.now.yyyymmdd,
       initializer: Boolean = false,
       loading: Boolean = false)
 
@@ -70,7 +74,8 @@ abstract class CommonTransactionC(implicit ec: ExecutionContext) {
 
     def isValid(s: State) =
       Try(BigDecimal(s.amount)).isSuccess &&
-          s.category.nonEmpty
+          s.category.nonEmpty &&
+          LocalDateParser.fromYYYYMMDD(s.transactionDate).isSuccess
 
     def init: Callback = Callback {
       AppCircuit.dispatch(LoadCategories())
@@ -78,6 +83,7 @@ abstract class CommonTransactionC(implicit ec: ExecutionContext) {
 
     def renderSubmitButton(pr: Props, state: State): ReactElement
     def renderCategoriesSelector(pr: Props, state: State): Categories ⇒ ReactElement
+    def renderAdditionalFields(pr: Props, state: State): ReactNode = div()
 
     def renderForm(pr: Props, state: State) = div(
       form(
@@ -130,6 +136,7 @@ abstract class CommonTransactionC(implicit ec: ExecutionContext) {
               "Initializer")
           ))
         else EmptyTag,
+        renderAdditionalFields(pr, state),
         FormGroup(
           div(grid.columnOffsetAll(HorizontalForm.LABEL_WIDTH), grid.columnAll(10),
             renderSubmitButton(pr, state)

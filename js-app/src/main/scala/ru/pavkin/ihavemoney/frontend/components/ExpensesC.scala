@@ -6,10 +6,13 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.all._
 import ru.pavkin.ihavemoney.domain.fortune.Currency
 import ru.pavkin.ihavemoney.frontend.api
-import ru.pavkin.ihavemoney.frontend.bootstrap.Button
+import ru.pavkin.ihavemoney.frontend.bootstrap.{Button, FormGroup}
 import ru.pavkin.ihavemoney.frontend.redux.model.Categories
 import ru.pavkin.ihavemoney.frontend.styles.Global._
 import ru.pavkin.utils.option._
+import helpers._
+import ru.pavkin.utils.date.LocalDateParser
+
 import scalacss.ScalaCssReact._
 import scala.scalajs.concurrent.JSExecutionContext.Implicits.queue
 
@@ -23,6 +26,7 @@ object ExpensesC extends CommonTransactionC {
       BigDecimal(state.amount),
       state.currency,
       state.category,
+      LocalDateParser.fromYYYYMMDD(state.transactionDate).get,
       initializer = state.initializer,
       notEmpty(state.comment)
     ))
@@ -43,6 +47,19 @@ object ExpensesC extends CommonTransactionC {
       )
 
     def render(pr: Props, state: State) = renderForm(pr, state)
+
+    def onDateChange(e: ReactEventI) =
+      e.extract(_.target.value)(text => $.modState(s => s.copy(
+        transactionDate = text
+      )))
+
+    override def renderAdditionalFields(pr: Props, state: State): ReactNode =
+      FormGroup(common.hasErrorOpt(!isValidDate(state.transactionDate)),
+        HorizontalForm.Label("Date"),
+        div(HorizontalForm.input, input.date(value := state.transactionDate, common.formControl, increasedFontSize,
+          onChange ==> onDateChange
+        ))
+      )
   }
 
   val component = ReactComponentB[Props]("AddExpensesComponent")
