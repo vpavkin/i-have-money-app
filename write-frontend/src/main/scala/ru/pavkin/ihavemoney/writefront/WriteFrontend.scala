@@ -189,7 +189,7 @@ object WriteFrontend extends App with CirceSupport with CorsDirectives {
                           req.amount,
                           req.currency,
                           ExpenseCategory(req.category),
-                          None,
+                          Some(req.date),
                           req.initializer,
                           req.comment
                         ))

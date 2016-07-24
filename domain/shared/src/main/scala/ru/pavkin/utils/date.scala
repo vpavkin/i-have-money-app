@@ -4,12 +4,15 @@ import java.time.{LocalDate, YearMonth}
 
 import strings.syntax._
 
+import scala.util.{Failure, Try}
+
 object date {
 
   private def p(i: Int): String = i.toString.padLeft(2, '0')
 
   implicit class LocalDateUtilityOps(m: LocalDate) {
     def ddmmyyyy: String = s"${p(m.getDayOfMonth)}-${p(m.getMonthValue)}-${m.getYear}"
+    def yyyymmdd: String = s"${m.getYear}-${p(m.getMonthValue)}-${p(m.getDayOfMonth)}"
     def dayOfWeekName = m.getDayOfWeek.name.toLowerCase.capitalize
     def toFullString = s"$dayOfWeekName, $ddmmyyyy"
 
@@ -34,5 +37,20 @@ object date {
     def previous = m.minusMonths(1)
     def next = m.plusMonths(1)
     def numberOfDays: Int = m.lengthOfMonth()
+  }
+
+  object LocalDateParser {
+
+    def fromYYYYMMDD(s: String): Try[LocalDate] = s.split("-").toList match {
+      case year :: month :: day :: Nil =>
+        Try(LocalDate.of(year.toInt, month.toInt, day.toInt))
+      case _ => Failure(new Exception("Invalid string supplied, expected YYYY-MM-DD"))
+    }
+
+    def fromDDMMYYY(s: String): Try[LocalDate] = s.split("-").toList match {
+      case day :: month :: year :: Nil =>
+        Try(LocalDate.of(year.toInt, month.toInt, day.toInt))
+      case _ => Failure(new Exception("Invalid string supplied, expected DD-MM-YYYY"))
+    }
   }
 }

@@ -1,5 +1,7 @@
 package ru.pavkin.ihavemoney.protocol
 
+import java.time.LocalDate
+
 import io.circe._
 import io.circe.generic.semiauto._
 import ru.pavkin.ihavemoney.domain.fortune._
@@ -19,6 +21,7 @@ object writefront extends SharedProtocol {
       amount: BigDecimal,
       currency: Currency,
       category: String,
+      date: LocalDate,
       initializer: Boolean = false,
       comment: Option[String] = None) extends WriteFrontRequest
 

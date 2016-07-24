@@ -1,5 +1,7 @@
 package ru.pavkin.ihavemoney.frontend
 
+import java.time.LocalDate
+
 import cats.data.Xor
 import io.circe.Decoder
 import io.circe.syntax._
@@ -77,11 +79,12 @@ object api {
       amount: BigDecimal,
       currency: Currency,
       category: String,
+      date: LocalDate,
       initializer: Boolean = false,
       comment: Option[String])
       (implicit ec: ExecutionContext): Future[Xor[RequestError, Unit]] =
     postJson(routes.addExpense(AppCircuit.fortuneId).value,
-      SpendRequest(amount, currency, category, initializer, comment),
+      SpendRequest(amount, currency, category, date, initializer, comment),
       headers = Map(authHeader)
     ).map(_.map(_ ⇒ ()))
 
