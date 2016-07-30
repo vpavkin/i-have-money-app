@@ -12,7 +12,7 @@ import ru.pavkin.ihavemoney.domain.fortune.FortuneProtocol._
 import ru.pavkin.ihavemoney.domain.fortune._
 import ru.pavkin.ihavemoney.domain.user.UserId
 import ru.pavkin.ihavemoney.readback.projections.{AssetsViewProjection, FortuneInfoProjection, LiabilitiesViewProjection, MoneyViewProjection}
-import ru.pavkin.ihavemoney.readback.repo.InMemoryRepository
+import ru.pavkin.ihavemoney.readback.repo.{InMemoryAssetsViewRepository, InMemoryLiabilitiesViewRepository, InMemoryMoneyViewRepository, InMemoryRepository}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -365,6 +365,21 @@ class FortuneProtocolSpec extends IHaveMoneySpec with ScalaFutures with OptionVa
         fortune ? PayLiabilityOff(owner, liabilityId, BigDecimal(10))
       }.getMessage
       message should include("not found")
+    }
+  }
+
+  test("Liabilities: initializer doesn't add money (projection)") {
+    new FortuneInMemoryTest {
+
+      val liability = NoInterestDebt("House", BigDecimal(1000), Currency.USD)
+      var liabilityId: LiabilityId = LiabilityId.generate
+
+      fortune ! TakeOnLiability(owner, liability, initializer = true)
+      expectEvent { case LiabilityTaken(_, liabId, liab, true, _, _) if liab == liability ⇒ liabilityId = liabId }
+
+      viewShouldBeEmpty(money)
+      liabilities.size shouldBe 1
+      liabilities.values.toList.head shouldBe liability
     }
   }
 
