@@ -13,7 +13,7 @@ import ru.pavkin.ihavemoney.frontend.redux.AppCircuit
 import ru.pavkin.ihavemoney.frontend.redux.actions.{LoadCategories, LoadEventLog}
 import ru.pavkin.ihavemoney.frontend.redux.model.Categories
 import ru.pavkin.ihavemoney.frontend.styles.Global._
-import ru.pavkin.ihavemoney.protocol.{Event, Expense}
+import ru.pavkin.ihavemoney.protocol.{Event, Expense, Income}
 import ru.pavkin.utils.date._
 
 import scala.math.BigDecimal.RoundingMode
@@ -57,8 +57,10 @@ object StatsViewC {
       pr.log().renderPending(_ => div(PreloaderC())),
       pr.log().renderReady { log ⇒
 
-        val yearExpensesByCategory = log
-            .filter(_.date.getYear == st.year.getValue)
+        // year data
+        val yearTransactions = log.filter(_.date.getYear == st.year.getValue)
+
+        val yearExpensesByCategory = yearTransactions
             .collect { case t: Expense => t }
             .groupBy(_.category)
 
@@ -71,10 +73,21 @@ object StatsViewC {
 
         val yearWithTotal = yearExpensesAggregated.toList.sortBy(_._1) :+ (ExpenseCategory.total -> yearExpensesAggregated.values.sum)
 
-        val monthlyExpensesByCategory = log
-            .filter(e => e.date.getMonth == st.month.getMonth && e.date.getYear == st.month.getYear)
-            .collect { case t: Expense => t }
-            .groupBy(_.category)
+        val yearIncomeAggregated = yearTransactions
+            .collect { case t: Income => t }
+            .map {
+              case e if e.currency == st.yearCurAgg => e.amount
+              case e if e.currency != st.yearCurAgg => AppCircuit.exchange(e.amount, e.currency, st.yearCurAgg)
+            }.sum
+
+        // month data
+
+        val monthlyTransactions = log.filter(e => e.date.getMonth == st.month.getMonth && e.date.getYear == st.month.getYear)
+
+        val monthlyExpensesByCategory =
+          monthlyTransactions
+              .collect { case t: Expense => t }
+              .groupBy(_.category)
 
         val monthlyExpensesAggregated =
           monthlyExpensesByCategory
@@ -85,11 +98,15 @@ object StatsViewC {
 
         val monthlyWithTotal = monthlyExpensesAggregated.toList.sortBy(_._1) :+ (ExpenseCategory.total -> monthlyExpensesAggregated.values.sum)
 
+        val monthlyIncomeAggregated = monthlyTransactions
+            .collect { case t: Income => t }
+            .map {
+              case e if e.currency == st.monthCurAgg => e.amount
+              case e if e.currency != st.monthCurAgg => AppCircuit.exchange(e.amount, e.currency, st.monthCurAgg)
+            }.sum
+
         val weeklyExpensesByCategory = log
-            .filter(e => {
-              println(s"${st.week.toEpochDay} ${e.date.toEpochDay} ${st.week.plusDays(6).toEpochDay}")
-              e.date.toEpochDay >= st.week.toEpochDay && e.date.toEpochDay <= st.week.plusDays(6).toEpochDay
-            })
+            .filter(e => e.date.toEpochDay >= st.week.toEpochDay && e.date.toEpochDay <= st.week.plusDays(6).toEpochDay)
             .collect { case t: Expense => t }
             .groupBy(_.category)
 
@@ -157,7 +174,9 @@ object StatsViewC {
                       )
                     })
                   )
-                )
+                ),
+                hr(),
+                h4("Total income: ", span(logPosAmount, renderAmount(yearIncomeAggregated) + st.yearCurAgg.sign))
               )
             )
           ),
@@ -191,7 +210,9 @@ object StatsViewC {
                     )
                   })
                 )
-              )
+              ),
+              hr(),
+              h4("Total income: ", span(logPosAmount, renderAmount(monthlyIncomeAggregated) + st.monthCurAgg.sign))
             )
           )
         )
