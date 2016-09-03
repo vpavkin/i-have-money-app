@@ -304,8 +304,9 @@ case class Fortune(
       }
       .handleEvent {
         evt: LiabilityTaken ⇒
-          addLiability(evt.liabilityId, evt.liability)
-              .increase(evt.liability.worth)
+          val added = addLiability(evt.liabilityId, evt.liability)
+          if (evt.initializer) added
+          else added.increase(evt.liability.worth)
       }
 
   def editorsCanPayOffLiabilities = action[Fortune]
