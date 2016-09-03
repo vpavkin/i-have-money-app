@@ -23,6 +23,8 @@ object ReadBackend extends App {
   val config = ConfigFactory.load()
   val system: ActorSystem = ActorSystem(config.getString("app.system"))
 
+  implicit val dispatcher = system.dispatcher
+
   val persistQuerySide = Try(config.getBoolean("app.cache-query-side")).getOrElse(false)
 
   val database: PostgresDriver.Backend#Database = Database.forConfig("read-db")
@@ -38,6 +40,7 @@ object ReadBackend extends App {
     else new InMemoryLiabilitiesViewRepository
 
 
+  val recentTransactionsRepo = new InMemoryTransactionsViewRepository
   val categoriesRepo = new InMemoryRepository[FortuneId, (Set[IncomeCategory], Set[ExpenseCategory])] {}
   val userRegistryRepo = new InMemoryRepository[UserId, Set[FortuneId]] {}
   val fortuneInfoRepo = new InMemoryRepository[FortuneId, FortuneInfo] {}
@@ -46,9 +49,11 @@ object ReadBackend extends App {
 
   val persistentProjectionConfig = projection(
     query = QueryByTag(Fortune.tag),
-    projection = new MoneyViewProjection(moneyViewRepo, assetsViewRepo, liabilitiesViewRepo)
-        .andThen(new AssetsViewProjection(assetsViewRepo))
-        .andThen(new LiabilitiesViewProjection(liabilitiesViewRepo)),
+    projection =
+        new RecentTransactionsProjection(recentTransactionsRepo)
+            .andThen(new MoneyViewProjection(recentTransactionsRepo, moneyViewRepo, assetsViewRepo, liabilitiesViewRepo))
+            .andThen(new AssetsViewProjection(assetsViewRepo))
+            .andThen(new LiabilitiesViewProjection(liabilitiesViewRepo)),
     name = "FortuneViewProjection"
   )
 

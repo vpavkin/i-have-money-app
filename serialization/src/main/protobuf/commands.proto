@@ -23,6 +23,7 @@ message PBCommandEnvelope {
 		PBExchangeCurrency command15 = 16;
 		PBCorrectBalances command16 = 17;
 		PBUpdateLimits command17 = 18;
+		PBCancelTransaction command18 = 19;
 	}
 }
 
@@ -126,4 +127,9 @@ message PBUpdateLimits {
 	string userId = 1;
 	map<string, PBWorth> weekly = 2;
 	map<string, PBWorth> monthly = 3;
+}
+
+message PBCancelTransaction {
+	string userId = 1;
+	string transactionId = 2;
 }

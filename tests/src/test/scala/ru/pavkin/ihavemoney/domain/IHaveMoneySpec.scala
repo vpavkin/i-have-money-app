@@ -24,7 +24,7 @@ class IHaveMoneySpec extends FunSuite with Matchers with GeneratorDrivenProperty
     id ← Gen.uuid.map(_.toString).map(FortuneId(_))
     ownerId ← Gen.uuid.map(_.toString).map(UserId(_))
     balances ← Gen.mapOf(generateCurrency.flatMap(c ⇒ Gen.posNum[Double].map(BigDecimal(_)).map(b ⇒ c → b)))
-  } yield Fortune(id, balances, Map.empty, Map.empty, ownerId, Set.empty, Map.empty, Map.empty)
+  } yield Fortune(id, balances, Map.empty, Map.empty, ownerId, Set.empty, Map.empty, Map.empty, Map.empty)
 
   implicit val arbFortune: Arbitrary[Fortune] = Arbitrary(generateFortune)
 }

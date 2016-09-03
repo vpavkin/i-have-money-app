@@ -12,7 +12,7 @@ import ru.pavkin.ihavemoney.domain.fortune.FortuneProtocol._
 import ru.pavkin.ihavemoney.domain.fortune._
 import ru.pavkin.ihavemoney.domain.user.UserId
 import ru.pavkin.ihavemoney.readback.projections.{AssetsViewProjection, FortuneInfoProjection, LiabilitiesViewProjection, MoneyViewProjection}
-import ru.pavkin.ihavemoney.readback.repo.{InMemoryAssetsViewRepository, InMemoryLiabilitiesViewRepository, InMemoryMoneyViewRepository, InMemoryRepository}
+import ru.pavkin.ihavemoney.readback.repo._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -21,6 +21,7 @@ class FortuneProtocolSpec extends IHaveMoneySpec with ScalaFutures with OptionVa
 
   class FortuneInMemoryTestBase extends InMemoryTestSupport {
 
+    val transactionsRepo = new InMemoryTransactionsViewRepository
     val moneyRepo = new InMemoryMoneyViewRepository
     val assetsRepo = new InMemoryAssetsViewRepository
     val liabRepo = new InMemoryLiabilitiesViewRepository
@@ -41,7 +42,7 @@ class FortuneProtocolSpec extends IHaveMoneySpec with ScalaFutures with OptionVa
       }.configure {
         projection(
           query = QueryByTag(Fortune.tag),
-          projection = new MoneyViewProjection(moneyRepo, assetsRepo, liabRepo)
+          projection = new MoneyViewProjection(transactionsRepo,moneyRepo, assetsRepo, liabRepo)
               .andThen(new AssetsViewProjection(assetsRepo))
               .andThen(new LiabilitiesViewProjection(liabRepo))
               .andThen(new FortuneInfoProjection(fortuneInfoRepo)),

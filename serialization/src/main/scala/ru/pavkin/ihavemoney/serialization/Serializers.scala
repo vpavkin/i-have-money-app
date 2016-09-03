@@ -24,3 +24,4 @@ class PayLiabilityOffSerializer extends ProtobufSerializer[PayLiabilityOff, PBPa
 class ExchangeCurrencySerializer extends ProtobufSerializer[ExchangeCurrency, PBExchangeCurrency](115)
 class CorrectBalancesSerializer extends ProtobufSerializer[CorrectBalances, PBCorrectBalances](116)
 class UpdateLimitsSerializer extends ProtobufSerializer[UpdateLimits, PBUpdateLimits](117)
+class CancelTransactionSerializer extends ProtobufSerializer[CancelTransaction, PBCancelTransaction](118)

@@ -130,3 +130,9 @@ message PBLimitsUpdated {
 	map<string, PBWorth> monthly = 3;
 	PBMetadata metadata = 14;
 }
+
+message PBTransactionCancelled {
+	string userId = 1;
+	string transactionId = 2;
+	PBMetadata metadata = 14;
+}

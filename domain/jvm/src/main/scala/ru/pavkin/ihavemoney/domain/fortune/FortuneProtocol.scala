@@ -121,6 +121,10 @@ object FortuneProtocol extends ProtocolLike {
       weekly: Map[ExpenseCategory, Worth],
       monthly: Map[ExpenseCategory, Worth]) extends FortuneCommand
 
+  case class CancelTransaction(
+      user: UserId,
+      transactionId: UUID) extends FortuneCommand
+
   /*-------------------Events---------------------*/
   sealed trait FortuneEvent extends ProtocolEvent with MetadataFacet[FortuneMetadata]
 
@@ -220,6 +224,11 @@ object FortuneProtocol extends ProtocolLike {
       user: UserId,
       weekly: Map[ExpenseCategory, Worth],
       monthly: Map[ExpenseCategory, Worth],
+      metadata: FortuneMetadata) extends FortuneEvent
+
+  case class TransactionCancelled(
+      user: UserId,
+      transactionId: UUID,
       metadata: FortuneMetadata) extends FortuneEvent
 
   /*-------------------Metadata---------------------*/

@@ -204,6 +204,14 @@ object WriteFrontend extends App with CirceSupport with CorsDirectives {
                         ))
                       }
                     } ~
+                    (path("cancel") & post & entity(as[CancelTransactionRequest])) { req ⇒
+                      complete {
+                        writeBack.sendCommandAndIgnoreResult(fortuneId, CancelTransaction(
+                          userId,
+                          req.transactionId
+                        ))
+                      }
+                    } ~
                     pathPrefix("assets") {
                       (pathEndOrSingleSlash & post & entity(as[BuyAssetRequest])) { req ⇒
                         complete {

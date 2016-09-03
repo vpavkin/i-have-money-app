@@ -1,10 +1,12 @@
 package ru.pavkin.ihavemoney.protocol
 
 import java.time.LocalDate
+import java.util.UUID
 
 import ru.pavkin.ihavemoney.domain.fortune.Currency
 
 sealed trait Event {
+  def id: UUID
   def date: LocalDate
 }
 
@@ -17,6 +19,7 @@ sealed trait Transaction extends Event {
 }
 
 case class Income(
+    id: UUID,
     user: String,
     amount: BigDecimal,
     currency: Currency,
@@ -25,6 +28,7 @@ case class Income(
     comment: Option[String]) extends Transaction
 
 case class Expense(
+    id: UUID,
     user: String,
     amount: BigDecimal,
     currency: Currency,
@@ -33,6 +37,7 @@ case class Expense(
     comment: Option[String]) extends Transaction
 
 case class CurrencyExchanged(
+    id: UUID,
     user: String,
     fromAmount: BigDecimal,
     fromCurrency: Currency,

@@ -21,6 +21,11 @@ import shapeless.{::, Generic, HNil}
 
 object implicits {
 
+  implicit val uuidIS: IsoSerializable[UUID, String] = new IsoSerializable[UUID, String] {
+    def serialize(t: UUID): String = t.toString
+    def deserialize(t: String): UUID = UUID.fromString(t)
+  }
+
   implicit def stringIdIS[Id](implicit G: Generic.Aux[Id, String :: HNil]): IsoSerializable[Id, String] = new IsoSerializable[Id, String] {
     def serialize(t: Id): String = G.to(t).head
     def deserialize(t: String): Id = G.from(t :: HNil)
@@ -112,6 +117,7 @@ object implicits {
   implicit val userLoggedInSuite: ProtobufSuite[UserLoggedIn, PBUserLoggedIn] = ProtobufSuite.iso[UserLoggedIn, PBUserLoggedIn]
   implicit val userFailedToLogInSuite: ProtobufSuite[UserFailedToLogIn, PBUserFailedToLogIn] = ProtobufSuite.iso[UserFailedToLogIn, PBUserFailedToLogIn]
   implicit val limitsUpdatedSuite: ProtobufSuite[LimitsUpdated, PBLimitsUpdated] = ProtobufSuite.iso[LimitsUpdated, PBLimitsUpdated]
+  implicit val transactionCancelledSuite: ProtobufSuite[TransactionCancelled, PBTransactionCancelled] = ProtobufSuite.iso[TransactionCancelled, PBTransactionCancelled]
 
   /* Commands */
   implicit val exchangeCurrencySuite: ProtobufSuite[ExchangeCurrency, PBExchangeCurrency] = ProtobufSuite.iso[ExchangeCurrency, PBExchangeCurrency]
@@ -131,6 +137,7 @@ object implicits {
   implicit val createFortuneSuite: ProtobufSuite[CreateFortune, PBCreateFortune] = ProtobufSuite.iso[CreateFortune, PBCreateFortune]
   implicit val addEditorSuite: ProtobufSuite[AddEditor, PBAddEditor] = ProtobufSuite.iso[AddEditor, PBAddEditor]
   implicit val updateLimitsSuite: ProtobufSuite[UpdateLimits, PBUpdateLimits] = ProtobufSuite.iso[UpdateLimits, PBUpdateLimits]
+  implicit val cancelTransactionSuite: ProtobufSuite[CancelTransaction, PBCancelTransaction] = ProtobufSuite.iso[CancelTransaction, PBCancelTransaction]
 
   implicit val commandEnvelopeSuite: ProtobufSuite[CommandEnvelope, PBCommandEnvelope] =
     new ProtobufSuite[CommandEnvelope, PBCommandEnvelope] {
@@ -151,6 +158,7 @@ object implicits {
             case c: ExchangeCurrency ⇒ Command15(c.encode)
             case c: CorrectBalances ⇒ Command16(c.encode)
             case c: UpdateLimits ⇒ Command17(c.encode)
+            case c: CancelTransaction ⇒ Command18(c.encode)
           }
           case cmd: UserCommand ⇒ cmd match {
             case c: CreateUser ⇒ Command3(c.encode)
@@ -182,6 +190,7 @@ object implicits {
           case Command15(value) ⇒ value.decode
           case Command16(value) ⇒ value.decode
           case Command17(value) ⇒ value.decode
+          case Command18(value) ⇒ value.decode
         }
       )
       def companion: GeneratedMessageCompanion[PBCommandEnvelope] = PBCommandEnvelope
