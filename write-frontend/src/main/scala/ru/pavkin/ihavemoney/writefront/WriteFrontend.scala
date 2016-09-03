@@ -203,7 +203,7 @@ object WriteFrontend extends App with CirceSupport with CorsDirectives {
                           req.monthly
                         ))
                       }
-                    }
+                    } ~
                     (path("cancel") & post & entity(as[CancelTransactionRequest])) { req ⇒
                       complete {
                         writeBack.sendCommandAndIgnoreResult(fortuneId, CancelTransaction(

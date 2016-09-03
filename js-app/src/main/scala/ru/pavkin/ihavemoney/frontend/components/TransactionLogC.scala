@@ -2,21 +2,23 @@ package ru.pavkin.ihavemoney.frontend.components
 
 import java.time.YearMonth
 
+import cats.data.Xor
 import diode.data.Pot
 import diode.react.ModelProxy
 import diode.react.ReactPot._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.all._
-import ru.pavkin.ihavemoney.frontend.bootstrap.{Checkbox, Panel}
-import ru.pavkin.ihavemoney.frontend.bootstrap.attributes._
+import org.scalajs.dom.window
+import ru.pavkin.ihavemoney.frontend.api
+import ru.pavkin.ihavemoney.frontend.bootstrap.{Checkbox, Icon, Panel}
 import ru.pavkin.ihavemoney.frontend.gravatar.GravatarAPI
 import ru.pavkin.ihavemoney.frontend.redux.AppCircuit
 import ru.pavkin.ihavemoney.frontend.redux.actions.{LoadCategories, LoadEventLog}
 import ru.pavkin.ihavemoney.frontend.redux.model.Categories
-import ru.pavkin.ihavemoney.protocol.{Event, Transaction}
 import ru.pavkin.ihavemoney.frontend.styles.Global._
+import ru.pavkin.ihavemoney.protocol.{Event, Transaction}
 import ru.pavkin.utils.date._
-
+import scala.scalajs.concurrent.JSExecutionContext.Implicits.queue
 import scalacss.ScalaCssReact._
 
 object TransactionLogC {
@@ -46,6 +48,15 @@ object TransactionLogC {
     def onTextChange(change: (State, String) ⇒ State)(e: ReactEventI) = {
       val newValue = e.target.value
       applyStateChange(change)(newValue)
+    }
+
+    def onCancelClick(t: Transaction) = Callback {
+      val response = window.confirm(s"Are you sure to cancel transaction ${t.amount.toString}${t.currency.sign}, ${t.category} from ${t.date.ddmmyyyy}?")
+      if (response)
+        api.cancelTransaction(t.id).map {
+          case Xor.Left(error) ⇒ Callback.alert(s"Error: $error")
+          case _ ⇒ Callback.alert(s"Success, refresh the page!")
+        }
     }
 
     def applyStateChange[T](change: (State, T) ⇒ State)(newValue: T): Callback =
@@ -83,7 +94,7 @@ object TransactionLogC {
 
             div(
               table(className := "table table-striped table-hover table-condensed",
-                thead(tr(th(""), th("Date"), th("Category"), th("Amount"), th("Comment"))),
+                thead(tr(th(""), th("Date"), th("Category"), th("Amount"), th("Comment"), th(""))),
                 tbody(
                   transactions.zipWithIndex.map {
                     case (t, index) ⇒ tr(
@@ -93,7 +104,8 @@ object TransactionLogC {
                       td(t.date.ddmmyyyy),
                       td(t.category),
                       td(amountStyle(t.amount), t.amount.toString + t.currency.sign),
-                      td(t.comment.getOrElse(""): String)
+                      td(t.comment.getOrElse(""): String),
+                      td(textAlign.right, span(Icon.timesCircle, color := "#E74C3C", onClick --> onCancelClick(t)))
                     )
                   }
                 )

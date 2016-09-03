@@ -1,6 +1,7 @@
 package ru.pavkin.ihavemoney.frontend
 
 import java.time.LocalDate
+import java.util.UUID
 
 import cats.data.Xor
 import io.circe.Decoder
@@ -34,6 +35,7 @@ object api {
     def fortune = writeFrontBaseUrl / "fortune"
     def editors(fortuneId: String) = fortune / fortuneId / "editors"
     def limit(fortuneId: String) = fortune / fortuneId / "limit"
+    def cancel(fortuneId: String) = fortune / fortuneId / "cancel"
     def finishInit(fortuneId: String) = fortune / fortuneId / "finish-initialization"
     def addIncome(fortuneId: String) = fortune / fortuneId / "income"
     def addExpense(fortuneId: String) = fortune / fortuneId / "spend"
@@ -123,6 +125,12 @@ object api {
   def updateLimits(weekly: Map[ExpenseCategory, Worth], monthly: Map[ExpenseCategory, Worth])(implicit ec: ExecutionContext): Future[Xor[RequestError, Unit]] =
     postJson(routes.limit(AppCircuit.fortuneId).value,
       UpdateLimitsRequest(weekly, monthly),
+      headers = Map(authHeader)
+    ).map(_.map(_ ⇒ ()))
+
+  def cancelTransaction(id: UUID)(implicit ec: ExecutionContext): Future[Xor[RequestError, Unit]] =
+    postJson(routes.cancel(AppCircuit.fortuneId).value,
+      CancelTransactionRequest(id),
       headers = Map(authHeader)
     ).map(_.map(_ ⇒ ()))
 
