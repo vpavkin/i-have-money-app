@@ -60,9 +60,9 @@ object ReadFrontend extends App with CirceSupport {
     r.events
         .sortBy(-_.metadata.date.toEpochSecond)
         .collect {
-          case e: FortuneIncreased ⇒ Income(e.user.value, e.amount, e.currency, e.category.name, e.date.toLocalDate, e.comment)
-          case e: FortuneSpent ⇒ Expense(e.user.value, -e.amount, e.currency, e.category.name, e.overrideDate.getOrElse(e.date.toLocalDate), e.comment)
-          case e: CurrencyExchanged ⇒ protocol.CurrencyExchanged(e.user.value, e.fromAmount, e.fromCurrency, e.toAmount, e.toCurrency, e.date.toLocalDate, e.comment)
+          case e: FortuneIncreased ⇒ Income(e.metadata.eventId.value, e.user.value, e.amount, e.currency, e.category.name, e.date.toLocalDate, e.comment)
+          case e: FortuneSpent ⇒ Expense(e.metadata.eventId.value, e.user.value, -e.amount, e.currency, e.category.name, e.overrideDate.getOrElse(e.date.toLocalDate), e.comment)
+          case e: CurrencyExchanged ⇒ protocol.CurrencyExchanged(e.metadata.eventId.value, e.user.value, e.fromAmount, e.fromCurrency, e.toAmount, e.toCurrency, e.date.toLocalDate, e.comment)
         }
         .sortBy(-_.date.toEpochDay)
   )
