@@ -1,10 +1,12 @@
 package ru.pavkin.ihavemoney.domain.fortune
 
-import java.time.LocalDate
+import java.time.OffsetDateTime
+import java.util.UUID
 
 import io.funcqrs._
 import io.funcqrs.behavior._
 import ru.pavkin.ihavemoney.domain.errors.{BalanceIsNotEnough, _}
+import ru.pavkin.ihavemoney.domain.fortune.FortuneProtocol._
 import ru.pavkin.ihavemoney.domain.user.UserId
 
 case class Fortune(
@@ -16,6 +18,7 @@ case class Fortune(
     editors: Set[UserId],
     weeklyLimits: Map[ExpenseCategory, Worth],
     monthlyLimits: Map[ExpenseCategory, Worth],
+    last30DaysTransactions: Map[UUID, FortuneEvent],
     initializationMode: Boolean = true) extends AggregateLike {
 
   type Id = FortuneId
@@ -25,6 +28,14 @@ case class Fortune(
 
   def increase(worth: Worth): Fortune =
     copy(balances = balances + (worth.currency -> (amount(worth.currency) + worth.amount)))
+
+  def cleanOldTransactions =
+    copy(last30DaysTransactions = last30DaysTransactions.filterNot(_._2.metadata.date.plusDays(30).isBefore(OffsetDateTime.now())))
+
+  def storeTransaction(evt: FortuneEvent) = {
+    val cleaned = cleanOldTransactions
+    cleaned.copy(last30DaysTransactions = cleaned.last30DaysTransactions + (evt.metadata.eventId.value -> evt))
+  }
 
   def addAsset(id: AssetId, asset: Asset): Fortune =
     copy(assets = assets + (id → asset))
@@ -56,6 +67,19 @@ case class Fortune(
 
   def decrease(by: Worth): Fortune =
     copy(balances = balances + (by.currency -> (amount(by.currency) - by.amount)))
+
+  def cancelTransaction(transactionId: UUID): Fortune = last30DaysTransactions(transactionId) match {
+    case FortuneIncreased(user, amount, currency, category, initializer, metadata, comment) =>
+      decrease(Worth(amount, currency))
+          .copy(last30DaysTransactions = last30DaysTransactions - transactionId)
+    case FortuneSpent(user, amount, currency, category, overrideDate, initializer, metadata, comment) =>
+      increase(Worth(amount, currency))
+          .copy(last30DaysTransactions = last30DaysTransactions - transactionId)
+    case CurrencyExchanged(user, fromAmount, fromCurrency, toAmount, toCurrency, metadata, comment) =>
+      exchange(Worth(toAmount, toCurrency), Worth(fromAmount, fromCurrency))
+          .copy(last30DaysTransactions = last30DaysTransactions - transactionId)
+    case _ => this
+  }
 
   def exchange(from: Worth, to: Worth): Fortune = {
     require(from.currency != to.currency)
@@ -131,6 +155,12 @@ case class Fortune(
           LiabilityNotFound(cmd.liabilityId)
       }
 
+  def cantCancelAnOldOrInexistingTransaction = action[Fortune]
+      .rejectCommand {
+        case cmd: CancelTransaction if !this.last30DaysTransactions.contains(cmd.transactionId) ⇒
+          TransactionNotFound(cmd.transactionId)
+      }
+
   def ownerCanAddEditors = action[Fortune]
       .handleCommand {
         cmd: AddEditor ⇒ EditorAdded(cmd.editor, metadata(cmd))
@@ -171,7 +201,9 @@ case class Fortune(
         )
       }
       .handleEvent {
-        evt: CurrencyExchanged ⇒ this.exchange(Worth(evt.fromAmount, evt.fromCurrency), Worth(evt.toAmount, evt.toCurrency))
+        evt: CurrencyExchanged ⇒
+          this.storeTransaction(evt)
+              .exchange(Worth(evt.fromAmount, evt.fromCurrency), Worth(evt.toAmount, evt.toCurrency))
       }
 
   def editorsCanPerformCorrections = action[Fortune]
@@ -189,10 +221,14 @@ case class Fortune(
           }.toList
   }
       .handleEvent {
-        evt: FortuneIncreased ⇒ this.increase(Worth(evt.amount, evt.currency))
+        evt: FortuneIncreased ⇒
+          this.storeTransaction(evt)
+              .increase(Worth(evt.amount, evt.currency))
       }
       .handleEvent {
-        evt: FortuneSpent ⇒ this.decrease(Worth(evt.amount, evt.currency))
+        evt: FortuneSpent ⇒
+          this.storeTransaction(evt)
+              .decrease(Worth(evt.amount, evt.currency))
       }
 
   def editorsCanBuyAssets = action[Fortune]
@@ -220,7 +256,9 @@ case class Fortune(
       else List(assetAcquired)
   }
       .handleEvent {
-        evt: FortuneIncreased ⇒ this.increase(Worth(evt.amount, evt.currency))
+        evt: FortuneIncreased ⇒
+          this.storeTransaction(evt)
+              .increase(Worth(evt.amount, evt.currency))
       }
       .handleEvent {
         evt: AssetAcquired ⇒
@@ -297,7 +335,9 @@ case class Fortune(
           cmd.comment)
       }
       .handleEvent {
-        evt: FortuneIncreased ⇒ this.increase(Worth(evt.amount, evt.currency))
+        evt: FortuneIncreased ⇒
+          this.storeTransaction(evt)
+              .increase(Worth(evt.amount, evt.currency))
       }
 
   def editorsCanDecreaseFortune = action[Fortune]
@@ -313,7 +353,18 @@ case class Fortune(
           cmd.comment)
       }
       .handleEvent {
-        evt: FortuneSpent ⇒ this.decrease(Worth(evt.amount, evt.currency))
+        evt: FortuneSpent ⇒
+          this.storeTransaction(evt)
+              .decrease(Worth(evt.amount, evt.currency))
+      }
+
+  def editorsCanCancelRecentTransactions = action[Fortune]
+      .handleCommand {
+        cmd: CancelTransaction => TransactionCancelled(cmd.user, cmd.transactionId, metadata(cmd))
+      }
+      .handleEvent {
+        evt: TransactionCancelled =>
+          cancelTransaction(evt.transactionId)
       }
 }
 
@@ -333,7 +384,7 @@ object Fortune {
           cmd: CreateFortune ⇒ FortuneCreated(cmd.owner, metadata(fortuneId, cmd))
         }
         .handleEvent {
-          evt: FortuneCreated ⇒ Fortune(fortuneId, Map.empty, Map.empty, Map.empty, evt.owner, Set.empty, Map.empty, Map.empty)
+          evt: FortuneCreated ⇒ Fortune(fortuneId, Map.empty, Map.empty, Map.empty, evt.owner, Set.empty, Map.empty, Map.empty, Map.empty)
         }
 
   def behavior(fortuneId: FortuneId): Behavior[Fortune] = {
@@ -349,6 +400,7 @@ object Fortune {
           fortune.cantManipulateLiabilityThatDoesNotExist ++
           fortune.cantHaveNegativeBalance ++
           fortune.cantAdjustWithANegativeValue ++
+          fortune.cantCancelAnOldOrInexistingTransaction ++
           fortune.ownerCanAddEditors ++
           fortune.editorsCanFinishInitialization ++
           fortune.editorsCanUpdateLimits ++
@@ -360,6 +412,7 @@ object Fortune {
           fortune.editorsCanPerformCorrections ++
           fortune.editorsCanExchangeCurrency ++
           fortune.editorsCanIncreaseFortune ++
-          fortune.editorsCanDecreaseFortune
+          fortune.editorsCanDecreaseFortune ++
+          fortune.editorsCanCancelRecentTransactions
   }
 }

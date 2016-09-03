@@ -1,5 +1,7 @@
 package ru.pavkin.ihavemoney.domain.errors
 
+import java.util.UUID
+
 import ru.pavkin.ihavemoney.domain.fortune.{AssetId, Currency, FortuneId, LiabilityId}
 import ru.pavkin.ihavemoney.domain.user.UserId
 
@@ -39,4 +41,7 @@ case class AssetNotFound(assetId: AssetId) extends DomainError {
 }
 case class LiabilityNotFound(liabilityId: LiabilityId) extends DomainError {
   def message = s"Liability $liabilityId not found"
+}
+case class TransactionNotFound(transactionId: UUID) extends DomainError {
+  def message = s"Transaction $transactionId not found"
 }

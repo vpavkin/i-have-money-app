@@ -14,8 +14,9 @@ trait CollectProjection[E] {
 
   def source: EventsSourceProvider
   def collector: PartialFunction[Any, E]
+
   def run(implicit ec: ExecutionContext): Future[List[E]] = source.source(0)
-    .map(_.event)
-    .collect(collector)
-    .runWith(Sink.seq).map(_.toList)
+      .map(_.event)
+      .collect(collector)
+      .runWith(Sink.seq).map(_.toList)
 }

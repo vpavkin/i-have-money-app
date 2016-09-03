@@ -3,10 +3,10 @@ package ru.pavkin.ihavemoney.readback
 import akka.actor.Actor
 import io.funcqrs.akka.EventsSourceProvider
 import ru.pavkin.ihavemoney.domain.fortune.FortuneId
-import ru.pavkin.ihavemoney.domain.fortune.FortuneProtocol.FortuneEvent
+import ru.pavkin.ihavemoney.domain.fortune.FortuneProtocol.{FortuneEvent, TransactionCancelled}
 import ru.pavkin.ihavemoney.domain.query._
 import ru.pavkin.ihavemoney.domain.user.UserId
-import ru.pavkin.ihavemoney.readback.projections.{CategoriesViewProjection, FortuneLogProjection, FortuneInfoProjection, FortunesPerUserProjection}
+import ru.pavkin.ihavemoney.readback.projections._
 import ru.pavkin.ihavemoney.readback.repo.{AssetsViewRepository, LiabilitiesViewRepository, MoneyViewRepository}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -31,7 +31,14 @@ class InterfaceActor(
       case false ⇒ Future.successful(AccessDenied(q.id, s"User ${q.user} doesn't have access to fortune ${q.fortuneId}"))
     }
 
-  def log(id: FortuneId): Future[List[FortuneEvent]] = new FortuneLogProjection(id, fortuneEventsProvider).run
+  def log(id: FortuneId): Future[List[FortuneEvent]] =
+    new FortuneLogProjection(id, fortuneEventsProvider).run.map { all =>
+      val cancelled = all.collect { case e: TransactionCancelled => e.transactionId }
+      all.filter {
+        case e: TransactionCancelled => false
+        case e: FortuneEvent => !cancelled.contains(e.metadata.eventId.value)
+      }
+    }
 
   def receive: Receive = {
     case query: Query ⇒
