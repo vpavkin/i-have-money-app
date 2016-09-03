@@ -1,6 +1,7 @@
 package ru.pavkin.ihavemoney.protocol
 
 import java.time.LocalDate
+import java.util.UUID
 
 import io.circe._
 import io.circe.generic.semiauto._
@@ -28,6 +29,8 @@ object writefront extends SharedProtocol {
   case class UpdateLimitsRequest(
       weekly: Map[ExpenseCategory, Worth],
       monthly: Map[ExpenseCategory, Worth]) extends WriteFrontRequest
+
+  case class CancelTransactionRequest(transactionId: UUID) extends WriteFrontRequest
 
   case class ExchangeCurrencyRequest(
       fromAmount: BigDecimal,
@@ -103,6 +106,9 @@ object writefront extends SharedProtocol {
 
   implicit val updateLimitsEncoder: Encoder[UpdateLimitsRequest] = deriveEncoder[UpdateLimitsRequest]
   implicit val updateLimitsDecoder: Decoder[UpdateLimitsRequest] = deriveDecoder[UpdateLimitsRequest]
+
+  implicit val cancelTransactionEncoder: Encoder[CancelTransactionRequest] = deriveEncoder[CancelTransactionRequest]
+  implicit val cancelTransactionDecoder: Decoder[CancelTransactionRequest] = deriveDecoder[CancelTransactionRequest]
 
   implicit val confirmEmailReqEncoder: Encoder[ConfirmEmailRequest] = deriveEncoder[ConfirmEmailRequest]
   implicit val confirmEmailReqDecoder: Decoder[ConfirmEmailRequest] = deriveDecoder[ConfirmEmailRequest]
