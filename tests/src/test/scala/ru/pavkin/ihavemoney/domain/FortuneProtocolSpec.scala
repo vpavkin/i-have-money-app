@@ -407,12 +407,12 @@ class FortuneProtocolSpec extends IHaveMoneySpec with ScalaFutures with OptionVa
 
   test("Corrections") {
     new FortuneInMemoryTest {
-      val correction = CorrectBalances(owner, Map(Currency.USD → BigDecimal(100), Currency.RUR → BigDecimal(2000)))
+      val correction = CorrectBalances(owner, Map(Currency.USD → BigDecimal(100), Currency.RUR → BigDecimal(2000)), Some("Corr"))
 
       fortune ! correction
 
-      expectEvent { case FortuneIncreased(_, amount, Currency.USD, _, false, _, _) if amount == BigDecimal(100) ⇒ () }
-      expectEvent { case FortuneIncreased(_, amount, Currency.RUR, _, false, _, _) if amount == BigDecimal(2000) ⇒ () }
+      expectEvent { case FortuneIncreased(_, amount, Currency.USD, _, false, _, Some("Corr")) if amount == BigDecimal(100) ⇒ () }
+      expectEvent { case FortuneIncreased(_, amount, Currency.RUR, _, false, _, Some("Corr")) if amount == BigDecimal(2000) ⇒ () }
 
       money(Currency.USD) shouldBe BigDecimal(100)
       money(Currency.RUR) shouldBe BigDecimal(2000)

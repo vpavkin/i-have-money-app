@@ -216,8 +216,8 @@ case class Fortune(
           .filter(_._2 != BigDecimal(0))
           .map {
             case (curr, correction) ⇒
-              if (correction > BigDecimal(0)) FortuneIncreased(cmd.user, correction, curr, IncomeCategory("Correction"), initializer = false, metadata(cmd))
-              else FortuneSpent(cmd.user, -correction, curr, ExpenseCategory("Correction"), None, initializer = false, metadata(cmd))
+              if (correction > BigDecimal(0)) FortuneIncreased(cmd.user, correction, curr, IncomeCategory("Correction"), initializer = false, metadata(cmd), cmd.comment)
+              else FortuneSpent(cmd.user, -correction, curr, ExpenseCategory("Correction"), None, initializer = false, metadata(cmd), cmd.comment)
           }.toList
   }
       .handleEvent {

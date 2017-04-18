@@ -20,11 +20,14 @@ import scalacss.ScalaCssReact._
 object BalanceViewC {
 
   case class Props(
-      balances: ModelProxy[Pot[Map[Currency, BigDecimal]]],
-      assets: ModelProxy[Pot[Map[String, Asset]]],
-      liabilities: ModelProxy[Pot[Map[String, Liability]]])
+    balances: ModelProxy[Pot[Map[Currency, BigDecimal]]],
+    assets: ModelProxy[Pot[Map[String, Asset]]],
+    liabilities: ModelProxy[Pot[Map[String, Liability]]])
 
-  case class State(correctionCurrency: Currency, correctionAmount: String) {
+  case class State(
+    correctionCurrency: Currency,
+    correctionAmount: String,
+    comment: String = "") {
     def correctionWorth: Option[Worth] =
       Try(BigDecimal(correctionAmount)).toOption.map(Worth(_, correctionCurrency))
   }
@@ -64,7 +67,8 @@ object BalanceViewC {
 
     def onCorrectionSubmit(state: State): Callback = genSubmit(state)(api.correct(
       BigDecimal(state.correctionAmount),
-      state.correctionCurrency
+      state.correctionCurrency,
+      if (state.comment.isEmpty) None else Some(state.comment)
     ))
 
     def isValid(s: State) =
@@ -167,6 +171,19 @@ object BalanceViewC {
                     }
                     else div()
                   )
+                ),
+                div(grid.columnAll(6),
+                  div(className := "input-group",
+                    input.text(
+                      required := true,
+                      common.formControl,
+                      addonMainInput,
+                      increasedFontSize,
+                      placeholder := s"Comment",
+                      value := state.comment,
+                      onChange ==> onTextChange((s, v) ⇒ s.copy(comment = v))
+                    )
+                  )
                 )
               )
             )
@@ -177,8 +194,8 @@ object BalanceViewC {
   }
 
   val component = ReactComponentB[Props]("Balance sheet")
-      .initialState(State(Currency.EUR, ""))
-      .renderBackend[Backend]
-      .componentDidMount(s ⇒ s.backend.loadData(s.props))
-      .build
+    .initialState(State(Currency.EUR, ""))
+    .renderBackend[Backend]
+    .componentDidMount(s ⇒ s.backend.loadData(s.props))
+    .build
 }
