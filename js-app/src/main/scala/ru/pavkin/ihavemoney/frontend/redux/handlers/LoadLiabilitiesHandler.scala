@@ -12,7 +12,7 @@ class LoadLiabilitiesHandler[M](modelRW: ModelRW[M, Pot[Map[String, Liability]]]
 
   override def handle = {
     case a: LoadLiabilities =>
-      val reloadF = a.effectXor(api.getLiabilities)(identity(_))
+      val reloadF = a.effectEither(api.getLiabilities)(identity(_))
       a.handleWith(this, reloadF)(PotAction.handler())
   }
 }

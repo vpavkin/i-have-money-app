@@ -3,7 +3,7 @@ package ru.pavkin.ihavemoney.readback.db
 import java.util.UUID
 
 import ru.pavkin.ihavemoney.domain.fortune.{AssetId, Currency, FortuneId, LiabilityId}
-import slick.driver.PostgresDriver.api._
+import slick.jdbc.PostgresProfile.api._
 import slick.jdbc.GetResult
 import slick.lifted.{Rep, TableQuery, Tag}
 

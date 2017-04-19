@@ -2,7 +2,7 @@ package ru.pavkin.ihavemoney.protocol
 
 import java.time.LocalDate
 
-import cats.data.Xor
+import cats.syntax.either._
 import io.circe.syntax._
 import io.circe._
 import io.circe.generic.auto._
@@ -11,7 +11,7 @@ import ru.pavkin.ihavemoney.domain.fortune._
 trait SharedProtocol {
 
   implicit val decodeCurrency: Decoder[Currency] =
-    Decoder.decodeString.emap(s ⇒ Xor.fromOption(Currency.fromCode(s), s"$s is not a valid currency"))
+    Decoder.decodeString.emap(s ⇒ Either.fromOption(Currency.fromCode(s), s"$s is not a valid currency"))
 
   implicit val encodeCurrency: Encoder[Currency] =
     Encoder.instance(c ⇒ Json.fromString(c.code))
@@ -32,9 +32,9 @@ trait SharedProtocol {
     c.as[String].flatMap { s =>
       s.split("-").toList match {
         case day :: month :: year :: Nil ⇒
-          Xor.catchNonFatal(LocalDate.of(year.toInt, month.toInt, day.toInt))
+          Either.catchNonFatal(LocalDate.of(year.toInt, month.toInt, day.toInt))
               .leftMap(ex ⇒ DecodingFailure(ex.getMessage, c.history))
-        case _ ⇒ Xor.left(DecodingFailure("Invalid date string", c.history))
+        case _ ⇒ Either.left(DecodingFailure("Invalid date string", c.history))
       }
     }
   }

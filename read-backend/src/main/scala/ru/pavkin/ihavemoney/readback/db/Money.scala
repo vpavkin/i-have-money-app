@@ -1,7 +1,7 @@
 package ru.pavkin.ihavemoney.readback.db
 
 import ru.pavkin.ihavemoney.domain.fortune.{Currency, FortuneId}
-import slick.driver.PostgresDriver.api._
+import slick.jdbc.PostgresProfile.api._
 import slick.jdbc.GetResult
 import slick.lifted.{Rep, TableQuery, Tag}
 

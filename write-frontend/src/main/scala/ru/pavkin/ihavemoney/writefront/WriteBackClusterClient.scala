@@ -8,7 +8,7 @@ import akka.pattern.ask
 import akka.util.Timeout
 import io.circe.syntax._
 import io.circe.{Encoder, Json}
-import io.funcqrs.{AggregateId, DomainCommand}
+import io.funcqrs.{AggregateId, CommandIdFacet, DomainCommand}
 import ru.pavkin.ihavemoney.domain.CommandEnvelope
 import ru.pavkin.ihavemoney.proto.results.{InvalidCommand, UnexpectedFailure, UnknownCommand}
 import ru.pavkin.ihavemoney.protocol.writefront._
@@ -34,12 +34,12 @@ class WriteBackClusterClient(system: ActorSystem) {
   }
 
   private def send[Id <: AggregateId](aggregateId: Id, command: DomainCommand)
-                                     (implicit timeout: Timeout): Future[Any] =
+    (implicit timeout: Timeout): Future[Any] =
     writeBackendClient ? ClusterClient.Send("/user/interface", CommandEnvelope(aggregateId.value, command), localAffinity = true)
 
   def sendCommand[E: ClassTag, Id <: AggregateId](aggregateId: Id, command: DomainCommand)
-                                                             (eventHandler: E ⇒ (StatusCode, Json))
-                                                             (implicit ec: ExecutionContext, timeout: Timeout): Future[(StatusCode, Json)] =
+    (eventHandler: E ⇒ (StatusCode, Json))
+    (implicit ec: ExecutionContext, timeout: Timeout): Future[(StatusCode, Json)] =
     send(aggregateId, command).collect {
       standardPF.orElse {
         case (evt: E) :: Nil ⇒
@@ -47,8 +47,11 @@ class WriteBackClusterClient(system: ActorSystem) {
       }
     }
 
-  def sendCommandAndIgnoreResult[Id <: AggregateId](aggregateId: Id, command: DomainCommand)
-                                                   (implicit ec: ExecutionContext, timeout: Timeout): Future[(StatusCode, Json)] =
+  def sendCommandAndIgnoreResult[Id <: AggregateId](
+    aggregateId: Id,
+    command: DomainCommand with CommandIdFacet)(
+    implicit ec: ExecutionContext,
+    timeout: Timeout): Future[(StatusCode, Json)] =
     send(aggregateId, command).collect(
       standardPF.orElse {
         case head :: tail ⇒

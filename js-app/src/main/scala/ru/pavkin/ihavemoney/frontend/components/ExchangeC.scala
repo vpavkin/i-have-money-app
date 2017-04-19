@@ -1,6 +1,6 @@
 package ru.pavkin.ihavemoney.frontend.components
 
-import cats.data.Xor
+
 import diode.data.Pot
 import diode.react.ModelProxy
 import japgolly.scalajs.react._
@@ -71,7 +71,7 @@ object ExchangeC {
       else
         $.modState(_.copy(loading = true)) >>
             Callback.future(req.map {
-              case Xor.Left(error) ⇒ Callback.alert(s"Error: $error")
+              case Left(error) ⇒ Callback.alert(s"Error: $error")
               case _ ⇒ $.modState(_.copy(
                 fromAmount = "",
                 toAmount = "",

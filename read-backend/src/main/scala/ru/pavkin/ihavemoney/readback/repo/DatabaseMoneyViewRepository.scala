@@ -2,7 +2,7 @@ package ru.pavkin.ihavemoney.readback.repo
 
 import ru.pavkin.ihavemoney.domain.fortune.{Currency, FortuneId}
 import ru.pavkin.ihavemoney.readback.db.{Money, MoneyRow}
-import slick.driver.PostgresDriver.api.{Database, _}
+import slick.jdbc.PostgresProfile.api.{Database, _}
 
 import scala.concurrent.{ExecutionContext, Future}
 

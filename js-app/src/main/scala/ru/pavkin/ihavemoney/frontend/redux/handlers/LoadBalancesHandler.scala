@@ -11,7 +11,7 @@ class LoadBalancesHandler[M](modelRW: ModelRW[M, Pot[Map[Currency, BigDecimal]]]
 
   override def handle = {
     case a: LoadBalances =>
-      val reloadF = a.effectXor(api.getBalances)(identity(_))
+      val reloadF = a.effectEither(api.getBalances)(identity(_))
       a.handleWith(this, reloadF)(PotAction.handler())
   }
 }

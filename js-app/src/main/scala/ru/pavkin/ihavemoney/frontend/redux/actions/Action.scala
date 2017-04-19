@@ -1,6 +1,6 @@
 package ru.pavkin.ihavemoney.frontend.redux.actions
 
-import cats.data.Xor
+
 import diode.data.{Empty, Pot, PotAction}
 import japgolly.scalajs.react.ReactElement
 import ru.pavkin.ihavemoney.domain.fortune.{Asset, Currency, FortuneInfo, Liability}
@@ -48,7 +48,7 @@ case object LoggedOut extends Action
 case class ShowModal(modal: ReactElement) extends Action
 case object HideModal extends Action
 
-case class SendRequest(command: Future[Xor[RequestError, Unit]], potResult: Pot[Unit] = Empty)
+case class SendRequest(command: Future[Either[RequestError, Unit]], potResult: Pot[Unit] = Empty)
     extends Action with PotAction[Unit, SendRequest] {
   def next(newResult: Pot[Unit]): SendRequest = copy(potResult = newResult)
 }

@@ -12,10 +12,12 @@ import akka.http.scaladsl.server.Route
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Framing
 import akka.util.{ByteString, Timeout}
-import ch.megard.akka.http.cors.{CorsDirectives, CorsSettings}
+import ch.megard.akka.http.cors.scaladsl.CorsDirectives
+import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 import com.typesafe.config.ConfigFactory
-import de.heikoseeberger.akkahttpcirce.CirceSupport
+import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport
 import io.circe.syntax._
+import ru.pavkin.ihavemoney.domain.cmdId
 import ru.pavkin.ihavemoney.domain.fortune.FortuneProtocol._
 import ru.pavkin.ihavemoney.domain.fortune.{AssetId, ExpenseCategory, FortuneId, IncomeCategory, LiabilityId}
 import ru.pavkin.ihavemoney.domain.unexpected
@@ -29,7 +31,7 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.{Failure, Try}
 
-object WriteFrontend extends App with CirceSupport with CorsDirectives {
+object WriteFrontend extends App with FailFastCirceSupport with CorsDirectives {
 
   implicit val system = ActorSystem("IHaveMoneyWriteFront")
   implicit val executor = system.dispatcher
@@ -65,14 +67,14 @@ object WriteFrontend extends App with CirceSupport with CorsDirectives {
       logRequestResult("i-have-money-write-frontend", Logging.InfoLevel) {
         (path("signIn") & post & entity(as[CreateUserRequest])) { req ⇒
           safe {
-            writeBack.sendCommandAndIgnoreResult(UserId(req.email), CreateUser(req.password, req.displayName))
+            writeBack.sendCommandAndIgnoreResult(UserId(req.email), CreateUser(cmdId, req.password, req.displayName))
           }
         } ~
           (path("logIn") &
             post &
             entity(as[LogInRequest])) { req ⇒
             complete {
-              val command = LoginUser(req.password)
+              val command = LoginUser(cmdId, req.password)
               writeBack.sendCommand(UserId(req.email), command)((evt: UserEvent) ⇒ evt match {
                 case e: UserLoggedIn ⇒ OK → CommandProcessedWithResult(command.id.value, Auth(req.email, e.displayName, tokenFactory.issue(req.email))).asJson
                 case e: UserFailedToLogIn ⇒ Unauthorized → FailedRequest(
@@ -86,7 +88,7 @@ object WriteFrontend extends App with CirceSupport with CorsDirectives {
           get {
             parameters('email, 'code) { (email, code) =>
               safe {
-                writeBack.sendCommandAndIgnoreResult(UserId(email), ConfirmEmail(code))
+                writeBack.sendCommandAndIgnoreResult(UserId(email), ConfirmEmail(cmdId, code))
                   .map(_ ⇒
                     HttpResponse(
                       status = Found,
@@ -100,7 +102,7 @@ object WriteFrontend extends App with CirceSupport with CorsDirectives {
         } ~
           (path("resendConfirmationEmail") & post & entity(as[ResendConfirmationEmailRequest])) { req ⇒
             safe {
-              writeBack.sendCommandAndIgnoreResult(UserId(req.email), ResendConfirmationEmail())
+              writeBack.sendCommandAndIgnoreResult(UserId(req.email), ResendConfirmationEmail(cmdId))
             }
           } ~ authenticateOrRejectWithChallenge(authenticator).optional {
           case Some(userId) ⇒
@@ -109,13 +111,14 @@ object WriteFrontend extends App with CirceSupport with CorsDirectives {
                 complete {
                   val fortuneId = FortuneId.generate
                   println(s"Generating new fortune with id: $fortuneId")
-                  writeBack.sendCommandAndIgnoreResult(fortuneId, CreateFortune(userId))
+                  writeBack.sendCommandAndIgnoreResult(fortuneId, CreateFortune(cmdId, userId))
                 }
               } ~
                 pathPrefix(JavaUUID.map(i ⇒ FortuneId(i.toString))) { fortuneId: FortuneId ⇒
                   (path("exchange") & post & entity(as[ExchangeCurrencyRequest])) { req ⇒
                     complete {
                       writeBack.sendCommandAndIgnoreResult(fortuneId, ExchangeCurrency(
+                        cmdId,
                         userId,
                         req.fromAmount,
                         req.fromCurrency,
@@ -126,34 +129,35 @@ object WriteFrontend extends App with CirceSupport with CorsDirectives {
                     }
                   } ~
                     (path("import") & post) {
-                      fileUpload("transactions"){
+                      fileUpload("transactions") {
                         case (metadata, byteSource) =>
                           val processingResult: Future[TSVImportResult] =
                             byteSource.via(Framing.delimiter(ByteString("\n"), 100000))
-                                .mapConcat { line =>
-                                  TSVTransactionsParser.parseLine(userId)(line.utf8String) match {
-                                    case Failure(exception) =>
-                                      println(s"$exception for ${line.utf8String}")
-                                      Nil
-                                    case util.Success(value) => value
-                                  }
+                              .mapConcat { line =>
+                                TSVTransactionsParser.parseLine(userId)(line.utf8String) match {
+                                  case Failure(exception) =>
+                                    println(s"$exception for ${line.utf8String}")
+                                    Nil
+                                  case util.Success(value) => value
                                 }
-                                .mapAsync(4)(writeBack.sendCommandAndIgnoreResult(fortuneId, _))
-                                .runFold(TSVImportResult(0, 0)) {
-                                  case (acc, (code, _)) =>
-                                    if (code == OK) acc.copy(success = acc.success + 1)
-                                    else acc.copy(failure = acc.failure + 1)
-                                }
+                              }
+                              .mapAsync(4)(writeBack.sendCommandAndIgnoreResult(fortuneId, _))
+                              .runFold(TSVImportResult(0, 0)) {
+                                case (acc, (code, _)) =>
+                                  if (code == OK) acc.copy(success = acc.success + 1)
+                                  else acc.copy(failure = acc.failure + 1)
+                              }
 
                           complete(processingResult.map(r =>
                             if (r.success > 0) OK -> r.asJson
                             else BadRequest -> r.asJson
                           ))
                       }
-                    }~
+                    } ~
                     (path("correct") & post & entity(as[CorrectBalancesRequest])) { req ⇒
                       complete {
                         writeBack.sendCommandAndIgnoreResult(fortuneId, CorrectBalances(
+                          cmdId,
                           userId,
                           req.realBalances,
                           req.comment
@@ -162,17 +166,18 @@ object WriteFrontend extends App with CirceSupport with CorsDirectives {
                     } ~
                     (path("finish-initialization") & post) {
                       complete {
-                        writeBack.sendCommandAndIgnoreResult(fortuneId, FinishInitialization(userId))
+                        writeBack.sendCommandAndIgnoreResult(fortuneId, FinishInitialization(cmdId, userId))
                       }
                     } ~
                     (path("editors") & post & entity(as[AddEditorRequest])) { req ⇒
                       complete {
-                        writeBack.sendCommandAndIgnoreResult(fortuneId, AddEditor(userId, UserId(req.email)))
+                        writeBack.sendCommandAndIgnoreResult(fortuneId, AddEditor(cmdId, userId, UserId(req.email)))
                       }
                     } ~
                     (path("income") & post & entity(as[ReceiveIncomeRequest])) { req ⇒
                       complete {
                         writeBack.sendCommandAndIgnoreResult(fortuneId, ReceiveIncome(
+                          cmdId,
                           userId,
                           req.amount,
                           req.currency,
@@ -185,6 +190,7 @@ object WriteFrontend extends App with CirceSupport with CorsDirectives {
                     (path("spend") & post & entity(as[SpendRequest])) { req ⇒
                       complete {
                         writeBack.sendCommandAndIgnoreResult(fortuneId, Spend(
+                          cmdId,
                           userId,
                           req.amount,
                           req.currency,
@@ -198,6 +204,7 @@ object WriteFrontend extends App with CirceSupport with CorsDirectives {
                     (path("limit") & post & entity(as[UpdateLimitsRequest])) { req ⇒
                       complete {
                         writeBack.sendCommandAndIgnoreResult(fortuneId, UpdateLimits(
+                          cmdId,
                           userId,
                           req.weekly,
                           req.monthly
@@ -207,6 +214,7 @@ object WriteFrontend extends App with CirceSupport with CorsDirectives {
                     (path("cancel") & post & entity(as[CancelTransactionRequest])) { req ⇒
                       complete {
                         writeBack.sendCommandAndIgnoreResult(fortuneId, CancelTransaction(
+                          cmdId,
                           userId,
                           req.transactionId
                         ))
@@ -216,6 +224,7 @@ object WriteFrontend extends App with CirceSupport with CorsDirectives {
                       (pathEndOrSingleSlash & post & entity(as[BuyAssetRequest])) { req ⇒
                         complete {
                           writeBack.sendCommandAndIgnoreResult(fortuneId, BuyAsset(
+                            cmdId,
                             userId,
                             req.asset,
                             req.initializer,
@@ -227,6 +236,7 @@ object WriteFrontend extends App with CirceSupport with CorsDirectives {
                           (path("sell") & post & entity(as[SellAssetRequest])) { req ⇒
                             complete {
                               writeBack.sendCommandAndIgnoreResult(fortuneId, SellAsset(
+                                cmdId,
                                 userId,
                                 assetId,
                                 req.comment
@@ -236,6 +246,7 @@ object WriteFrontend extends App with CirceSupport with CorsDirectives {
                             (path("reevaluate") & post & entity(as[ReevaluateAssetRequest])) { req ⇒
                               complete {
                                 writeBack.sendCommandAndIgnoreResult(fortuneId, ReevaluateAsset(
+                                  cmdId,
                                   userId,
                                   assetId,
                                   req.newPrice,
@@ -249,6 +260,7 @@ object WriteFrontend extends App with CirceSupport with CorsDirectives {
                       (pathEndOrSingleSlash & post & entity(as[TakeOnLiabilityRequest])) { req ⇒
                         complete {
                           writeBack.sendCommandAndIgnoreResult(fortuneId, TakeOnLiability(
+                            cmdId,
                             userId,
                             req.liability,
                             req.initializer,
@@ -260,6 +272,7 @@ object WriteFrontend extends App with CirceSupport with CorsDirectives {
                           (path("pay-off") & post & entity(as[PayLiabilityOffRequest])) { req ⇒
                             complete {
                               writeBack.sendCommandAndIgnoreResult(fortuneId, PayLiabilityOff(
+                                cmdId,
                                 userId,
                                 liabilityId,
                                 req.byAmount,

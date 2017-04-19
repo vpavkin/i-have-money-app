@@ -1,10 +1,9 @@
-import com.trueaccord.scalapb.{ScalaPbPlugin ⇒ Protobuf}
 import sbtdocker.Instructions._
 import ReleaseTransformations._
 
 lazy val buildSettings = Seq(
   organization := "ru.pavkin.ihavemoney",
-  scalaVersion := "2.11.8"
+  scalaVersion := "2.12.1"
 )
 
 lazy val releaseSettings = Seq(releaseProcess := Seq[ReleaseStep](
@@ -52,16 +51,19 @@ lazy val baseSettings = Seq(
 
 lazy val allSettings = buildSettings ++ baseSettings
 
-lazy val postgreSQLVersion = "9.4-1206-jdbc42"
-lazy val funCQRSVersion = "0.4.6"
-lazy val shapelessVersion = "2.3.1"
-lazy val catsVersion = "0.5.0"
-lazy val circeVersion = "0.4.1"
-lazy val akkaVersion = "2.4.7"
-lazy val akkaPersistenceJDBCVersion = "2.5.2"
-lazy val akkaHttpCorsVersion = "0.1.4"
-lazy val scalaCheckVersion = "1.12.5"
-lazy val scalaTestVersion = "2.2.6"
+lazy val postgreSQLVersion = "42.0.0"
+lazy val funCQRSVersion = "0.4.11"
+lazy val shapelessVersion = "2.3.2"
+lazy val catsVersion = "0.9.0"
+lazy val circeVersion = "0.7.0"
+lazy val akkaVersion = "2.4.17"
+lazy val akkaPersistenceJDBCVersion = "2.4.17.1"
+lazy val akkaHttpVersion = "10.0.5"
+lazy val akkaHttpCorsVersion = "0.2.1"
+lazy val akkaHttpCirceVersion = "1.15.0"
+lazy val jwtCirceVersion = "0.12.1"
+lazy val scalaCheckVersion = "1.13.4"
+lazy val scalaTestVersion = "3.0.1"
 
 lazy val journal_db_host = sys.props.getOrElse("ihavemoney_writeback_db_host", "127.0.0.1")
 lazy val journal_db_port = sys.props.getOrElse("ihavemoney_writeback_db_port", "5432")
@@ -95,9 +97,9 @@ lazy val testDependencies = libraryDependencies ++= Seq(
   "io.strongtyped" %% "fun-cqrs-test-kit" % funCQRSVersion % "test"
 )
 
-lazy val protobufSettings = Protobuf.protobufSettings ++
-    (Protobuf.runProtoc in Protobuf.protobufConfig := (args ⇒
-      com.github.os72.protocjar.Protoc.runProtoc("-v300" +: args.toArray)))
+lazy val protobufSettings = PB.targets in Compile := Seq(
+  scalapb.gen(grpc = false) -> (sourceManaged in Compile).value
+)
 
 lazy val iHaveMoney = project.in(file("."))
     .settings(buildSettings)
@@ -118,8 +120,8 @@ lazy val domain = crossProject.in(file("domain"))
     )
     .jvmSettings(libraryDependencies ++= Seq(
       "io.strongtyped" %% "fun-cqrs-core" % funCQRSVersion,
-      "com.github.t3hnar" %% "scala-bcrypt" % "2.6",
-      "com.pauldijou" %% "jwt-circe" % "0.8.0"
+      "com.github.t3hnar" %% "scala-bcrypt" % "3.0",
+      "com.pauldijou" %% "jwt-circe" % jwtCirceVersion
     ))
     .jvmSettings(testDependencies)
 
@@ -224,14 +226,13 @@ lazy val writeFrontend = project.in(file("write-frontend"))
     .settings(allSettings: _*)
     .settings(
       libraryDependencies ++= Seq(
-        "com.typesafe.akka" %% "akka-http-core" % akkaVersion,
-        "com.typesafe.akka" %% "akka-http-experimental" % akkaVersion,
+        "com.typesafe.akka" %% "akka-http" % akkaHttpVersion,
         "com.typesafe.akka" %% "akka-cluster-tools" % akkaVersion,
         "ch.megard" %% "akka-http-cors" % akkaHttpCorsVersion,
         "io.circe" %% "circe-core" % circeVersion,
         "io.circe" %% "circe-generic" % circeVersion,
         "io.circe" %% "circe-parser" % circeVersion,
-        "de.heikoseeberger" %% "akka-http-circe" % "1.7.0"
+        "de.heikoseeberger" %% "akka-http-circe" % akkaHttpCirceVersion
       )
     )
     .settings(testDependencies)
@@ -362,7 +363,7 @@ lazy val frontendProtocol = crossProject.in(file("frontend-protocol"))
       "io.circe" %%% "circe-generic" % circeVersion,
       "io.circe" %%% "circe-parser" % circeVersion
     ))
-    .jsSettings(libraryDependencies += "org.scala-js" %%% "scalajs-java-time" % "0.1.0")
+    .jsSettings(libraryDependencies += "org.scala-js" %%% "scalajs-java-time" % "0.2.0")
     .dependsOn(domain)
 
 lazy val frontendProtocolJS = frontendProtocol.js
@@ -378,13 +379,12 @@ lazy val readFrontend = project.in(file("read-frontend"))
       libraryDependencies ++= Seq(
         "com.typesafe.akka" %% "akka-actor" % akkaVersion,
         "com.typesafe.akka" %% "akka-remote" % akkaVersion,
-        "com.typesafe.akka" %% "akka-http-core" % akkaVersion,
-        "com.typesafe.akka" %% "akka-http-experimental" % akkaVersion,
+        "com.typesafe.akka" %% "akka-http" % akkaHttpVersion,
         "ch.megard" %% "akka-http-cors" % akkaHttpCorsVersion,
         "io.circe" %% "circe-core" % circeVersion,
         "io.circe" %% "circe-generic" % circeVersion,
         "io.circe" %% "circe-parser" % circeVersion,
-        "de.heikoseeberger" %% "akka-http-circe" % "1.7.0"
+        "de.heikoseeberger" %% "akka-http-circe" % akkaHttpCirceVersion
       ),
       testDependencies
     )
@@ -452,13 +452,13 @@ lazy val jsApp = project.in(file("js-app"))
     )
     .settings(
       libraryDependencies ++= Seq(
-        "com.github.japgolly.scalajs-react" %%% "core" % "0.11.1",
-        "com.github.japgolly.scalajs-react" %%% "extra" % "0.11.1",
-        "com.github.japgolly.scalacss" %%% "core" % "0.4.1",
-        "com.github.japgolly.scalacss" %%% "ext-react" % "0.4.1",
-        "me.chrons" %%% "diode" % "1.0.0",
-        "me.chrons" %%% "diode-react" % "1.0.0",
-        "org.querki" %%% "jquery-facade" % "1.0-RC3",
+        "com.github.japgolly.scalajs-react" %%% "core" % "0.11.3",
+        "com.github.japgolly.scalajs-react" %%% "extra" % "0.11.3",
+        "com.github.japgolly.scalacss" %%% "core" % "0.5.1",
+        "com.github.japgolly.scalacss" %%% "ext-react" % "0.5.1",
+        "io.suzaku" %%% "diode" % "1.1.1",
+        "io.suzaku" %%% "diode-react" % "1.1.1",
+        "org.querki" %%% "jquery-facade" % "1.0",
         "io.circe" %%% "circe-core" % circeVersion,
         "io.circe" %%% "circe-generic" % circeVersion,
         "io.circe" %%% "circe-parser" % circeVersion

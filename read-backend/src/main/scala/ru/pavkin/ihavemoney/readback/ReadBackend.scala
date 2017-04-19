@@ -11,8 +11,8 @@ import ru.pavkin.ihavemoney.domain.user.UserId
 import ru.pavkin.ihavemoney.readback.projections._
 import ru.pavkin.ihavemoney.readback.repo._
 import ru.pavkin.ihavemoney.readback.sources.{CurrentFortuneTagEventSourceProvider, FortuneTagEventSourceProvider}
-import slick.driver.PostgresDriver
-import slick.driver.PostgresDriver.api._
+import slick.jdbc.PostgresProfile
+import slick.jdbc.PostgresProfile.api._
 
 import scala.util.Try
 
@@ -27,7 +27,7 @@ object ReadBackend extends App {
 
   val persistQuerySide = Try(config.getBoolean("app.cache-query-side")).getOrElse(false)
 
-  val database: PostgresDriver.Backend#Database = Database.forConfig("read-db")
+  val database: PostgresProfile.Backend#Database = Database.forConfig("read-db")
 
   val moneyViewRepo =
     if (persistQuerySide) new DatabaseMoneyViewRepository(database)

@@ -1,7 +1,7 @@
 package ru.pavkin.ihavemoney.frontend.redux
 
 import diode.react.ReactConnector
-import diode.{Circuit, ModelR}
+import diode.{Circuit, ModelR, ModelRO}
 import io.circe.parser._
 import io.circe.syntax._
 import japgolly.scalajs.react.ReactElement
@@ -41,7 +41,7 @@ object AppCircuit extends Circuit[RootModel] with ReactConnector[RootModel] {
 
   override def initialModel = RootModel(None)
 
-  def subscribeU[T](cursor: ModelR[RootModel, T])(listener: (Unsubscriber, ModelR[RootModel, T]) => Unit): Unit = {
+  def subscribeU[T](cursor: ModelR[RootModel, T])(listener: (Unsubscriber, ModelRO[T]) => Unit): Unit = {
     var unsubscribe: () ⇒ Unit = () ⇒ ()
     unsubscribe = subscribe(cursor)(m ⇒ listener(unsubscribe, m))
   }

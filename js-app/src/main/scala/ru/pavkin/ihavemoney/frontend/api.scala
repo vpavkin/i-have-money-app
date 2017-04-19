@@ -3,7 +3,7 @@ package ru.pavkin.ihavemoney.frontend
 import java.time.LocalDate
 import java.util.UUID
 
-import cats.data.Xor
+
 import io.circe.Decoder
 import io.circe.syntax._
 import japgolly.scalajs.react.Callback
@@ -25,8 +25,8 @@ object api {
   var writeFrontBaseUrl: BaseUrl = BaseUrl("")
 
   get((readFrontBaseUrl / "write_front_url").value).foreach {
-    case Xor.Right(url) ⇒ writeFrontBaseUrl = BaseUrl(url).endWith_/
-    case Xor.Left(error) ⇒ Callback.alert(s"Failed to obtain writeback url: $error").runNow
+    case Right(url) ⇒ writeFrontBaseUrl = BaseUrl(url).endWith_/
+    case Left(error) ⇒ Callback.alert(s"Failed to obtain writeback url: $error").runNow
   }
 
   object routes {
@@ -54,14 +54,14 @@ object api {
 
   def authHeader = "Authorization" → s"Bearer ${AppCircuit.auth.map(_.token).getOrElse("")}"
 
-  def login(email: String, password: String)(implicit ec: ExecutionContext): Future[Xor[RequestError, Auth]] = expect[CommandProcessedWithResult[Auth]](
+  def login(email: String, password: String)(implicit ec: ExecutionContext): Future[Either[RequestError, Auth]] = expect[CommandProcessedWithResult[Auth]](
     postJson(routes.login.value, LogInRequest(email, password))
   ).map(_.map(_.result))
 
-  def register(email: String, password: String, displayName: String)(implicit ec: ExecutionContext): Future[Xor[RequestError, Unit]] =
+  def register(email: String, password: String, displayName: String)(implicit ec: ExecutionContext): Future[Either[RequestError, Unit]] =
     postJson(routes.register.value, CreateUserRequest(email, displayName, password)).map(_.map(_ ⇒ ()))
 
-  def createFortune: Future[Xor[RequestError, Unit]] =
+  def createFortune: Future[Either[RequestError, Unit]] =
     postEmpty(routes.fortune.value, headers = Map(authHeader))
         .map(_.map(_ ⇒ ()))
 
@@ -71,7 +71,7 @@ object api {
       category: String,
       initializer: Boolean = false,
       comment: Option[String])
-      (implicit ec: ExecutionContext): Future[Xor[RequestError, Unit]] =
+      (implicit ec: ExecutionContext): Future[Either[RequestError, Unit]] =
     postJson(routes.addIncome(AppCircuit.fortuneId).value,
       ReceiveIncomeRequest(amount, currency, category, initializer, comment),
       headers = Map(authHeader)
@@ -84,7 +84,7 @@ object api {
       date: LocalDate,
       initializer: Boolean = false,
       comment: Option[String])
-      (implicit ec: ExecutionContext): Future[Xor[RequestError, Unit]] =
+      (implicit ec: ExecutionContext): Future[Either[RequestError, Unit]] =
     postJson(routes.addExpense(AppCircuit.fortuneId).value,
       SpendRequest(amount, currency, category, date, initializer, comment),
       headers = Map(authHeader)
@@ -94,7 +94,7 @@ object api {
       newAmount: BigDecimal,
       newCurrency: Currency,
       comment: Option[String] = None)
-      (implicit ec: ExecutionContext): Future[Xor[RequestError, Unit]] =
+      (implicit ec: ExecutionContext): Future[Either[RequestError, Unit]] =
     postJson(routes.correct(AppCircuit.fortuneId).value,
       CorrectBalancesRequest(Map(newCurrency → newAmount), comment),
       headers = Map(authHeader)
@@ -106,7 +106,7 @@ object api {
       toAmount: BigDecimal,
       toCurrency: Currency,
       comment: Option[String])
-      (implicit ec: ExecutionContext): Future[Xor[RequestError, Unit]] =
+      (implicit ec: ExecutionContext): Future[Either[RequestError, Unit]] =
     postJson(routes.exchange(AppCircuit.fortuneId).value,
       ExchangeCurrencyRequest(fromAmount, fromCurrency, toAmount, toCurrency, comment),
       headers = Map(authHeader)
@@ -116,31 +116,31 @@ object api {
       asset: Asset,
       initializer: Boolean = false,
       comment: Option[String])
-      (implicit ec: ExecutionContext): Future[Xor[RequestError, Unit]] =
+      (implicit ec: ExecutionContext): Future[Either[RequestError, Unit]] =
     postJson(routes.assets(AppCircuit.fortuneId).value,
       BuyAssetRequest(asset, initializer, comment),
       headers = Map(authHeader)
     ).map(_.map(_ ⇒ ()))
 
-  def updateLimits(weekly: Map[ExpenseCategory, Worth], monthly: Map[ExpenseCategory, Worth])(implicit ec: ExecutionContext): Future[Xor[RequestError, Unit]] =
+  def updateLimits(weekly: Map[ExpenseCategory, Worth], monthly: Map[ExpenseCategory, Worth])(implicit ec: ExecutionContext): Future[Either[RequestError, Unit]] =
     postJson(routes.limit(AppCircuit.fortuneId).value,
       UpdateLimitsRequest(weekly, monthly),
       headers = Map(authHeader)
     ).map(_.map(_ ⇒ ()))
 
-  def cancelTransaction(id: UUID)(implicit ec: ExecutionContext): Future[Xor[RequestError, Unit]] =
+  def cancelTransaction(id: UUID)(implicit ec: ExecutionContext): Future[Either[RequestError, Unit]] =
     postJson(routes.cancel(AppCircuit.fortuneId).value,
       CancelTransactionRequest(id),
       headers = Map(authHeader)
     ).map(_.map(_ ⇒ ()))
 
-  def addEditor(email: String)(implicit ec: ExecutionContext): Future[Xor[RequestError, Unit]] =
+  def addEditor(email: String)(implicit ec: ExecutionContext): Future[Either[RequestError, Unit]] =
     postJson(routes.editors(AppCircuit.fortuneId).value,
       AddEditorRequest(email),
       headers = Map(authHeader)
     ).map(_.map(_ ⇒ ()))
 
-  def finishInitialization(implicit ec: ExecutionContext): Future[Xor[RequestError, Unit]] =
+  def finishInitialization(implicit ec: ExecutionContext): Future[Either[RequestError, Unit]] =
     postEmpty(routes.finishInit(AppCircuit.fortuneId).value,
       headers = Map(authHeader)
     ).map(_.map(_ ⇒ ()))
@@ -148,37 +148,37 @@ object api {
   // queries
 
   def query[A](route: BaseUrl, extractor: PartialFunction[FrontendQueryResult, A])
-      (implicit ec: ExecutionContext): Future[Xor[RequestError, A]] = expect[FrontendQueryResult](
+      (implicit ec: ExecutionContext): Future[Either[RequestError, A]] = expect[FrontendQueryResult](
     get(route.value, headers = Map(authHeader))
   ).map(_.flatMap { res ⇒
-    extractor.andThen(Xor.Right(_)).applyOrElse(res, (_: FrontendQueryResult) ⇒ Xor.Left(OtherError("Unexpected response")))
+    extractor.andThen(Right(_)).applyOrElse(res, (_: FrontendQueryResult) ⇒ Left(OtherError("Unexpected response")))
   })
 
-  def fortunes(implicit ec: ExecutionContext): Future[Xor[RequestError, List[FortuneInfo]]] = query(routes.getFortunes, {
+  def fortunes(implicit ec: ExecutionContext): Future[Either[RequestError, List[FortuneInfo]]] = query(routes.getFortunes, {
     case FrontendFortunes(_, fortunes) ⇒ fortunes
   })
 
-  def getCategories(implicit ec: ExecutionContext): Future[RequestError Xor Categories] =
+  def getCategories(implicit ec: ExecutionContext): Future[RequestError Either Categories] =
     query(routes.getCategories(AppCircuit.fortuneId), {
       case FrontendCategories(_, income, expenses) ⇒ Categories(income, expenses)
     })
 
-  def getBalances(implicit ec: ExecutionContext): Future[RequestError Xor Map[Currency, BigDecimal]] =
+  def getBalances(implicit ec: ExecutionContext): Future[RequestError Either Map[Currency, BigDecimal]] =
     query(routes.getBalances(AppCircuit.fortuneId), {
       case FrontendMoneyBalance(_, balances) ⇒ balances
     })
 
-  def getAssets(implicit ec: ExecutionContext): Future[RequestError Xor Map[String, Asset]] =
+  def getAssets(implicit ec: ExecutionContext): Future[RequestError Either Map[String, Asset]] =
     query(routes.getAssets(AppCircuit.fortuneId), {
       case FrontendAssets(_, assets) ⇒ assets
     })
 
-  def getLiabilities(implicit ec: ExecutionContext): Future[RequestError Xor Map[String, Liability]] =
+  def getLiabilities(implicit ec: ExecutionContext): Future[RequestError Either Map[String, Liability]] =
     query(routes.getLiabilities(AppCircuit.fortuneId), {
       case FrontendLiabilities(_, liabilities) ⇒ liabilities
     })
 
-  def getEventLog(implicit ec: ExecutionContext): Future[RequestError Xor List[Event]] =
+  def getEventLog(implicit ec: ExecutionContext): Future[RequestError Either List[Event]] =
     query(routes.getEventLog(AppCircuit.fortuneId), {
       case FrontendEvents(_, transactions) ⇒ transactions
     })

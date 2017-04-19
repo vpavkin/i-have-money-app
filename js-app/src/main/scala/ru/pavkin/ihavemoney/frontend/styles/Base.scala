@@ -1,10 +1,11 @@
 package ru.pavkin.ihavemoney.frontend.styles
 
+import japgolly.univeq.UnivEq
+
 import scala.language.postfixOps
 import scalacss.Defaults._
-import scalacss.{StyleS, mutable}
 
-class Base(implicit r: mutable.Register) extends StyleSheet.Inline()(r) {
+class Base(implicit r: StyleSheet.Register) extends StyleSheet.Inline()(r) {
 
   import dsl._
 
@@ -13,10 +14,21 @@ class Base(implicit r: mutable.Register) extends StyleSheet.Inline()(r) {
   val colorInfo = c"#3498DB"
   val colorWarning = c"#F39C12"
   val colorDanger = c"#E74C3C"
+  val colorBackground = c"#222"
 
-  sealed trait ClassName {self ⇒
+  sealed trait ClassName {self =>
     def name: String = self.toString
   }
+
+  sealed trait direction extends ClassName
+  object direction {
+    case object left extends direction
+    case object right extends direction
+    case object top extends direction
+    case object bottom extends direction
+  }
+
+  // this can't start from uppercase because it breaks something in ScalaCSS internals
   sealed trait context extends ClassName
   object context {
     case object default extends context
@@ -27,102 +39,163 @@ class Base(implicit r: mutable.Register) extends StyleSheet.Inline()(r) {
     case object danger extends context
   }
 
-  sealed abstract class device(override val name: String) extends ClassName
-  object device {
-    case object extraSmall extends device("xs")
-    case object small extends device("sm")
-    case object medium extends device("md")
-    case object large extends device("lg")
+  sealed abstract class Device(override val name: String) extends ClassName
+  object Device {
+    case object extraSmall extends Device("xs")
+    case object small extends Device("sm")
+    case object medium extends Device("md")
+    case object large extends Device("lg")
+  }
+
+  // this can't start from uppercase because it breaks something in ScalaCSS internals
+  sealed trait textStyle extends ClassName
+  object textStyle {
+    case object muted extends textStyle
+    case object primary extends textStyle
+    case object success extends textStyle
+    case object info extends textStyle
+    case object warning extends textStyle
+    case object danger extends textStyle
   }
 
   import context._
-  import device._
+  import Device._
 
   val commonDomain: Domain[context] = Domain.ofValues(default, primary, success, info, warning, danger)
   val contextDomain: Domain[context] = Domain.ofValues(success, info, warning, danger)
-  val deviceDomain: Domain[device] = Domain.ofValues(extraSmall, small, device.medium, large)
+  val textDomain: Domain[textStyle] = Domain.ofValues(textStyle.muted, textStyle.primary, textStyle.success,
+    textStyle.info, textStyle.warning, textStyle.danger)
+  val deviceDomain: Domain[Device] = Domain.ofValues(extraSmall, small, Device.medium, large)
+  val directionDomain: Domain[direction] = Domain.ofValues(direction.left, direction.right,
+    direction.top, direction.bottom)
 
-  def commonStyle[A <: ClassName](domain: Domain[A], base: String) = styleF(domain)(opt =>
+  implicit val contextUEq: UnivEq[context] = UnivEq.derive
+  implicit val deviceUEq: UnivEq[Device] = UnivEq.derive
+  implicit val textUEq: UnivEq[textStyle] = UnivEq.derive
+  implicit val directionUEq: UnivEq[direction] = UnivEq.derive
+
+  def domainStyle[A <: ClassName : UnivEq](domain: Domain[A]): (A) => StyleA = styleF(domain)(opt =>
+    styleS(addClassNames(opt.name))
+  )
+
+  def commonStyle[A <: ClassName : UnivEq](domain: Domain[A], base: String): (A) => StyleA = styleF(domain)(opt =>
     styleS(addClassNames(base, s"$base-${opt.name}"))
   )
 
-  def classNamesStyle(classNames: String*) = style(addClassNames(classNames: _*))
+  def classNamesStyle(classNames: String*): StyleA = style(addClassNames(classNames: _*))
 
-  val hasErrorOpt = styleF(Domain.boolean)(b ⇒ if (b) addClassName("has-error") else StyleS.empty)
+  val popoverDirection: direction => StyleA = domainStyle(directionDomain)
+  val popover: StyleA = classNamesStyle("popover fade in")
+  val popoverArrow: StyleA = classNamesStyle("arrow")
+  val popoverTitle: StyleA = classNamesStyle("popover-title")
+  val popoverBody: StyleA = classNamesStyle("popover-content")
 
-  val buttonOpt = commonStyle(commonDomain, "btn")
-  val button = buttonOpt(default)
-  val buttonXS = classNamesStyle("btn-xs")
-  val buttonLarge = classNamesStyle("btn-lg")
-  val close = classNamesStyle("close")
+  val disabled: StyleA = classNamesStyle("disabled")
+  val active: StyleA = classNamesStyle("active")
 
-  val panelOpt = commonStyle(commonDomain, "panel")
-  val panel = panelOpt(default)
+  val hasErrorOpt: Boolean => StyleA = styleF(Domain.boolean)(b => if (b) addClassName("has-error") else StyleS.empty)
 
-  val labelOpt = commonStyle(commonDomain, "label")
-  val label = labelOpt(default)
+  val text: textStyle => StyleA = commonStyle(textDomain, "text")
 
-  val alertOpt = commonStyle(commonDomain, "alert")
-  val alert = alertOpt(default)
+  val buttonOpt: context => StyleA = commonStyle(commonDomain, "btn")
+  val button: StyleA = buttonOpt(default)
+  val buttonXS: StyleA = classNamesStyle("btn-xs")
+  val buttonSM: StyleA = classNamesStyle("btn-sm")
+  val buttonLarge: StyleA = classNamesStyle("btn-lg")
+  val close: StyleA = classNamesStyle("close")
 
-  val panelHeading = classNamesStyle("panel-heading")
-  val panelBody = classNamesStyle("panel-body")
-  val panelTitle = classNamesStyle("panel-title")
+  val buttonToolbar: StyleA = classNamesStyle("btn-toolbar")
+  val buttonGroup: StyleA = classNamesStyle("btn-group")
 
-  val dropdown = classNamesStyle("dropdown")
-  val dropdownMenu = classNamesStyle("dropdown-menu")
+  val panelOpt: context => StyleA = commonStyle(commonDomain, "panel")
+  val panel: StyleA = panelOpt(default)
+
+  val labelOpt: context => StyleA = commonStyle(commonDomain, "label")
+  val label: StyleA = labelOpt(default)
+
+  val alertOpt: context => StyleA = commonStyle(commonDomain, "alert")
+  val alert: StyleA = alertOpt(default)
+
+  val panelHeading: StyleA = classNamesStyle("panel-heading")
+  val panelBody: StyleA = classNamesStyle("panel-body")
+  val panelTitle: StyleA = classNamesStyle("panel-title")
+
+  val dropdown: StyleA = classNamesStyle("dropdown")
+  val dropdownMenu: StyleA = classNamesStyle("dropdown-menu")
+
+  val progress: StyleA = classNamesStyle("progress")
+  val progressBarOpt: context => StyleA = commonStyle(commonDomain, "progress-bar")
+  val progressBar: StyleA = progressBarOpt(default)
 
   object modal {
-    val modal = classNamesStyle("modal")
-    val fade = classNamesStyle("fade")
-    val dialog = classNamesStyle("modal-dialog")
-    val content = classNamesStyle("modal-content")
-    val header = classNamesStyle("modal-header")
-    val body = classNamesStyle("modal-body")
-    val footer = classNamesStyle("modal-footer")
+    val modal: StyleA = classNamesStyle("modal")
+    val fade: StyleA = classNamesStyle("fade")
+    val dialog: StyleA = classNamesStyle("modal-dialog")
+    val content: StyleA = classNamesStyle("modal-content")
+    val header: StyleA = classNamesStyle("modal-header")
+    val body: StyleA = classNamesStyle("modal-body")
+    val footer: StyleA = classNamesStyle("modal-footer")
   }
 
-  val _modal = modal
+  val _modal: modal.type = modal
 
   object listGroup {
-    val listGroup = classNamesStyle("list-group")
-    val itemOpt = commonStyle(contextDomain, "list-group-item")
-    val item = classNamesStyle("list-group-item")
-    val itemHeading = classNamesStyle("list-group-item-heading")
-    val itemText = classNamesStyle("list-group-item-text")
+    val listGroup: StyleA = classNamesStyle("list-group")
+    val itemOpt: context => StyleA = commonStyle(contextDomain, "list-group-item")
+    val item: StyleA = classNamesStyle("list-group-item")
+    val itemHeader: StyleA = classNamesStyle("list-group-item header")
+    val itemHeading: StyleA = classNamesStyle("list-group-item-heading")
+    val itemText: StyleA = classNamesStyle("list-group-item-text")
   }
 
-  val _listGroup = listGroup
+  val _listGroup: listGroup.type = listGroup
 
-  val collapsed = classNamesStyle("collapsed")
-  val collapseCollapsed = classNamesStyle("collapse")
-  val collapseExpanded = classNamesStyle("collapse", "in")
+  val collapsed: StyleA = classNamesStyle("collapsed")
+  val collapseCollapsed: StyleA = classNamesStyle("collapse")
+  val collapseExpanded: StyleA = collapseCollapsed + classNamesStyle("in")
 
-  val container = classNamesStyle("container")
-  val row = classNamesStyle("row")
+  val container: StyleA = classNamesStyle("container")
+  val row: StyleA = classNamesStyle("row")
 
-  val pullLeft = classNamesStyle("pull-left")
-  val pullRight = classNamesStyle("pull-right")
+  val pullLeft: StyleA = classNamesStyle("pull-left")
+  val pullRight: StyleA = classNamesStyle("pull-right")
 
-  val table = classNamesStyle("table")
-  val tableBordered = classNamesStyle("table-bordered")
-  val tableStriped = classNamesStyle("table-striped")
-  val tableCondensed = classNamesStyle("table-condensed")
+  val table: StyleA = classNamesStyle("table")
+  val tableBordered: StyleA = classNamesStyle("table-bordered")
+  val tableStriped: StyleA = classNamesStyle("table-striped")
+  val tableCondensed: StyleA = classNamesStyle("table-condensed")
 
-  val navbarOpt = commonStyle(commonDomain, "navbar")
-  val navbar = navbarOpt(default)
-  val navbarFixedTop = classNamesStyle("navbar navbar-fixed-top")
+  val navbarOpt: context => StyleA = commonStyle(commonDomain, "navbar")
+  val navbar: StyleA = navbarOpt(default)
+  val navbarFixedTop: StyleA = classNamesStyle("navbar navbar-fixed-top")
 
-  val navbarSection = classNamesStyle("nav", "navbar-nav")
-  val navbarHeader = classNamesStyle("navbar-header")
-  val navbarRight = classNamesStyle("navbar-right")
-  val navbarCollapse = classNamesStyle("navbar-collapse", "collapse")
-  val navbarBrand = classNamesStyle("navbar-brand")
+  val navbarSection: StyleA = classNamesStyle("nav", "navbar-nav")
+  val navbarHeader: StyleA = classNamesStyle("navbar-header")
+  val navbarRight: StyleA = classNamesStyle("navbar-right")
+  val navbarCollapse: StyleA = classNamesStyle("navbar-collapse", "collapse")
+  val navbarBrand: StyleA = classNamesStyle("navbar-brand")
 
-  val formGroup = classNamesStyle("form-group")
-  val formControl = classNamesStyle("form-control")
-  val formControlStatic = classNamesStyle("form-control-static")
-  val formHorizontal = classNamesStyle("form-horizontal")
+  val formGroup: StyleA = classNamesStyle("form-group")
+  val formControl: StyleA = classNamesStyle("form-control")
+  val formControlStatic: StyleA = classNamesStyle("form-control-static")
+  val formHorizontal: StyleA = classNamesStyle("form-horizontal")
+  val inputGroupAddon: StyleA = classNamesStyle("input-group-addon")
+  val inputGroup: StyleA = classNamesStyle("input-group")
 
-  val caret = classNamesStyle("caret")
+  val datePickerInputGroup: StyleA = classNamesStyle("date")
+
+  val caret: StyleA = classNamesStyle("caret")
+
+  val screenReaderOnly: StyleA = classNamesStyle("sr-only")
+
+  val regularFontSize: StyleA = style(fontSize(100.%%))
+
+  val listInline: StyleA = classNamesStyle("list-inline")
+
+  val clearBoth: StyleA = style(clear.both)
+
+  val inlineBlock: StyleA = style(display.inlineBlock)
+
+  val fullWidth: StyleA = style(width(100.%%))
+
 }
