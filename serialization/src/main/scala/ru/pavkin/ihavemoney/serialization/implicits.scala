@@ -13,11 +13,14 @@ import ru.pavkin.ihavemoney.proto.commands.PBCommandEnvelope.Command._
 import ru.pavkin.ihavemoney.proto.commands._
 import ru.pavkin.ihavemoney.proto.common._
 import ru.pavkin.ihavemoney.proto.events._
+import ru.pavkin.ihavemoney.proto.snapshots.PBFortune
 import ru.pavkin.ihavemoney.serialization.ProtobufSuite.syntax._
 import ru.pavkin.ihavemoney.serialization.derivation.IsoSerializable
 import ru.pavkin.ihavemoney.serialization.derivation.IsoSerializable.syntax._
 import ru.pavkin.utils.option._
 import shapeless.{::, Generic, HNil}
+import cats.instances.list._
+import ru.pavkin.ihavemoney.domain.user.UserId
 
 object implicits {
 
@@ -195,4 +198,16 @@ object implicits {
       )
       def companion: GeneratedMessageCompanion[PBCommandEnvelope] = PBCommandEnvelope
     }
+
+  /* Snapshots */
+
+  implicit def repeatable[M, R](implicit P: IsoSerializable[M, R]): IsoSerializable[List[M], scala.collection.Seq[R]] =
+    IsoSerializable.traverseSerializable[M, R, List].inmapR[Seq[R]](_.toSeq, _.toList)
+
+  implicit val ignoreLast30DaysTransactions = new IsoSerializable[Map[UUID, FortuneEvent], Boolean] {
+    def serialize(t: Map[UUID, FortuneEvent]): Boolean = false
+    def deserialize(t: Boolean): Map[UUID, FortuneEvent] = Map.empty
+  }
+
+  implicit val fortuneSuite = ProtobufSuite.iso[Fortune, PBFortune]
 }

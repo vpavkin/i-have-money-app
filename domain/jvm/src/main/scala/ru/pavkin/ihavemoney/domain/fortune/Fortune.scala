@@ -15,7 +15,7 @@ case class Fortune(
   assets: Map[AssetId, Asset],
   liabilities: Map[LiabilityId, Liability],
   owner: UserId,
-  editors: Set[UserId],
+  editors: List[UserId],
   weeklyLimits: Map[ExpenseCategory, Worth],
   monthlyLimits: Map[ExpenseCategory, Worth],
   last30DaysTransactions: Map[UUID, FortuneEvent],
@@ -29,10 +29,10 @@ case class Fortune(
   def increase(worth: Worth): Fortune =
     copy(balances = balances + (worth.currency -> (amount(worth.currency) + worth.amount)))
 
-  def cleanOldTransactions =
+  def cleanOldTransactions: Fortune =
     copy(last30DaysTransactions = last30DaysTransactions.filterNot(_._2.metadata.date.plusDays(30).isBefore(OffsetDateTime.now())))
 
-  def storeTransaction(evt: FortuneEvent) = {
+  def storeTransaction(evt: FortuneEvent): Fortune = {
     val cleaned = cleanOldTransactions
     cleaned.copy(last30DaysTransactions = cleaned.last30DaysTransactions + (evt.metadata.eventId.value -> evt))
   }
@@ -68,18 +68,23 @@ case class Fortune(
   def decrease(by: Worth): Fortune =
     copy(balances = balances + (by.currency -> (amount(by.currency) - by.amount)))
 
-  def cancelTransaction(transactionId: UUID): Fortune = last30DaysTransactions.get(transactionId) match {
-    case Some(FortuneIncreased(user, amount, currency, category, initializer, metadata, comment)) =>
-      decrease(Worth(amount, currency))
-        .copy(last30DaysTransactions = last30DaysTransactions - transactionId)
-    case Some(FortuneSpent(user, amount, currency, category, overrideDate, initializer, metadata, comment)) =>
-      increase(Worth(amount, currency))
-        .copy(last30DaysTransactions = last30DaysTransactions - transactionId)
-    case Some(CurrencyExchanged(user, fromAmount, fromCurrency, toAmount, toCurrency, metadata, comment)) =>
-      exchange(Worth(toAmount, toCurrency), Worth(fromAmount, fromCurrency))
-        .copy(last30DaysTransactions = last30DaysTransactions - transactionId)
-    case _ => this
-  }
+  def cancelTransactionResult(cmd: CancelTransaction): List[TransactionCancelled] =
+    last30DaysTransactions.get(cmd.transactionId) match {
+      case Some(FortuneIncreased(_, amount, currency, _, _, _, _)) =>
+        List(TransactionCancelled(cmd.user, cmd.transactionId, -amount, currency, metadata(cmd)))
+      case Some(FortuneSpent(_, amount, currency, _, _, _, _, _)) =>
+        List(TransactionCancelled(cmd.user, cmd.transactionId, amount, currency, metadata(cmd)))
+      case Some(CurrencyExchanged(_, fromAmount, fromCurrency, toAmount, toCurrency, _, _)) =>
+        List(
+          TransactionCancelled(cmd.user, cmd.transactionId, -toAmount, toCurrency, metadata(cmd)),
+          TransactionCancelled(cmd.user, cmd.transactionId, fromAmount, fromCurrency, metadata(cmd))
+        )
+      case _ => Nil
+    }
+
+  def cancelTransaction(c: TransactionCancelled): Fortune =
+    increase(Worth(c.adjustmentAmount, c.adjustmentCurrency))
+      .copy(last30DaysTransactions = last30DaysTransactions - c.transactionId)
 
   def exchange(from: Worth, to: Worth): Fortune = {
     require(from.currency != to.currency)
@@ -91,32 +96,32 @@ case class Fortune(
   def amount(currency: Currency): BigDecimal = balances.getOrElse(currency, BigDecimal(0.0))
 
   def addEditor(user: UserId): Fortune =
-    copy(editors = editors + user)
+    copy(editors = user :: editors)
 
   import FortuneProtocol._
 
   def metadata(cmd: FortuneCommand): FortuneMetadata =
     Fortune.metadata(id, cmd)
 
-  def cantSendInitializationCommandsAfterInitializationIsComplete = action[Fortune]
+  def cantSendInitializationCommandsAfterInitializationIsComplete: Actions[Fortune] = action[Fortune]
     .rejectCommand {
       case cmd: FortuneAdjustmentCommand if cmd.initializer && !initializationMode ⇒
         FortuneAlreadyInitialized(id)
     }
 
-  def unauthorizedUserCanNotAdjustFortune = action[Fortune]
+  def unauthorizedUserCanNotAdjustFortune: Actions[Fortune] = action[Fortune]
     .rejectCommand {
       case cmd: FortuneAdjustmentCommand if !this.canBeAdjustedBy(cmd.user) ⇒
         InsufficientAccessRights(cmd.user, this.id)
     }
 
-  def onlyOwnerCanAddEditors = action[Fortune]
+  def onlyOwnerCanAddEditors: Actions[Fortune] = action[Fortune]
     .rejectCommand {
       case cmd: AddEditor if this.owner != cmd.user ⇒
         InsufficientAccessRights(cmd.user, this.id)
     }
 
-  def cantHaveNegativeBalance = action[Fortune]
+  def cantHaveNegativeBalance: Actions[Fortune] = action[Fortune]
     .rejectCommand {
       case cmd: Spend if this.amount(cmd.currency) < cmd.amount ⇒
         BalanceIsNotEnough(this.amount(cmd.currency), cmd.currency)
@@ -124,7 +129,7 @@ case class Fortune(
         BalanceIsNotEnough(this.amount(cmd.fromCurrency), cmd.fromCurrency)
     }
 
-  def cantAdjustWithANegativeValue = action[Fortune]
+  def cantAdjustWithANegativeValue: Actions[Fortune] = action[Fortune]
     .rejectCommand {
       case cmd: Spend if cmd.amount <= 0 ⇒ NegativeAmount
       case cmd: ReceiveIncome if cmd.amount <= 0 ⇒ NegativeAmount
@@ -137,31 +142,31 @@ case class Fortune(
       case cmd: UpdateLimits if cmd.weekly.values.exists(_.amount < 0) || cmd.monthly.values.exists(_.amount < 0) ⇒ NegativeAmount
     }
 
-  def cantAcquireAssetWithNotEnoughMoney = action[Fortune]
+  def cantAcquireAssetWithNotEnoughMoney: Actions[Fortune] = action[Fortune]
     .rejectCommand {
       case cmd: BuyAsset if !cmd.initializer && this.amount(cmd.asset.currency) < cmd.asset.worth.amount ⇒
         BalanceIsNotEnough(this.amount(cmd.asset.currency), cmd.asset.currency)
     }
 
-  def cantManipulateAssetThatDoesNotExist = action[Fortune]
+  def cantManipulateAssetThatDoesNotExist: Actions[Fortune] = action[Fortune]
     .rejectCommand {
       case cmd: AssetManipulationCommand if !this.assets.contains(cmd.assetId) ⇒
         AssetNotFound(cmd.assetId)
     }
 
-  def cantManipulateLiabilityThatDoesNotExist = action[Fortune]
+  def cantManipulateLiabilityThatDoesNotExist: Actions[Fortune] = action[Fortune]
     .rejectCommand {
       case cmd: LiabilityManipulationCommand if !this.liabilities.contains(cmd.liabilityId) ⇒
         LiabilityNotFound(cmd.liabilityId)
     }
 
-  def cantCancelAnOldOrInexistingTransaction = action[Fortune]
+  def cantCancelAnOldOrInexistingTransaction: Actions[Fortune] = action[Fortune]
     .rejectCommand {
       case cmd: CancelTransaction if !this.last30DaysTransactions.contains(cmd.transactionId) ⇒
         TransactionNotFound(cmd.transactionId)
     }
 
-  def ownerCanAddEditors = action[Fortune]
+  def ownerCanAddEditors: Actions[Fortune] = action[Fortune]
     .handleCommand {
       cmd: AddEditor ⇒ EditorAdded(cmd.editor, metadata(cmd))
     }
@@ -169,7 +174,7 @@ case class Fortune(
       evt: EditorAdded ⇒ this.addEditor(evt.editor)
     }
 
-  def editorsCanFinishInitialization = action[Fortune]
+  def editorsCanFinishInitialization: Actions[Fortune] = action[Fortune]
     .handleCommand {
       cmd: FinishInitialization ⇒ FortuneInitializationFinished(cmd.user, metadata(cmd))
     }
@@ -177,7 +182,7 @@ case class Fortune(
       evt: FortuneInitializationFinished ⇒ copy(initializationMode = false)
     }
 
-  def editorsCanUpdateLimits = action[Fortune]
+  def editorsCanUpdateLimits: Actions[Fortune] = action[Fortune]
     .handleCommand {
       cmd: UpdateLimits ⇒
         LimitsUpdated(
@@ -191,7 +196,7 @@ case class Fortune(
       evt: LimitsUpdated ⇒ this.copy(weeklyLimits = evt.weekly, monthlyLimits = evt.monthly)
     }
 
-  def editorsCanExchangeCurrency = action[Fortune]
+  def editorsCanExchangeCurrency: Actions[Fortune] = action[Fortune]
     .handleCommand {
       cmd: ExchangeCurrency ⇒
         CurrencyExchanged(
@@ -208,7 +213,7 @@ case class Fortune(
           .exchange(Worth(evt.fromAmount, evt.fromCurrency), Worth(evt.toAmount, evt.toCurrency))
     }
 
-  def editorsCanPerformCorrections = action[Fortune]
+  def editorsCanPerformCorrections: Actions[Fortune] = action[Fortune]
     .handleCommand {
       cmd: CorrectBalances ⇒
         cmd.realBalances
@@ -233,7 +238,7 @@ case class Fortune(
           .decrease(Worth(evt.amount, evt.currency))
     }
 
-  def editorsCanBuyAssets = action[Fortune]
+  def editorsCanBuyAssets: Actions[Fortune] = action[Fortune]
     .handleCommand {
       cmd: BuyAsset ⇒
         val assetId = AssetId.generate
@@ -268,7 +273,7 @@ case class Fortune(
           .decrease(evt.asset.worth)
     }
 
-  def editorsCanSellAssets = action[Fortune]
+  def editorsCanSellAssets: Actions[Fortune] = action[Fortune]
     .handleCommand {
       cmd: SellAsset ⇒
         AssetSold(cmd.user, cmd.assetId, metadata(cmd), cmd.comment)
@@ -280,7 +285,7 @@ case class Fortune(
           .increase(asset.worth)
     }
 
-  def editorsCanReevaluateAssets = action[Fortune]
+  def editorsCanReevaluateAssets: Actions[Fortune] = action[Fortune]
     .handleCommand {
       cmd: ReevaluateAsset ⇒
         AssetPriceChanged(cmd.user, cmd.assetId, cmd.newPrice, metadata(cmd), cmd.comment)
@@ -290,7 +295,7 @@ case class Fortune(
         changeAssetPrice(evt.assetId, evt.newPrice)
     }
 
-  def editorsCanTakeOnLiabilities = action[Fortune]
+  def editorsCanTakeOnLiabilities: Actions[Fortune] = action[Fortune]
     .handleCommand {
       cmd: TakeOnLiability ⇒
         val liabilityId = LiabilityId.generate
@@ -311,7 +316,7 @@ case class Fortune(
         else added.increase(evt.liability.worth)
     }
 
-  def editorsCanPayOffLiabilities = action[Fortune]
+  def editorsCanPayOffLiabilities: Actions[Fortune] = action[Fortune]
     .handleCommand {
       cmd: PayLiabilityOff ⇒
         LiabilityPaidOff(
@@ -327,7 +332,7 @@ case class Fortune(
         payLiabilityOff(evt.liabilityId, evt.amount)
     }
 
-  def editorsCanIncreaseFortune = action[Fortune]
+  def editorsCanIncreaseFortune: Actions[Fortune] = action[Fortune]
     .handleCommand {
       cmd: ReceiveIncome ⇒
         FortuneIncreased(
@@ -345,7 +350,7 @@ case class Fortune(
           .increase(Worth(evt.amount, evt.currency))
     }
 
-  def editorsCanDecreaseFortune = action[Fortune]
+  def editorsCanDecreaseFortune: Actions[Fortune] = action[Fortune]
     .handleCommand {
       cmd: Spend ⇒
         FortuneSpent(
@@ -364,13 +369,14 @@ case class Fortune(
           .decrease(Worth(evt.amount, evt.currency))
     }
 
-  def editorsCanCancelRecentTransactions = action[Fortune]
+  def editorsCanCancelRecentTransactions: Actions[Fortune] = action[Fortune]
     .handleCommand {
-      cmd: CancelTransaction => TransactionCancelled(cmd.user, cmd.transactionId, metadata(cmd))
+      cmd: CancelTransaction =>
+        cancelTransactionResult(cmd)
     }
     .handleEvent {
       evt: TransactionCancelled =>
-        cancelTransaction(evt.transactionId)
+        cancelTransaction(evt)
     }
 }
 
@@ -378,19 +384,19 @@ object Fortune {
 
   import FortuneProtocol._
 
-  val tag = Tags.aggregateTag("fortune")
+  val tag: Tag = Tags.aggregateTag("fortune")
 
-  def metadata(fortuneId: FortuneId, cmd: FortuneCommand) = {
+  def metadata(fortuneId: FortuneId, cmd: FortuneCommand): FortuneMetadata = {
     FortuneMetadata(fortuneId, cmd.id, tags = Set(tag))
   }
 
-  def createFortune(fortuneId: FortuneId) =
+  def createFortune(fortuneId: FortuneId): Actions[Fortune] =
     actions[Fortune]
       .handleCommand {
         cmd: CreateFortune ⇒ FortuneCreated(cmd.owner, metadata(fortuneId, cmd))
       }
       .handleEvent {
-        evt: FortuneCreated ⇒ Fortune(fortuneId, Map.empty, Map.empty, Map.empty, evt.owner, Set.empty, Map.empty, Map.empty, Map.empty)
+        evt: FortuneCreated ⇒ Fortune(fortuneId, Map.empty, Map.empty, Map.empty, evt.owner, List.empty, Map.empty, Map.empty, Map.empty)
       }
 
   def behavior(fortuneId: FortuneId): Behavior[Fortune] = {

@@ -4,135 +4,137 @@ option optimize_for = SPEED;
 import "common.proto";
 
 message PBMetadata {
-	string aggregate_id = 1;
-	string command_id = 2;
-	string event_id = 3;
-	string timestamp = 4;
-	repeated string tags = 5;
+    string aggregate_id = 1;
+    string command_id = 2;
+    string event_id = 3;
+    string timestamp = 4;
+    repeated string tags = 5;
 }
 
 message PBFortuneInitializationFinished {
-	string userId = 1;
-	PBMetadata metadata = 14;
+    string userId = 1;
+    PBMetadata metadata = 14;
 }
 
 message PBFortuneIncreased {
-	string userId = 1;
-	string amount = 2;
-	string currency = 3;
-	string category = 4;
-	bool initializer = 5;
-	PBMetadata metadata = 14;
-	string comment = 15;
+    string userId = 1;
+    string amount = 2;
+    string currency = 3;
+    string category = 4;
+    bool initializer = 5;
+    PBMetadata metadata = 14;
+    string comment = 15;
 }
 
 message PBCurrencyExchanged {
-	string userId = 1;
-	string fromAmount = 2;
-	string fromCurrency = 3;
-	string toAmount = 4;
-	string toCurrency = 5;
-	PBMetadata metadata = 14;
-	string comment = 15;
+    string userId = 1;
+    string fromAmount = 2;
+    string fromCurrency = 3;
+    string toAmount = 4;
+    string toCurrency = 5;
+    PBMetadata metadata = 14;
+    string comment = 15;
 }
 
 message PBFortuneSpent {
-	string userId = 1;
-	string amount = 2;
-	string currency = 3;
-	string category = 4;
-	string overrideDate = 6;
-	bool initializer = 5;
-	PBMetadata metadata = 14;
-	string comment = 15;
+    string userId = 1;
+    string amount = 2;
+    string currency = 3;
+    string category = 4;
+    string overrideDate = 6;
+    bool initializer = 5;
+    PBMetadata metadata = 14;
+    string comment = 15;
 }
 
 
 message PBAssetAcquired {
-	string userId = 1;
-	string assetId = 2;
-	PBAsset asset = 3;
-	bool initializer = 4;
-	PBMetadata metadata = 14;
-	string comment = 15;
+    string userId = 1;
+    string assetId = 2;
+    PBAsset asset = 3;
+    bool initializer = 4;
+    PBMetadata metadata = 14;
+    string comment = 15;
 }
 
 message PBAssetSold {
-	string userId = 1;
-	string assetId = 2;
-	PBMetadata metadata = 14;
-	string comment = 15;
+    string userId = 1;
+    string assetId = 2;
+    PBMetadata metadata = 14;
+    string comment = 15;
 }
 
 message PBAssetPriceChanged {
-	string userId = 1;
-	string assetId = 2;
-	string newPrice = 3;
-	PBMetadata metadata = 14;
-	string comment = 15;
+    string userId = 1;
+    string assetId = 2;
+    string newPrice = 3;
+    PBMetadata metadata = 14;
+    string comment = 15;
 }
 
 message PBLiabilityTaken {
-	string userId = 1;
-	string liabilityId = 2;
-	PBLiability liability = 3;
-	bool initializer = 4;
-	PBMetadata metadata = 14;
-	string comment = 15;
+    string userId = 1;
+    string liabilityId = 2;
+    PBLiability liability = 3;
+    bool initializer = 4;
+    PBMetadata metadata = 14;
+    string comment = 15;
 }
 
 message PBLiabilityPaidOff {
-	string userId = 1;
-	string liabilityId = 2;
-	string byAmount = 3;
-	PBMetadata metadata = 14;
-	string comment = 15;
+    string userId = 1;
+    string liabilityId = 2;
+    string byAmount = 3;
+    PBMetadata metadata = 14;
+    string comment = 15;
 }
 
 message PBFortuneCreated {
-	string ownerId = 1;
-	PBMetadata metadata = 14;
+    string ownerId = 1;
+    PBMetadata metadata = 14;
 }
 
 message PBEditorAdded {
-	string editorId = 1;
-	PBMetadata metadata = 14;
+    string editorId = 1;
+    PBMetadata metadata = 14;
 }
 
 message PBUserCreated {
-	string password_hash = 1;
-	string display_name = 2;
-	string confirmation_code = 3;
-	PBMetadata metadata = 14;
+    string password_hash = 1;
+    string display_name = 2;
+    string confirmation_code = 3;
+    PBMetadata metadata = 14;
 }
 
 message PBUserConfirmed {
-	PBMetadata metadata = 14;
+    PBMetadata metadata = 14;
 }
 
 message PBConfirmationEmailSent {
-	PBMetadata metadata = 14;
+    PBMetadata metadata = 14;
 }
 
 message PBUserLoggedIn {
-	string display_name = 1;
-	PBMetadata metadata = 14;
+    string display_name = 1;
+    PBMetadata metadata = 14;
 }
 
 message PBUserFailedToLogIn {
-	string invalid_password = 1;
-	PBMetadata metadata = 14;
+    string invalid_password = 1;
+    PBMetadata metadata = 14;
 }
 
 message PBLimitsUpdated {
-	string userId = 1;
-	map<string, PBWorth> weekly = 2;
-	map<string, PBWorth> monthly = 3;
-	PBMetadata metadata = 14;
+    string userId = 1;
+    map<string, PBWorth> weekly = 2;
+    map<string, PBWorth> monthly = 3;
+    PBMetadata metadata = 14;
 }
 
 message PBTransactionCancelled {
-	string userId = 1;
-	string transactionId = 2;
-	PBMetadata metadata = 14;
+    string userId = 1;
+    string transactionId = 2;
+    string adjustmentAmount = 3;
+    string adjustmentCurrency = 4;
+    PBMetadata metadata = 14;
 }

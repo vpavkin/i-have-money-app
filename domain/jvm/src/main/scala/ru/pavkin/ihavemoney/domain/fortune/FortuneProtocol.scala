@@ -246,6 +246,8 @@ object FortuneProtocol extends ProtocolLike {
   case class TransactionCancelled(
     user: UserId,
     transactionId: UUID,
+    adjustmentAmount: BigDecimal,
+    adjustmentCurrency: Currency,
     metadata: FortuneMetadata) extends FortuneEvent
 
   /*-------------------Metadata---------------------*/

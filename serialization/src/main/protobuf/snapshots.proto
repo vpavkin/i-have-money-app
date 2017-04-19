@@ -1,0 +1,17 @@
+syntax = "proto3";
+option java_package = "ru.pavkin.ihavemoney.proto";
+option optimize_for = SPEED;
+import "common.proto";
+
+message PBFortune {
+    string id = 1;
+    map<string, string> balances = 2;
+    map<string, PBAsset> assets = 3;
+    map<string, PBLiability> liabilities = 4;
+    string owner = 5;
+    repeated string editors = 6;
+    map<string, PBWorth> weeklyLimits = 7;
+    map<string, PBWorth> monthlyLimits = 8;
+    bool last30DaysTransactions = 9; // placeholder
+    bool initializationMode = 10;
+}
