@@ -12,7 +12,7 @@ import akka.pattern.AskTimeoutException
 import akka.stream.ActorMaterializer
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
-import de.heikoseeberger.akkahttpcirce.CirceSupport
+import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.headers.{HttpChallenge, HttpCredentials, OAuth2BearerToken}
 
@@ -28,7 +28,7 @@ import ru.pavkin.ihavemoney.domain.fortune.FortuneProtocol.{CurrencyExchanged, F
 
 import scala.concurrent.Future
 
-object ReadFrontend extends App with CirceSupport {
+object ReadFrontend extends App with FailFastCirceSupport {
 
   implicit val system = ActorSystem("IHaveMoneyReadFront")
   implicit val executor = system.dispatcher

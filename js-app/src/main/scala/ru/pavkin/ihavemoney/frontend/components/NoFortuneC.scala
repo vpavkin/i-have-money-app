@@ -1,6 +1,6 @@
 package ru.pavkin.ihavemoney.frontend.components
 
-import cats.data.Xor
+
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra.router.RouterCtl
 import japgolly.scalajs.react.vdom.all._
@@ -19,8 +19,8 @@ object NoFortuneC {
 
     def onButtonClick(router: Props) = Callback.future(
       api.createFortune.map {
-        case Xor.Left(e) ⇒ Callback.alert(e.getMessage)
-        case Xor.Right(_) ⇒
+        case Left(e) ⇒ Callback.alert(e.getMessage)
+        case Right(_) ⇒
           // Callback(window.open(api.readFrontBaseUrl.value, "_self")).delayMs(2000).void
           $.setState(true) >> router.set(Route.Initializer).delayMs(2000).void
       }

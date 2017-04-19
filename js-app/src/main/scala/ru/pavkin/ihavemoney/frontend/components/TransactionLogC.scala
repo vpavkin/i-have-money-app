@@ -2,7 +2,7 @@ package ru.pavkin.ihavemoney.frontend.components
 
 import java.time.YearMonth
 
-import cats.data.Xor
+
 import diode.data.Pot
 import diode.react.ModelProxy
 import diode.react.ReactPot._
@@ -54,7 +54,7 @@ object TransactionLogC {
       val response = window.confirm(s"Are you sure to cancel transaction ${t.amount.toString}${t.currency.sign}, ${t.category} from ${t.date.ddmmyyyy}?")
       if (response)
         api.cancelTransaction(t.id).map {
-          case Xor.Left(error) ⇒ Callback.alert(s"Error: $error")
+          case Left(error) ⇒ Callback.alert(s"Error: $error")
           case _ ⇒ Callback.alert(s"Success, refresh the page!")
         }
     }

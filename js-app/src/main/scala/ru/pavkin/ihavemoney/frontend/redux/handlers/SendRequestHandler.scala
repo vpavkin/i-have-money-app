@@ -10,7 +10,7 @@ class SendRequestHandler[M](modelRW: ModelRW[M, Pot[Unit]]) extends ActionHandle
 
   override def handle = {
     case a: SendRequest =>
-      val reloadF = a.effectXor(a.command)(identity(_))
+      val reloadF = a.effectEither(a.command)(identity(_))
       a.handleWith(this, reloadF)(PotAction.handler())
   }
 }

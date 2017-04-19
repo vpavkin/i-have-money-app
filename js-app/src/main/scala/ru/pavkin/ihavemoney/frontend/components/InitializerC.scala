@@ -18,7 +18,7 @@ object InitializerC {
 
     def init(pr: Props) = Callback {
       AppCircuit.subscribeU(AppCircuit.zoom(_.fortunes))((unsubscribe, fortuneId) ⇒
-        fortuneId() match {
+        fortuneId.value match {
           case Empty ⇒
             println("Empty fortuneId pot in Initializer. Reloading")
             AppCircuit.dispatch(UpdateFortuneId())

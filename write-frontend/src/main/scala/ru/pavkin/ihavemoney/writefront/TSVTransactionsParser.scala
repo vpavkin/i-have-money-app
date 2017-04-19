@@ -2,7 +2,9 @@ package ru.pavkin.ihavemoney.writefront
 
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.util.UUID
 
+import io.funcqrs.CommandId
 import ru.pavkin.ihavemoney.domain.fortune.FortuneProtocol.Spend
 import ru.pavkin.ihavemoney.domain.fortune.{Currency, ExpenseCategory, Worth}
 import ru.pavkin.ihavemoney.domain.user.UserId
@@ -46,6 +48,7 @@ object TSVTransactionsParser {
       e <- Try(BigDecimal(eur.replace(",", ".").replaceAll("\\s", "")))
       r <- Try(BigDecimal(rur.replace(",", ".").replaceAll("\\s", "")))
     } yield worth(u, e, r).map(w => Spend(
+      CommandId(UUID.randomUUID()),
       userId,
       w.amount,
       w.currency,

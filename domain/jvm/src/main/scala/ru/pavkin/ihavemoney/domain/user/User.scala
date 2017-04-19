@@ -11,11 +11,12 @@ import ru.pavkin.ihavemoney.services.EmailService
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 
-case class User(id: UserId,
-                passwordHash: String,
-                displayName: String,
-                confirmationCode: String,
-                isConfirmed: Boolean) extends AggregateLike {
+case class User(
+  id: UserId,
+  passwordHash: String,
+  displayName: String,
+  confirmationCode: String,
+  isConfirmed: Boolean) extends AggregateLike {
 
   type Id = UserId
   type Protocol = UserProtocol.type
@@ -56,19 +57,20 @@ case class User(id: UserId,
     }
 
   def resendConfirmationEmail(emailService: EmailService, linkFactory: (String, String) ⇒ String) = action[User]
-    .handleCommandAsync[ResendConfirmationEmail, ConfirmationEmailSent] {
-    cmd ⇒ User.sendConfirmationEmail(emailService, linkFactory)(metadata(cmd), this.confirmationCode)
-  }
+    .handleCommand { (cmd: ResendConfirmationEmail) ⇒
+      User.sendConfirmationEmail(emailService, linkFactory)(metadata(cmd), this.confirmationCode)
+    }
     .handleEvent {
       evt: ConfirmationEmailSent ⇒ this
     }
 
   def login = action[User]
     .handleCommand {
-      cmd: LoginUser ⇒ if (passwords.isCorrect(cmd.password, this.passwordHash))
-        UserLoggedIn(this.displayName, metadata(cmd))
-      else
-        UserFailedToLogIn(cmd.password, metadata(cmd))
+      cmd: LoginUser ⇒
+        if (passwords.isCorrect(cmd.password, this.passwordHash))
+          UserLoggedIn(this.displayName, metadata(cmd))
+        else
+          UserFailedToLogIn(cmd.password, metadata(cmd))
     }
     .handleEvent {
       _: UserLoggedIn ⇒ this
@@ -88,7 +90,11 @@ object User {
     UserMetadata(userId, cmd.id, tags = Set(tag))
   }
 
-  def sendConfirmationEmail(emailService: EmailService, linkFactory: (String, String) ⇒ String)(userMetadata: UserMetadata, confirmationCode: String)(implicit ec: ExecutionContext): Future[ConfirmationEmailSent] = {
+  def sendConfirmationEmail(
+    emailService: EmailService,
+    linkFactory: (String, String) ⇒ String)(
+    userMetadata: UserMetadata,
+    confirmationCode: String): Future[ConfirmationEmailSent] = {
     println(s"Sending confirmation email to: ${userMetadata.aggregateId.email}. Code: $confirmationCode")
     val url = linkFactory(userMetadata.aggregateId.email, confirmationCode)
     emailService.sendEmail("ihavemoney@ihavemoney.com", userMetadata.aggregateId.email, "I have money: email confirmation",
@@ -105,7 +111,7 @@ object User {
 
   def createUser(emailService: EmailService, linkFactory: (String, String) ⇒ String)(id: UserId) =
     actions[User]
-      .handleCommandAsync {
+      .handleCommand {
         cmd: CreateUser ⇒
           val md = metadata(id, cmd)
           val code = generateConfirmationCode

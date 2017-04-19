@@ -2,7 +2,7 @@ package ru.pavkin.ihavemoney.frontend.components
 
 import java.time.LocalDate
 
-import cats.data.Xor
+
 import diode.data.Pot
 import diode.react.ModelProxy
 import diode.react.ReactPot._
@@ -61,7 +61,7 @@ abstract class CommonTransactionC(implicit ec: ExecutionContext) {
       else
         $.modState(_.copy(loading = true)) >>
             Callback.future(req.map {
-              case Xor.Left(error) ⇒ Callback.alert(s"Error: $error")
+              case Left(error) ⇒ Callback.alert(s"Error: $error")
               case _ ⇒ $.modState(_.copy(
                 currency = Currency.EUR,
                 amount = "",

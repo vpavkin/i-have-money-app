@@ -12,7 +12,7 @@ class LoadAssetsHandler[M](modelRW: ModelRW[M, Pot[Map[String, Asset]]]) extends
 
   override def handle = {
     case a: LoadAssets =>
-      val reloadF = a.effectXor(api.getAssets)(identity(_))
+      val reloadF = a.effectEither(api.getAssets)(identity(_))
       a.handleWith(this, reloadF)(PotAction.handler())
   }
 }

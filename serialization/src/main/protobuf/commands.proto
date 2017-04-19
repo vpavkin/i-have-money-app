@@ -28,10 +28,12 @@ message PBCommandEnvelope {
 }
 
 message PBFinishInitialization {
+	string id = 14;
 	string userId = 1;
 }
 
 message PBReceiveIncome {
+	string id = 14;
 	string userId = 1;
 	string amount = 2;
 	string currency = 3;
@@ -41,6 +43,7 @@ message PBReceiveIncome {
 }
 
 message PBSpend {
+	string id = 14;
 	string userId = 1;
 	string amount = 2;
 	string currency = 3;
@@ -51,6 +54,7 @@ message PBSpend {
 }
 
 message PBExchangeCurrency {
+	string id = 14;
 	string userId = 1;
 	string fromAmount = 2;
 	string fromCurrency = 3;
@@ -60,12 +64,14 @@ message PBExchangeCurrency {
 }
 
 message PBCorrectBalances {
+	string id = 14;
 	string userId = 1;
 	map<string,string> realBalances = 2;
 	string comment = 15;
 }
 
 message PBBuyAsset {
+	string id = 14;
 	string userId = 1;
 	PBAsset asset = 2;
 	bool initializer = 3;
@@ -73,12 +79,14 @@ message PBBuyAsset {
 }
 
 message PBSellAsset {
+	string id = 14;
 	string userId = 1;
 	string assetId = 2;
 	string comment = 15;
 }
 
 message PBReevaluateAsset {
+	string id = 14;
 	string userId = 1;
 	string assetId = 2;
 	string newPrice = 3;
@@ -86,6 +94,7 @@ message PBReevaluateAsset {
 }
 
 message PBTakeOnLiability {
+	string id = 14;
 	string userId = 1;
 	PBLiability liability = 2;
 	bool initializer = 3;
@@ -93,6 +102,7 @@ message PBTakeOnLiability {
 }
 
 message PBPayLiabilityOff {
+	string id = 14;
 	string userId = 1;
 	string liabilityId = 2;
 	string byAmount = 3;
@@ -100,36 +110,45 @@ message PBPayLiabilityOff {
 }
 
 message PBCreateFortune {
+	string id = 14;
 	string ownerId = 1;
 }
 
 message PBAddEditor {
+	string id = 14;
 	string userId = 1;
 	string editorId = 2;
 }
 
 message PBCreateUser {
+	string id = 14;
 	string password = 1;
 	string displayName = 2;
 }
 
 message PBConfirmEmail {
+	string id = 14;
 	string confirmationCode = 1;
 }
 
 message PBLogIn {
+	string id = 14;
 	string password = 1;
 }
 
-message PBResendConfirmationEmail {}
+message PBResendConfirmationEmail {
+	string id = 14;
+}
 
 message PBUpdateLimits {
+	string id = 14;
 	string userId = 1;
 	map<string, PBWorth> weekly = 2;
 	map<string, PBWorth> monthly = 3;
 }
 
 message PBCancelTransaction {
+	string id = 14;
 	string userId = 1;
 	string transactionId = 2;
 }

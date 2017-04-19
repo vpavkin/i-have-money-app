@@ -12,7 +12,7 @@ class LoadTransactionLogHandler[M](modelRW: ModelRW[M, Pot[List[Event]]]) extend
 
   override def handle = {
     case a: LoadEventLog =>
-      val reloadF = a.effectXor(api.getEventLog)(identity(_))
+      val reloadF = a.effectEither(api.getEventLog)(identity(_))
       a.handleWith(this, reloadF)(PotAction.handler())
   }
 }

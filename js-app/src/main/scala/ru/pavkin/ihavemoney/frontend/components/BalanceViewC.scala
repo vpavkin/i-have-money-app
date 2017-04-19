@@ -1,6 +1,6 @@
 package ru.pavkin.ihavemoney.frontend.components
 
-import cats.data.Xor
+
 import diode.data.Pot
 import diode.react.ModelProxy
 import diode.react.ReactPot._
@@ -58,7 +58,7 @@ object BalanceViewC {
       if (!isValid(st))
         Callback.alert("Invalid data")
       else Callback.future(req.map {
-        case Xor.Left(error) ⇒ Callback.alert(s"Error: $error")
+        case Left(error) ⇒ Callback.alert(s"Error: $error")
         case _ ⇒ Callback.alert(s"Success")
       })
 

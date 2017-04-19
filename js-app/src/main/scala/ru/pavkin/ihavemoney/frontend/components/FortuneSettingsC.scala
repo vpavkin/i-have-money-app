@@ -1,9 +1,9 @@
 package ru.pavkin.ihavemoney.frontend.components
 
-import cats.data.Xor
+
 import cats.syntax.traverse._
-import cats.std.option._
-import cats.std.list._
+import cats.instances.option._
+import cats.instances.list._
 import diode.data.Pot
 import diode.react.ModelProxy
 import diode.react.ReactPot._
@@ -42,22 +42,22 @@ object FortuneSettingsC {
     def updateLimits(s: State) = if (!s.limitsValid) Callback.alert("Invalid limits config")
     else Callback.future(
       api.updateLimits(s.weekly.get, s.monthly.get).map {
-        case Xor.Left(error) ⇒ Callback.alert(error.getMessage)
-        case Xor.Right(_) ⇒ Callback.alert("Done, please refresh the page!")
+        case Left(error) ⇒ Callback.alert(error.getMessage)
+        case Right(_) ⇒ Callback.alert("Done, please refresh the page!")
       }
     )
 
     def addEditor(email: String) = Callback.future(
       api.addEditor(email).map {
-        case Xor.Left(error) ⇒ Callback.alert(error.getMessage)
-        case Xor.Right(_) ⇒ Callback.alert("Done, please refresh the page!")
+        case Left(error) ⇒ Callback.alert(error.getMessage)
+        case Right(_) ⇒ Callback.alert("Done, please refresh the page!")
       }
     )
 
     def finishInitialization = Callback.future(
       api.finishInitialization.map {
-        case Xor.Left(error) ⇒ Callback.alert(error.getMessage)
-        case Xor.Right(_) ⇒ Callback.alert("Done, please refresh the page!")
+        case Left(error) ⇒ Callback.alert(error.getMessage)
+        case Right(_) ⇒ Callback.alert("Done, please refresh the page!")
       }
     )
 

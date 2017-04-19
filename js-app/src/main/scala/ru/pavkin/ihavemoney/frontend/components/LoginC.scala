@@ -1,6 +1,6 @@
 package ru.pavkin.ihavemoney.frontend.components
 
-import cats.data.Xor
+
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra.router.RouterCtl
 import japgolly.scalajs.react.vdom.all._
@@ -36,8 +36,8 @@ object LoginC {
 
     def login(router: RouterCtl[Route])(email: String, password: String) = Callback.future(
       api.login(email, password).map {
-        case Xor.Left(error) ⇒ Callback.alert(error.getMessage)
-        case Xor.Right(auth) ⇒ Callback {
+        case Left(error) ⇒ Callback.alert(error.getMessage)
+        case Right(auth) ⇒ Callback {
           AppCircuit.dispatch(LoggedIn(auth))
         }.flatMap(_ ⇒ router.set(Route.Initializer))
       }
@@ -45,8 +45,8 @@ object LoginC {
 
     def register(email: String, password: String, displayName: String) = Callback.future(
       api.register(email, password, displayName).map {
-        case Xor.Left(error) ⇒ Callback.alert(error.getMessage)
-        case Xor.Right(_) ⇒ Callback.alert("Check your email for confirmation link")
+        case Left(error) ⇒ Callback.alert(error.getMessage)
+        case Right(_) ⇒ Callback.alert("Check your email for confirmation link")
       }
     )
 

@@ -12,7 +12,7 @@ class UpdateFortuneIdHandler[M](modelRW: ModelRW[M, Pot[List[FortuneInfo]]]) ext
 
   override def handle = {
     case action: UpdateFortuneId =>
-      val reloadF = action.effectXor(api.fortunes)(identity)
+      val reloadF = action.effectEither(api.fortunes)(identity)
       action.handleWith(this, reloadF)(PotAction.handler())
   }
 }

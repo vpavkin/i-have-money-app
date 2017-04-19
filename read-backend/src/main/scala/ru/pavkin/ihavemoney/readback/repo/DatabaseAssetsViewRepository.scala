@@ -4,7 +4,7 @@ import ru.pavkin.ihavemoney.domain.{fortune ⇒ domain}
 import domain.{Asset, AssetId, FortuneId}
 import ru.pavkin.ihavemoney.readback.db._
 import slick.dbio.DBIOAction
-import slick.driver.PostgresDriver.api.{Database, _}
+import slick.jdbc.PostgresProfile.api.{Database, _}
 
 import scala.concurrent.{ExecutionContext, Future}
 

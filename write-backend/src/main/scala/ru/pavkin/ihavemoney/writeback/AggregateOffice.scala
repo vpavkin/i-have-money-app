@@ -2,7 +2,7 @@ package ru.pavkin.ihavemoney.writeback
 
 import akka.actor.{Actor, ActorLogging}
 import akka.util.Timeout
-import io.funcqrs.AggregateLike
+import io.funcqrs.{AggregateLike, CommandIdFacet}
 import io.funcqrs.akka.backend.AkkaBackend
 import ru.pavkin.ihavemoney.domain._
 import ru.pavkin.ihavemoney.domain.errors.DomainError
@@ -12,9 +12,10 @@ import scala.concurrent.ExecutionContext
 import scala.reflect.ClassTag
 import scala.util.{Failure, Success}
 
-class AggregateOffice[T <: AggregateLike : ClassTag, C <: T#Protocol#ProtocolCommand : ClassTag]
-(backend: AkkaBackend, idFactory: String ⇒ T#Id)
-(implicit val timeout: Timeout) extends Actor with ActorLogging {
+class AggregateOffice[T <: AggregateLike : ClassTag, C <: T#Protocol#ProtocolCommand with CommandIdFacet : ClassTag](
+  backend: AkkaBackend,
+  idFactory: String ⇒ T#Id)(
+  implicit val timeout: Timeout) extends Actor with ActorLogging {
 
   implicit val dispatcher: ExecutionContext = context.system.dispatcher
 

@@ -12,7 +12,7 @@ class LoadCategoriesHandler[M](modelRW: ModelRW[M, Pot[Categories]]) extends Act
 
   override def handle = {
     case a: LoadCategories =>
-      val reloadF = a.effectXor(api.getCategories)(identity(_))
+      val reloadF = a.effectEither(api.getCategories)(identity(_))
       a.handleWith(this, reloadF)(PotAction.handler())
   }
 }
