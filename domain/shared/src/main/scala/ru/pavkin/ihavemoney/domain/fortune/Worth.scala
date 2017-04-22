@@ -22,5 +22,5 @@ object Worth {
   }
   implicit val ord: Ordering[Worth] = Ordering.by(_.amount)
 
-  def unsafeFrom(amount: BigDecimal, currency: String) = Worth(amount, Currency.unsafeFromCode(currency))
+  def unsafeFrom(amount: BigDecimal, currency: String) = Worth(amount, Currency.withName(currency))
 }

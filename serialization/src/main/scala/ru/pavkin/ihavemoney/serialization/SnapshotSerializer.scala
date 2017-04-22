@@ -5,8 +5,10 @@ import akka.event.{Logging, LoggingAdapter}
 import akka.serialization.BaseSerializer
 import ru.pavkin.ihavemoney.domain.fortune.Fortune
 import ru.pavkin.ihavemoney.proto.snapshots.PBFortune
-import ru.pavkin.ihavemoney.serialization.ProtobufSuite.syntax._
-import ru.pavkin.ihavemoney.serialization.implicits._
+import ru.pavkin.ihavemoney.serialization.derivation.Protocol.syntax._
+import ru.pavkin.ihavemoney.serialization.formats._
+
+import scala.util.{Left, Right}
 
 class SnapshotSerializer(val system: ExtendedActorSystem)
   extends BaseSerializer {
@@ -17,16 +19,21 @@ class SnapshotSerializer(val system: ExtendedActorSystem)
 
   override def toBinary(o: AnyRef): Array[Byte] = o match {
     case fortune: Fortune =>
-      fortune.encode.toByteArray
+      fortuneProtocol.encode(fortune).toByteArray
     case _ =>
       throw new RuntimeException(s"No serializer found for ${o.getClass.getName}")
   }
 
   override def fromBinary(bytes: Array[Byte], manifest: Option[Class[_]]): AnyRef = {
     val L = classOf[Fortune]
+
     manifest match {
       case Some(L) =>
-        fortuneSuite.decode(PBFortune.parseFrom(bytes))
+        fortuneProtocol.decode(PBFortune.parseFrom(bytes)) match {
+          case Right(value) => value
+          case Left(exception) =>
+            throw new RuntimeException(s"Failed to deserialize snapshot.", exception)
+        }
       case Some(m) =>
         throw new RuntimeException(s"No deserializer found for ${m.getName}")
       case None =>

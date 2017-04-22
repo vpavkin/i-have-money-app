@@ -18,7 +18,7 @@ case class AssetRow(
 class Assets(tableTag: Tag) extends Table[AssetRow](tableTag, "assets") {
   def * = (assetId, fortuneId, name, price, currency, count) <>(
       (t: (String, String, String, BigDecimal, String, BigDecimal)) ⇒
-        AssetRow(AssetId(UUID.fromString(t._1)), FortuneId(t._2), t._3, t._4, Currency.unsafeFromCode(t._5), t._6),
+        AssetRow(AssetId(UUID.fromString(t._1)), FortuneId(t._2), t._3, t._4, Currency.withName(t._5), t._6),
       (m: AssetRow) ⇒ Some((m.assetId.value.toString, m.fortuneId.value, m.name, m.price, m.currency.code, m.count))
       )
 
@@ -37,7 +37,7 @@ object Assets {
       e0: GetResult[String],
       e1: GetResult[BigDecimal]): GetResult[AssetRow] = GetResult {
     prs ⇒ import prs._
-      AssetRow(AssetId(UUID.fromString(<<[String])), FortuneId(<<[String]), <<[String], <<[BigDecimal], Currency.unsafeFromCode(<<[String]), <<[BigDecimal])
+      AssetRow(AssetId(UUID.fromString(<<[String])), FortuneId(<<[String]), <<[String], <<[BigDecimal], Currency.withName(<<[String]), <<[BigDecimal])
   }
 
   lazy val table = new TableQuery(tag ⇒ new Assets(tag))

@@ -17,7 +17,7 @@ case class DebtRow(liabilityId: LiabilityId,
 class Debts(tableTag: Tag) extends Table[DebtRow](tableTag, "debts") {
   def * = (liabilityId, fortuneId, name, amount, currency, interestRate) <>(
     (t: (String, String, String, BigDecimal, String, Option[BigDecimal])) ⇒
-      DebtRow(LiabilityId(UUID.fromString(t._1)), FortuneId(t._2), t._3, t._4, Currency.unsafeFromCode(t._5), t._6),
+      DebtRow(LiabilityId(UUID.fromString(t._1)), FortuneId(t._2), t._3, t._4, Currency.withName(t._5), t._6),
     (m: DebtRow) ⇒ Some((m.liabilityId.value.toString, m.fortuneId.value, m.name, m.amount, m.currency.code, m.interestRate))
     )
 
@@ -35,7 +35,7 @@ object Debts {
                                 e0: GetResult[String],
                                 e1: GetResult[BigDecimal]): GetResult[DebtRow] = GetResult {
     prs ⇒ import prs._
-      DebtRow(LiabilityId(UUID.fromString(<<[String])), FortuneId(<<[String]), <<[String], <<[BigDecimal], Currency.unsafeFromCode(<<[String]), <<[Option[BigDecimal]])
+      DebtRow(LiabilityId(UUID.fromString(<<[String])), FortuneId(<<[String]), <<[String], <<[BigDecimal], Currency.withName(<<[String]), <<[Option[BigDecimal]])
   }
 
   lazy val table = new TableQuery(tag ⇒ new Debts(tag))

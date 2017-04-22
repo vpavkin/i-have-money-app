@@ -9,6 +9,7 @@ import diode.react.ModelProxy
 import diode.react.ReactPot._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.all._
+import org.scalajs.dom.html.Div
 import ru.pavkin.ihavemoney.domain.fortune.{Currency, ExpenseCategory, FortuneInfo, Worth}
 import ru.pavkin.ihavemoney.frontend.api
 import ru.pavkin.ihavemoney.frontend.bootstrap.{Button, FormGroup}
@@ -25,21 +26,21 @@ object FortuneSettingsC {
   case class Props(fortunes: ModelProxy[Pot[List[FortuneInfo]]])
 
   case class State(email: String, weeklyLimits: String, monthlyLimits: String) {
-    val weekly = parseLimits(weeklyLimits)
-    val monthly = parseLimits(monthlyLimits)
-    def limitsValid = weekly.isDefined && monthly.isDefined
+    val weekly: Option[Map[ExpenseCategory, Worth]] = parseLimits(weeklyLimits)
+    val monthly: Option[Map[ExpenseCategory, Worth]] = parseLimits(monthlyLimits)
+    def limitsValid: Boolean = weekly.isDefined && monthly.isDefined
   }
 
   class Backend($: BackendScope[Props, State]) {
 
     def onFormSubmit(e: ReactEventI): Callback = e.preventDefaultCB
 
-    def onTextChange(change: (State, String) ⇒ State)(e: ReactEventI) = {
+    def onTextChange(change: (State, String) ⇒ State)(e: ReactEventI): Callback = {
       val newValue = e.target.value
       $.modState(change(_, newValue))
     }
 
-    def updateLimits(s: State) = if (!s.limitsValid) Callback.alert("Invalid limits config")
+    def updateLimits(s: State): Callback = if (!s.limitsValid) Callback.alert("Invalid limits config")
     else Callback.future(
       api.updateLimits(s.weekly.get, s.monthly.get).map {
         case Left(error) ⇒ Callback.alert(error.getMessage)
@@ -47,21 +48,21 @@ object FortuneSettingsC {
       }
     )
 
-    def addEditor(email: String) = Callback.future(
+    def addEditor(email: String): Callback = Callback.future(
       api.addEditor(email).map {
         case Left(error) ⇒ Callback.alert(error.getMessage)
         case Right(_) ⇒ Callback.alert("Done, please refresh the page!")
       }
     )
 
-    def finishInitialization = Callback.future(
+    def finishInitialization: Callback = Callback.future(
       api.finishInitialization.map {
         case Left(error) ⇒ Callback.alert(error.getMessage)
         case Right(_) ⇒ Callback.alert("Done, please refresh the page!")
       }
     )
 
-    def renderInitializationOffButton(f: FortuneInfo) =
+    def renderInitializationOffButton(f: FortuneInfo): TagMod =
       if (f.initializationMode) div(
         hr(),
         h2("Fortune is in initialization mode."),
@@ -73,7 +74,7 @@ object FortuneSettingsC {
       else
         EmptyTag
 
-    def renderLimitsEditor(s: State) = div(
+    def renderLimitsEditor(s: State): ReactTagOf[Div] = div(
       hr(),
       h2("Limits"),
       div(common.container,
@@ -97,7 +98,7 @@ object FortuneSettingsC {
         addAttributes = Seq(disabled := !s.limitsValid))("Update Limits"))
     )
 
-    def renderAddEditorForm(s: State, f: FortuneInfo) = div(common.container,
+    def renderAddEditorForm(s: State, f: FortuneInfo): ReactTagOf[Div] = div(common.container,
       form(
         topMargin(20),
         increasedFontSize, common.formHorizontal,
@@ -126,7 +127,7 @@ object FortuneSettingsC {
       )
     )
 
-    def render(pr: Props, s: State) = div(
+    def render(pr: Props, s: State): ReactTagOf[Div] = div(
       pr.fortunes().renderEmpty(PreloaderC()),
       pr.fortunes().renderPending(_ => PreloaderC()),
       pr.fortunes().renderReady { fortunes ⇒
@@ -149,14 +150,14 @@ object FortuneSettingsC {
     )
   }
 
-  def stringifyLimits(l: Map[ExpenseCategory, Worth]) = l.map {
+  def stringifyLimits(l: Map[ExpenseCategory, Worth]): String = l.map {
     case (k, v) ⇒ s"${k.name} -> ${v.toString}"
   }.toList.sorted.mkString("\n")
 
   def parseWorth(s: String): Option[Worth] = s.split(" ").toList match {
     case amount :: currency :: Nil ⇒ for {
       a ← Try(BigDecimal(amount)).toOption
-      c ← Currency.fromCode(currency)
+      c ← Currency.withNameOption(currency)
     } yield Worth(a, c)
     case _ ⇒ None
   }
@@ -170,7 +171,7 @@ object FortuneSettingsC {
       }
     ).toList.sequence.map(_.toMap)
 
-  val component = ReactComponentB[Props]("Fortune settings")
+  val component: ReactComponentC.ReqProps[Props, State, Backend, TopNode] = ReactComponentB[Props]("Fortune settings")
       .initialState(State("",
         stringifyLimits(AppCircuit.fortune.weeklyLimits),
         stringifyLimits(AppCircuit.fortune.monthlyLimits)
@@ -178,5 +179,5 @@ object FortuneSettingsC {
       .renderBackend[Backend]
       .build
 
-  def apply(fortunes: ModelProxy[Pot[List[FortuneInfo]]]) = component(Props(fortunes))
+  def apply(fortunes: ModelProxy[Pot[List[FortuneInfo]]]): ReactComponentU[Props, State, Backend, TopNode] = component(Props(fortunes))
 }

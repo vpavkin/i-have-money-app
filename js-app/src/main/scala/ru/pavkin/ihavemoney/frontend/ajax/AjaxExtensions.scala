@@ -1,6 +1,8 @@
 package ru.pavkin.ihavemoney.frontend.ajax
 
 import cats.syntax.either._
+import cats.syntax.eq._
+import cats.instances.int._
 import io.circe.parser._
 import io.circe.syntax._
 import io.circe.{Decoder, Encoder}
@@ -17,7 +19,7 @@ object AjaxExtensions {
   private def toJson[T: Encoder](v: T): String = v.asJson.noSpaces
 
   private def defaultHandler(xhr: dom.XMLHttpRequest): Either[RequestError, String] =
-    if (xhr.status / 100 == 2) {
+    if (xhr.status / 100 === 2) {
       xhr.responseText.asRight
     } else
       HTTPError(xhr.status, decode[FailedRequest](xhr.responseText).toOption, xhr.responseText).asLeft

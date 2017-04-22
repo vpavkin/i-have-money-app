@@ -61,7 +61,7 @@ object NavigationBar {
                   td(img(className := "img-circle", paddingRight := 10, src := GravatarAPI.img(AppCircuit.auth.map(_.email).getOrElse(""), 42))),
                   td(span("Logged in as", br(), strong(AppCircuit.auth.map(_.displayName).getOrElse(""): String)))
                 ))),
-                li, showCaret = false, addStyles = Seq(navbarTwoLineItem, loggedInAsNavbarItem)),
+                li, showCaret = false, addAttributes = Seq(navbarTwoLineItem, loggedInAsNavbarItem)),
                 li(a("Log out", onClick ==> logOut(ctl)))
               )
             )

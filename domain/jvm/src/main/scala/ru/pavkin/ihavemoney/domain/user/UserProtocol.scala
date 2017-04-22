@@ -2,10 +2,15 @@ package ru.pavkin.ihavemoney.domain.user
 
 import java.time.OffsetDateTime
 
+import cats.Eq
 import io.funcqrs._
 
 case class UserId(email: String) extends AggregateId {
   val value: String = email
+}
+
+object UserId {
+  implicit val eq: Eq[UserId] = Eq.fromUniversalEquals
 }
 
 object UserProtocol extends ProtocolLike {

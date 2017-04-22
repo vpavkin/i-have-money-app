@@ -64,7 +64,7 @@ object WriteFrontend extends App with FailFastCirceSupport with CorsDirectives {
 
   val routes: Route =
     cors(CorsSettings.defaultSettings.copy(allowCredentials = false)) {
-      logRequestResult("i-have-money-write-frontend", Logging.InfoLevel) {
+      logRequestResult("i-have-money-write-frontend" -> Logging.InfoLevel) {
         (path("signIn") & post & entity(as[CreateUserRequest])) { req ⇒
           safe {
             writeBack.sendCommandAndIgnoreResult(UserId(req.email), CreateUser(cmdId, req.password, req.displayName))
@@ -86,7 +86,7 @@ object WriteFrontend extends App with FailFastCirceSupport with CorsDirectives {
             }
           } ~ path("confirmEmail") {
           get {
-            parameters('email, 'code) { (email, code) =>
+            parameters('email -> 'code) { (email, code) =>
               safe {
                 writeBack.sendCommandAndIgnoreResult(UserId(email), ConfirmEmail(cmdId, code))
                   .map(_ ⇒
@@ -181,7 +181,7 @@ object WriteFrontend extends App with FailFastCirceSupport with CorsDirectives {
                           userId,
                           req.amount,
                           req.currency,
-                          IncomeCategory(req.category),
+                          req.category,
                           req.initializer,
                           req.comment
                         ))
@@ -194,7 +194,7 @@ object WriteFrontend extends App with FailFastCirceSupport with CorsDirectives {
                           userId,
                           req.amount,
                           req.currency,
-                          ExpenseCategory(req.category),
+                          req.category,
                           Some(req.date),
                           req.initializer,
                           req.comment

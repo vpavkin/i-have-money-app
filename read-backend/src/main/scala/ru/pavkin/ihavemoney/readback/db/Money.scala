@@ -10,7 +10,7 @@ case class MoneyRow(fortuneId: FortuneId, currency: Currency, amount: BigDecimal
 class Money(tableTag: Tag) extends Table[MoneyRow](tableTag, "money") {
   def * = (fortuneId, currency, amount) <>(
     (t: (String, String, BigDecimal)) ⇒
-      MoneyRow(FortuneId(t._1), Currency.unsafeFromCode(t._2), t._3),
+      MoneyRow(FortuneId(t._1), Currency.withName(t._2), t._3),
     (m: MoneyRow) ⇒ Some((m.fortuneId.value, m.currency.code, m.amount))
     )
 
@@ -27,7 +27,7 @@ object Money {
                                  e0: GetResult[String],
                                  e1: GetResult[BigDecimal]): GetResult[MoneyRow] = GetResult {
     prs ⇒ import prs._
-      MoneyRow(FortuneId(<<[String]), Currency.unsafeFromCode(<<[String]), <<[BigDecimal])
+      MoneyRow(FortuneId(<<[String]), Currency.withName(<<[String]), <<[BigDecimal])
   }
 
   lazy val table = new TableQuery(tag ⇒ new Money(tag))

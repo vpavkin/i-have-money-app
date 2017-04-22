@@ -1,6 +1,5 @@
 package ru.pavkin.ihavemoney.frontend.components
 
-
 import diode.data.Pot
 import diode.react.ModelProxy
 import diode.react.ReactPot._
@@ -9,9 +8,11 @@ import japgolly.scalajs.react.vdom.all._
 import ru.pavkin.ihavemoney.domain.fortune.{Asset, Currency, Liability, Worth}
 import ru.pavkin.ihavemoney.frontend.api
 import ru.pavkin.ihavemoney.frontend.bootstrap.{Button, FormGroup, Panel}
+import ru.pavkin.ihavemoney.frontend.components.selectors.CurrencySelector
 import ru.pavkin.ihavemoney.frontend.redux.AppCircuit
 import ru.pavkin.ihavemoney.frontend.redux.actions.{LoadAssets, LoadBalances, LoadLiabilities}
 import ru.pavkin.ihavemoney.frontend.styles.Global._
+
 import scala.scalajs.concurrent.JSExecutionContext.Implicits.queue
 import scala.concurrent.Future
 import scala.util.Try
@@ -20,9 +21,9 @@ import scalacss.ScalaCssReact._
 object BalanceViewC {
 
   case class Props(
-      balances: ModelProxy[Pot[Map[Currency, BigDecimal]]],
-      assets: ModelProxy[Pot[Map[String, Asset]]],
-      liabilities: ModelProxy[Pot[Map[String, Liability]]])
+    balances: ModelProxy[Pot[Map[Currency, BigDecimal]]],
+    assets: ModelProxy[Pot[Map[String, Asset]]],
+    liabilities: ModelProxy[Pot[Map[String, Liability]]])
 
   case class State(correctionCurrency: Currency, correctionAmount: String) {
     def correctionWorth: Option[Worth] =
@@ -37,24 +38,24 @@ object BalanceViewC {
       AppCircuit.dispatch(LoadLiabilities())
     }
 
-    def onFormSubmit(e: ReactEventI) = e.preventDefaultCB
+    private def onFormSubmit(e: ReactEventI) = e.preventDefaultCB
 
-    def onTextChange(change: (State, String) ⇒ State)(e: ReactEventI) = {
+    private def onTextChange(change: (State, String) ⇒ State)(e: ReactEventI) = {
       val newValue = e.target.value
       applyStateChange(change)(newValue)
     }
 
-    def amountCurrencyHelper(oldState: State, newAmount: String): State = newAmount match {
+    private def amountCurrencyHelper(oldState: State, newAmount: String): State = newAmount match {
       case s if s.endsWith("e") || s.endsWith("€") ⇒ oldState.copy(Currency.EUR, s.init)
       case s if s.endsWith("$") || s.endsWith("d") ⇒ oldState.copy(Currency.USD, s.init)
       case s if s.endsWith("r") ⇒ oldState.copy(Currency.RUR, s.init)
       case _ ⇒ oldState.copy(correctionAmount = newAmount)
     }
 
-    def applyStateChange[T](change: (State, T) ⇒ State)(newValue: T): Callback =
+    private def applyStateChange[T](change: (State, T) ⇒ State)(newValue: T): Callback =
       $.modState(change(_, newValue))
 
-    def genSubmit[T](st: State)(req: ⇒ Future[T]): Callback =
+    private def genSubmit[T](st: State)(req: ⇒ Future[T]): Callback =
       if (!isValid(st))
         Callback.alert("Invalid data")
       else Callback.future(req.map {
@@ -62,15 +63,15 @@ object BalanceViewC {
         case _ ⇒ Callback.alert(s"Success")
       })
 
-    def onCorrectionSubmit(state: State): Callback = genSubmit(state)(api.correct(
+    private def onCorrectionSubmit(state: State): Callback = genSubmit(state)(api.correct(
       BigDecimal(state.correctionAmount),
       state.correctionCurrency
     ))
 
-    def isValid(s: State) =
+    private def isValid(s: State) =
       Try(BigDecimal(s.correctionAmount)).toOption.exists(_ >= 0)
 
-    def amountStyle(amount: BigDecimal) =
+    private def amountStyle(amount: BigDecimal) =
       if (amount >= 0) logPosAmount
       else logNegAmount
 
@@ -147,7 +148,9 @@ object BalanceViewC {
                       CurrencySelector(
                         state.correctionCurrency,
                         c ⇒ applyStateChange[Currency]((st, v) ⇒ st.copy(correctionCurrency = v))(c),
-                        addStyles = Seq(increasedFontSize, inputCurrencyAddon))
+                        Currency.values.toList,
+                        style = common.context.info,
+                        addAttributes = Seq(increasedFontSize, inputCurrencyAddon))
                     )
                   )
                 ),
@@ -177,8 +180,8 @@ object BalanceViewC {
   }
 
   val component = ReactComponentB[Props]("Balance sheet")
-      .initialState(State(Currency.EUR, ""))
-      .renderBackend[Backend]
-      .componentDidMount(s ⇒ s.backend.loadData(s.props))
-      .build
+    .initialState(State(Currency.EUR, ""))
+    .renderBackend[Backend]
+    .componentDidMount(s ⇒ s.backend.loadData(s.props))
+    .build
 }

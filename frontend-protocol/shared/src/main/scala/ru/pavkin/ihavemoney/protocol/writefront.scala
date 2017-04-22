@@ -6,6 +6,7 @@ import java.util.UUID
 import io.circe._
 import io.circe.generic.semiauto._
 import ru.pavkin.ihavemoney.domain.fortune._
+import cats.syntax.eq._
 
 object writefront extends SharedProtocol {
 
@@ -13,58 +14,59 @@ object writefront extends SharedProtocol {
 
   // Fortune commands
   case class ReceiveIncomeRequest(
-      amount: BigDecimal,
-      currency: Currency,
-      category: String,
-      initializer: Boolean = false,
-      comment: Option[String] = None) extends WriteFrontRequest
+    amount: BigDecimal,
+    currency: Currency,
+    category: IncomeCategory,
+    initializer: Boolean = false,
+    comment: Option[String] = None) extends WriteFrontRequest
+
   case class SpendRequest(
-      amount: BigDecimal,
-      currency: Currency,
-      category: String,
-      date: LocalDate,
-      initializer: Boolean = false,
-      comment: Option[String] = None) extends WriteFrontRequest
+    amount: BigDecimal,
+    currency: Currency,
+    category: ExpenseCategory,
+    date: LocalDate,
+    initializer: Boolean = false,
+    comment: Option[String] = None) extends WriteFrontRequest
 
   case class UpdateLimitsRequest(
-      weekly: Map[ExpenseCategory, Worth],
-      monthly: Map[ExpenseCategory, Worth]) extends WriteFrontRequest
+    weekly: Map[ExpenseCategory, Worth],
+    monthly: Map[ExpenseCategory, Worth]) extends WriteFrontRequest
 
   case class CancelTransactionRequest(transactionId: UUID) extends WriteFrontRequest
 
   case class ExchangeCurrencyRequest(
-      fromAmount: BigDecimal,
-      fromCurrency: Currency,
-      toAmount: BigDecimal,
-      toCurrency: Currency,
-      comment: Option[String] = None) extends WriteFrontRequest {
-    require(fromCurrency != toCurrency)
+    fromAmount: BigDecimal,
+    fromCurrency: Currency,
+    toAmount: BigDecimal,
+    toCurrency: Currency,
+    comment: Option[String] = None) extends WriteFrontRequest {
+    require(fromCurrency =!= toCurrency)
   }
 
   case class CorrectBalancesRequest(
-      realBalances: Map[Currency, BigDecimal],
-      comment: Option[String] = None) extends WriteFrontRequest
+    realBalances: Map[Currency, BigDecimal],
+    comment: Option[String] = None) extends WriteFrontRequest
 
   case class BuyAssetRequest(
-      asset: Asset,
-      initializer: Boolean = false,
-      comment: Option[String] = None) extends WriteFrontRequest
+    asset: Asset,
+    initializer: Boolean = false,
+    comment: Option[String] = None) extends WriteFrontRequest
 
   case class SellAssetRequest(comment: Option[String] = None) extends WriteFrontRequest
 
   /* Reevaluate per-stock worth for stocks, whole asset worth otherwise*/
   case class ReevaluateAssetRequest(
-      newPrice: BigDecimal,
-      comment: Option[String] = None) extends WriteFrontRequest
+    newPrice: BigDecimal,
+    comment: Option[String] = None) extends WriteFrontRequest
 
   case class TakeOnLiabilityRequest(
-      liability: Liability,
-      initializer: Boolean = false,
-      comment: Option[String] = None) extends WriteFrontRequest
+    liability: Liability,
+    initializer: Boolean = false,
+    comment: Option[String] = None) extends WriteFrontRequest
 
   case class PayLiabilityOffRequest(
-      byAmount: BigDecimal,
-      comment: Option[String] = None) extends WriteFrontRequest
+    byAmount: BigDecimal,
+    comment: Option[String] = None) extends WriteFrontRequest
 
   // User commands
 

@@ -11,7 +11,7 @@ import ru.pavkin.ihavemoney.domain.fortune._
 trait SharedProtocol {
 
   implicit val decodeCurrency: Decoder[Currency] =
-    Decoder.decodeString.emap(s ⇒ Either.fromOption(Currency.fromCode(s), s"$s is not a valid currency"))
+    Decoder.decodeString.emap(s ⇒ Either.fromOption(Currency.withNameOption(s), s"$s is not a valid currency"))
 
   implicit val encodeCurrency: Encoder[Currency] =
     Encoder.instance(c ⇒ Json.fromString(c.code))
@@ -23,7 +23,7 @@ trait SharedProtocol {
   implicit val liabilityDecoder = Decoder[Liability]
 
   implicit val currencyKeyEncoder: KeyEncoder[Currency] = KeyEncoder.instance(_.code)
-  implicit val currencyKeyDecoder: KeyDecoder[Currency] = KeyDecoder.instance(Currency.fromCode)
+  implicit val currencyKeyDecoder: KeyDecoder[Currency] = KeyDecoder.instance(Currency.withNameOption)
 
   implicit val expenseCategoryKeyEncoder: KeyEncoder[ExpenseCategory] = KeyEncoder.instance(_.name)
   implicit val expenseCategoryKeyDecoder: KeyDecoder[ExpenseCategory] = KeyDecoder.instance(s ⇒ Some(ExpenseCategory(s)))
@@ -33,7 +33,7 @@ trait SharedProtocol {
       s.split("-").toList match {
         case day :: month :: year :: Nil ⇒
           Either.catchNonFatal(LocalDate.of(year.toInt, month.toInt, day.toInt))
-              .leftMap(ex ⇒ DecodingFailure(ex.getMessage, c.history))
+            .leftMap(ex ⇒ DecodingFailure(ex.getMessage, c.history))
         case _ ⇒ Either.left(DecodingFailure("Invalid date string", c.history))
       }
     }
@@ -51,8 +51,11 @@ trait SharedProtocol {
   implicit val decoderWorth = Decoder[Worth]
   implicit val encoderWorth = Encoder[Worth]
 
-  implicit val decoderExpenseCategory = Decoder[ExpenseCategory]
-  implicit val encoderExpenseCategory = Encoder[ExpenseCategory]
+  implicit val decoderExpenseCategory: Decoder[ExpenseCategory] = Decoder.decodeString.map(ExpenseCategory(_))
+  implicit val encoderExpenseCategory: Encoder[ExpenseCategory] = Encoder.encodeString.contramap(_.name)
+
+  implicit val decoderIncomeCategory: Decoder[IncomeCategory] = Decoder.decodeString.map(IncomeCategory(_))
+  implicit val encoderIncomeCategory: Encoder[IncomeCategory] = Encoder.encodeString.contramap(_.name)
 
   implicit val decoderFortuneInfo = Decoder[FortuneInfo]
   implicit val encoderFortuneInfo = Encoder[FortuneInfo]
