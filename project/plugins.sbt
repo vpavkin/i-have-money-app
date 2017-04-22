@@ -12,4 +12,6 @@ addSbtPlugin("com.github.gseitz" % "sbt-release" % "1.0.3")
 
 addSbtPlugin("com.softwaremill.clippy" % "plugin-sbt" % "0.5.2")
 
+addSbtPlugin("com.eed3si9n" % "sbt-buildinfo" % "0.7.0")
+
 libraryDependencies += "com.trueaccord.scalapb" %% "compilerplugin" % "0.6.0-pre3"

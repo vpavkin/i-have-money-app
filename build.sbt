@@ -109,9 +109,12 @@ lazy val iHaveMoney = project.in(file("."))
   .aggregate(domainJVM, serialization, writeBackend, writeFrontend, readBackend, frontendProtocolJVM, readFrontend, jsApp, tests)
 
 lazy val domain = crossProject.in(file("domain"))
+  .enablePlugins(BuildInfoPlugin)
   .settings(
     moduleName := "domain",
-    name := "domain"
+    name := "domain",
+    buildInfoKeys := Seq[BuildInfoKey](version),
+    buildInfoPackage := "ru.pavkin.ihavemoney"
   )
   .settings(allSettings: _*)
   .settings(

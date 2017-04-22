@@ -53,23 +53,23 @@ object IHaveMoneyApp extends JSApp {
     }
 
     (trimSlashes
-        | staticRoute(root, Route.Initializer) ~> renderInitializer
-        | staticRoute("#nofortune", Route.NoFortunes) ~> renderR(ctl ⇒ NoFortuneC.component(ctl))
-        | staticRoute("#expenses", Route.Expenses) ~> renderExpenses
-        | staticRoute("#income", Route.Income) ~> renderIncome
-        | staticRoute("#exchange", Route.Exchange) ~> renderExchange
-        | staticRoute("#balance", Route.BalanceView) ~> renderBalance
-        | staticRoute("#stats", Route.StatsView) ~> renderStats
-        | staticRoute("#settings", Route.FortuneSettingsView) ~> renderFortuneSettings
-        | staticRoute("#log", Route.TransactionLogView) ~> renderLog
-        | staticRoute("#login", Route.Login) ~> renderR(ctl ⇒ LoginC.component(ctl)))
-        .notFound(redirectToPage(Route.Expenses)(Redirect.Replace))
-        .renderWith(layout)
-        .onPostRender((prev, next) => Callback {
-          println(s"Page changing from $prev to $next.")
-          storeRedirectToRoute(prev, next)
-        })
-        .verify(Route.Expenses, Route.BalanceView)
+      | staticRoute(root, Route.Initializer) ~> renderInitializer
+      | staticRoute("#nofortune", Route.NoFortunes) ~> renderR(ctl ⇒ NoFortuneC.component(ctl))
+      | staticRoute("#expenses", Route.Expenses) ~> renderExpenses
+      | staticRoute("#income", Route.Income) ~> renderIncome
+      | staticRoute("#exchange", Route.Exchange) ~> renderExchange
+      | staticRoute("#balance", Route.BalanceView) ~> renderBalance
+      | staticRoute("#stats", Route.StatsView) ~> renderStats
+      | staticRoute("#settings", Route.FortuneSettingsView) ~> renderFortuneSettings
+      | staticRoute("#log", Route.TransactionLogView) ~> renderLog
+      | staticRoute("#login", Route.Login) ~> renderR(ctl ⇒ LoginC.component(ctl)))
+      .notFound(redirectToPage(Route.Expenses)(Redirect.Replace))
+      .renderWith(layout)
+      .onPostRender((prev, next) => Callback {
+        println(s"Page changing from $prev to $next.")
+        storeRedirectToRoute(prev, next)
+      })
+      .verify(Route.Expenses, Route.BalanceView)
   }
 
   def layout(c: RouterCtl[Route], r: Resolution[Route]) = div(
@@ -83,7 +83,10 @@ object IHaveMoneyApp extends JSApp {
           case Failed(exception) =>
             FatalErrorC.component(exception.getMessage)
           case _ => PreloaderC()
-        }))
+        })),
+        footer(
+          div(commonFooter, cls := "version-footer", ru.pavkin.ihavemoney.BuildInfo.version)
+        )
       )
     },
     connectors.modal(px ⇒ div(px() match {
