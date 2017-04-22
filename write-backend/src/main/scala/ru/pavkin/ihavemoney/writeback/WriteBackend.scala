@@ -49,7 +49,7 @@ object WriteBackend extends App {
 
   val userRegion = ClusterSharding(system).start(
     typeName = "UserShard",
-    entityProps = Props(new AggregateOffice[User, UserCommand](backend, UserId)),
+    entityProps = Props(new AggregateOffice[User, UserCommand](backend, UserId(_))),
     settings = ClusterShardingSettings(system),
     messageExtractor = new CommandMessageExtractor(config.getInt("app.number-of-nodes"))
   )

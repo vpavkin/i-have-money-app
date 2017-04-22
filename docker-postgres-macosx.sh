@@ -4,4 +4,4 @@ cp ./write-backend/src/main/resources/db/migrations/V1_0__Journals.sql ./docker-
 docker build -t ihavemoney/postgres ./docker-postgres && \
 
 docker run --name ihavemoney-postgres -v /Users/Shared/postgres:/var/lib/postgresql \
- -d -P -e POSTGRES_USER=admin -e POSTGRES_PASSWORD=changeit ihavemoney/postgres
+ -d -p 5432:5432 -e POSTGRES_USER=admin -e POSTGRES_PASSWORD=changeit ihavemoney/postgres

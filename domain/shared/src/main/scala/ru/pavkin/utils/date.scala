@@ -13,29 +13,29 @@ object date {
   implicit class LocalDateUtilityOps(m: LocalDate) {
     def ddmmyyyy: String = s"${p(m.getDayOfMonth)}-${p(m.getMonthValue)}-${m.getYear}"
     def yyyymmdd: String = s"${m.getYear}-${p(m.getMonthValue)}-${p(m.getDayOfMonth)}"
-    def dayOfWeekName = m.getDayOfWeek.name.toLowerCase.capitalize
+    def dayOfWeekName: String = m.getDayOfWeek.name.toLowerCase.capitalize
     def toFullString = s"$dayOfWeekName, $ddmmyyyy"
 
-    def atStartOfWeek = m.minusDays(m.getDayOfWeek.getValue - 1L)
+    def atStartOfWeek: LocalDate = m.minusDays(m.getDayOfWeek.getValue - 1L)
 
-    def isCurrentWeek = atStartOfWeek == LocalDate.now().atStartOfWeek
-    def isPreviousWeek = atStartOfWeek == LocalDate.now().atStartOfWeek.minusDays(7)
-    def isNextWeek = atStartOfWeek == LocalDate.now().atStartOfWeek.plusDays(7)
+    def isCurrentWeek: Boolean = atStartOfWeek == LocalDate.now().atStartOfWeek
+    def isPreviousWeek: Boolean = atStartOfWeek == LocalDate.now().atStartOfWeek.minusDays(7)
+    def isNextWeek: Boolean = atStartOfWeek == LocalDate.now().atStartOfWeek.plusDays(7)
 
-    def toWeekString = {
+    def toWeekString: String = {
       val end = m.plusDays(6)
       s"${m.getDayOfMonth} ${m.getMonth.name.toLowerCase.capitalize} — ${end.getDayOfMonth} ${end.getMonth.name.toLowerCase.capitalize} ${end.getYear}"
     }
   }
 
   implicit class YearMonthUtilityOps(m: YearMonth) {
-    def month = m.getMonthValue
-    def year = m.getYear
+    def month: Int = m.getMonthValue
+    def year: Int = m.getYear
 
     def mmyyyy: String = f"$month%02d" + "-" + f"$year%04d"
 
-    def previous = m.minusMonths(1)
-    def next = m.plusMonths(1)
+    def previous: YearMonth = m.minusMonths(1)
+    def next: YearMonth = m.plusMonths(1)
     def numberOfDays: Int = m.lengthOfMonth()
   }
 

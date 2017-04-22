@@ -7,7 +7,8 @@ import io.funcqrs.behavior._
 import ru.pavkin.ihavemoney.domain.errors.{EmailAlreadyConfirmed, EmailIsNotYetConfirmed, InvalidConfirmationCode}
 import ru.pavkin.ihavemoney.domain.passwords
 import ru.pavkin.ihavemoney.services.EmailService
-
+import cats.syntax.eq._
+import cats.instances.string._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -28,27 +29,27 @@ case class User(
   def metadata(cmd: UserCommand): UserMetadata =
     User.metadata(id, cmd)
 
-  def cantConfirmWithInvalidCode = action[User]
+  def cantConfirmWithInvalidCode: Actions[User] = action[User]
     .rejectCommand {
-      case cmd: ConfirmEmail if this.confirmationCode != cmd.confirmationCode ⇒
+      case cmd: ConfirmEmail if this.confirmationCode =!= cmd.confirmationCode ⇒
         InvalidConfirmationCode
     }
 
-  def cantLogInUnconfirmedUser = action[User]
+  def cantLogInUnconfirmedUser: Actions[User] = action[User]
     .rejectCommand {
-      case cmd: LoginUser if !this.isConfirmed ⇒
+      case _: LoginUser if !this.isConfirmed ⇒
         EmailIsNotYetConfirmed
     }
 
-  def cantSentConfirmationEmailForConfirmedUser = action[User]
+  def cantSentConfirmationEmailForConfirmedUser: Actions[User] = action[User]
     .rejectCommand {
-      case cmd: ResendConfirmationEmail if this.isConfirmed ⇒
+      case _: ResendConfirmationEmail if this.isConfirmed ⇒
         EmailAlreadyConfirmed
-      case cmd: ConfirmEmail if this.isConfirmed ⇒
+      case _: ConfirmEmail if this.isConfirmed ⇒
         EmailAlreadyConfirmed
     }
 
-  def confirmEmail = action[User]
+  def confirmEmail: Actions[User] = action[User]
     .handleCommand {
       cmd: ConfirmEmail ⇒ UserConfirmed(metadata(cmd))
     }
@@ -56,7 +57,7 @@ case class User(
       evt: UserConfirmed ⇒ this.copy(isConfirmed = true)
     }
 
-  def resendConfirmationEmail(emailService: EmailService, linkFactory: (String, String) ⇒ String) = action[User]
+  def resendConfirmationEmail(emailService: EmailService, linkFactory: (String, String) ⇒ String): Actions[User] = action[User]
     .handleCommand { (cmd: ResendConfirmationEmail) ⇒
       User.sendConfirmationEmail(emailService, linkFactory)(metadata(cmd), this.confirmationCode)
     }
@@ -64,7 +65,7 @@ case class User(
       evt: ConfirmationEmailSent ⇒ this
     }
 
-  def login = action[User]
+  def login: Actions[User] = action[User]
     .handleCommand {
       cmd: LoginUser ⇒
         if (passwords.isCorrect(cmd.password, this.passwordHash))
@@ -84,9 +85,9 @@ object User {
 
   import UserProtocol._
 
-  val tag = Tags.aggregateTag("user")
+  val tag: Tag = Tags.aggregateTag("user")
 
-  def metadata(userId: UserId, cmd: UserCommand) = {
+  def metadata(userId: UserId, cmd: UserCommand): UserMetadata = {
     UserMetadata(userId, cmd.id, tags = Set(tag))
   }
 
@@ -109,7 +110,7 @@ object User {
 
   def generateConfirmationCode: String = UUID.randomUUID.toString
 
-  def createUser(emailService: EmailService, linkFactory: (String, String) ⇒ String)(id: UserId) =
+  def createUser(emailService: EmailService, linkFactory: (String, String) ⇒ String)(id: UserId): Actions[User] =
     actions[User]
       .handleCommand {
         cmd: CreateUser ⇒

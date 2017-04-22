@@ -4,21 +4,25 @@ import diode.data.Pot
 import diode.react.ModelProxy
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.all._
-import ru.pavkin.ihavemoney.domain.fortune.Currency
+import ru.pavkin.ihavemoney.domain.fortune.{Currency, ExpenseCategory}
 import ru.pavkin.ihavemoney.frontend.api
 import ru.pavkin.ihavemoney.frontend.bootstrap.{Button, FormGroup}
 import ru.pavkin.ihavemoney.frontend.redux.model.Categories
 import ru.pavkin.ihavemoney.frontend.styles.Global._
 import ru.pavkin.utils.option._
 import helpers._
+import ru.pavkin.ihavemoney.frontend.components.selectors.ExpenseCategorySelector
 import ru.pavkin.utils.date.LocalDateParser
 
 import scalacss.ScalaCssReact._
 import scala.scalajs.concurrent.JSExecutionContext.Implicits.queue
 
-object ExpensesC extends CommonTransactionC {
+object ExpensesC extends CommonTransactionC[ExpenseCategory] {
 
-  val defaultCategories = Set("Groceries", "Lunches", "Entertainment", "Communication", "Presents", "Traveling", "Transport", "Creativity", "Sport", "Health", "Beauty", "Clothes", "Rent & Utility", "Fees & Taxes", "Other", "Education")
+  val defaultCategories = Set(
+    "Groceries", "Lunches", "Entertainment", "Communication", "Presents", "Traveling", "Transport",
+    "Creativity", "Sport", "Health", "Beauty", "Clothes", "Rent & Utility", "Fees & Taxes", "Other", "Education"
+  ).map(ExpenseCategory(_))
 
   class Backend($: BackendScope[Props, State]) extends CommonTransactionBackend($) {
 
@@ -39,12 +43,12 @@ object ExpensesC extends CommonTransactionC {
       )("Add Expense")
 
     def renderCategoriesSelector(pr: Props, state: State): Categories ⇒ ReactElement = categories ⇒
-      div(StringValueSelector(
+      ExpenseCategorySelector(
         state.category,
-        s ⇒ applyStateChange[String]((st, v) ⇒ st.copy(category = v))(s),
+        s ⇒ applyStateChange[ExpenseCategory]((st, v) ⇒ st.copy(category = v))(s),
         enrich(categories.expense).toList,
-        addStyles = Seq(increasedFontSize))
-      )
+        style = common.context.danger,
+        addAttributes = Seq(increasedFontSize))
 
     def render(pr: Props, state: State) = renderForm(pr, state)
 
@@ -63,10 +67,10 @@ object ExpensesC extends CommonTransactionC {
   }
 
   val component = ReactComponentB[Props]("AddExpensesComponent")
-      .initialState(State(Currency.EUR, "", "Groceries", ""))
-      .renderBackend[Backend]
-      .componentDidMount(s ⇒ s.backend.init)
-      .build
+    .initialState(State(Currency.EUR, "", ExpenseCategory("Groceries"), ""))
+    .renderBackend[Backend]
+    .componentDidMount(s ⇒ s.backend.init)
+    .build
 
   def apply(categories: ModelProxy[Pot[Categories]]) = component(Props(categories))
 }

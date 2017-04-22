@@ -5,6 +5,7 @@ import java.util.UUID
 
 import io.funcqrs._
 import ru.pavkin.ihavemoney.domain.user.UserId
+import cats.syntax.eq._
 
 case class FortuneId(value: String) extends AggregateId
 object FortuneId {
@@ -69,7 +70,7 @@ object FortuneProtocol extends ProtocolLike {
     toAmount: BigDecimal,
     toCurrency: Currency,
     comment: Option[String] = None) extends InitializedFortuneAdjustmentCommand {
-    require(fromCurrency != toCurrency)
+    require(fromCurrency =!= toCurrency)
   }
 
   // issues correction events with a special category
@@ -180,7 +181,7 @@ object FortuneProtocol extends ProtocolLike {
     toCurrency: Currency,
     metadata: FortuneMetadata,
     comment: Option[String] = None) extends FortuneEvent {
-    require(fromCurrency != toCurrency)
+    require(fromCurrency =!= toCurrency)
   }
 
   case class FortuneInitializationFinished(

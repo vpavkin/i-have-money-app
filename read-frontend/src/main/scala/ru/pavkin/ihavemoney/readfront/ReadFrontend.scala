@@ -60,8 +60,8 @@ object ReadFrontend extends App with FailFastCirceSupport {
     r.events
         .sortBy(-_.metadata.date.toEpochSecond)
         .collect {
-          case e: FortuneIncreased ⇒ Income(e.metadata.eventId.value, e.user.value, e.amount, e.currency, e.category.name, e.date.toLocalDate, e.comment)
-          case e: FortuneSpent ⇒ Expense(e.metadata.eventId.value, e.user.value, -e.amount, e.currency, e.category.name, e.overrideDate.getOrElse(e.date.toLocalDate), e.comment)
+          case e: FortuneIncreased ⇒ Income(e.metadata.eventId.value, e.user.value, e.amount, e.currency, e.category, e.date.toLocalDate, e.comment)
+          case e: FortuneSpent ⇒ Expense(e.metadata.eventId.value, e.user.value, -e.amount, e.currency, e.category, e.overrideDate.getOrElse(e.date.toLocalDate), e.comment)
           case e: CurrencyExchanged ⇒ protocol.CurrencyExchanged(e.metadata.eventId.value, e.user.value, e.fromAmount, e.fromCurrency, e.toAmount, e.toCurrency, e.date.toLocalDate, e.comment)
         }
         .sortBy(-_.date.toEpochDay)
@@ -73,7 +73,7 @@ object ReadFrontend extends App with FailFastCirceSupport {
           case FortunesQueryResult(id, fortunes) ⇒
             kv._1 → (FrontendFortunes(id.value, fortunes): FrontendQueryResult).asJson
           case CategoriesQueryResult(id, inc, exp) ⇒
-            kv._1 → (FrontendCategories(id.value, inc.map(_.name), exp.map(_.name)): FrontendQueryResult).asJson
+            kv._1 → (FrontendCategories(id.value, inc, exp): FrontendQueryResult).asJson
           case r@EventLogQueryResult(id, events) ⇒
             kv._1 → (toFrontendEvents(r): FrontendQueryResult).asJson
           case MoneyBalanceQueryResult(id, balance) ⇒

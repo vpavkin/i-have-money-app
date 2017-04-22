@@ -13,11 +13,11 @@ import scalacss.StyleA
 object WeekSelector {
 
   case class Props(
-      selected: LocalDate,
-      onChange: LocalDate => Callback,
-      weeksToPast: Int = 12,
-      weeksToFuture: Int = 12,
-      addStyles: Seq[StyleA] = Seq())
+    selected: LocalDate,
+    onChange: LocalDate => Callback,
+    weeksToPast: Int = 5,
+    weeksToFuture: Int = 5,
+    addAttributes: Seq[TagMod] = Seq())
 
   def genElements(from: LocalDate, n: Int, f: LocalDate => LocalDate): List[LocalDate] =
     (1 until n).foldLeft(List(f(from))) {
@@ -37,19 +37,19 @@ object WeekSelector {
     li(key := m.toString, a(onClick --> pr.onChange(m), renderWeek(m)))
 
   val component = ReactComponentB[Props]("WeekSelector")
-      .renderPC((_, p, c) =>
-        Dropdown(renderWeek(p.selected), a, Some(common.context.info), addStyles = p.addStyles)(
-          (genElements(p.selected, p.weeksToPast, _.minusDays(7)) ++
-              genElements(p.selected, p.weeksToFuture, _.plusDays(7)).reverse)
-              .map(renderElement(p))
-        )
-      ).build
+    .renderPC((_, p, c) =>
+      Dropdown(renderWeek(p.selected), a, Some(common.context.info), addAttributes = p.addAttributes)(
+        (genElements(p.selected, p.weeksToPast, _.minusDays(7)) ++
+          genElements(p.selected, p.weeksToFuture, _.plusDays(7)).reverse)
+          .map(renderElement(p))
+      )
+    ).build
 
   def apply(
-      selected: LocalDate,
-      onChange: LocalDate => Callback,
-      weeksToPast: Int = 12,
-      weeksToFuture: Int = 12,
-      addStyles: Seq[StyleA] = Seq()) =
-    component(Props(selected, onChange, weeksToPast, weeksToFuture, addStyles))
+    selected: LocalDate,
+    onChange: LocalDate => Callback,
+    weeksToPast: Int = 5,
+    weeksToFuture: Int = 5,
+    addAttributes: Seq[TagMod] = Seq()) =
+    component(Props(selected, onChange, weeksToPast, weeksToFuture, addAttributes))
 }

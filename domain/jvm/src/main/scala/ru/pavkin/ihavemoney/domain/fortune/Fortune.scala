@@ -8,6 +8,8 @@ import io.funcqrs.behavior._
 import ru.pavkin.ihavemoney.domain.errors.{BalanceIsNotEnough, _}
 import ru.pavkin.ihavemoney.domain.fortune.FortuneProtocol._
 import ru.pavkin.ihavemoney.domain.user.UserId
+import cats.syntax.eq._
+import cats.instances.bigDecimal._
 
 case class Fortune(
   id: FortuneId,
@@ -24,7 +26,7 @@ case class Fortune(
   type Id = FortuneId
   type Protocol = FortuneProtocol.type
 
-  def canBeAdjustedBy(user: UserId): Boolean = owner == user || editors.contains(user)
+  def canBeAdjustedBy(user: UserId): Boolean = owner === user || editors.contains(user)
 
   def increase(worth: Worth): Fortune =
     copy(balances = balances + (worth.currency -> (amount(worth.currency) + worth.amount)))
@@ -220,7 +222,7 @@ case class Fortune(
           .map {
             case (curr, realAmount) ⇒ curr → (realAmount - this.amount(curr))
           }
-          .filter(_._2 != BigDecimal(0))
+          .filter(_._2 =!= BigDecimal(0))
           .map {
             case (curr, correction) ⇒
               if (correction > BigDecimal(0)) FortuneIncreased(cmd.user, correction, curr, IncomeCategory("Correction"), initializer = false, metadata(cmd))

@@ -1,6 +1,5 @@
 package ru.pavkin.ihavemoney.frontend.components
 
-
 import diode.data.Pot
 import diode.react.ModelProxy
 import japgolly.scalajs.react._
@@ -13,24 +12,25 @@ import ru.pavkin.ihavemoney.frontend.redux.actions.{LoadCategories, LoadEventLog
 import ru.pavkin.ihavemoney.frontend.styles.Global._
 import ru.pavkin.ihavemoney.protocol.{CurrencyExchanged, Event, Transaction}
 import ru.pavkin.utils.option._
-
+import ReactHelpers._
 import scala.concurrent.Future
 import scala.scalajs.concurrent.JSExecutionContext.Implicits.queue
 import scala.util.Try
 import scalacss.ScalaCssReact._
 import diode.react.ReactPot._
+import ru.pavkin.ihavemoney.frontend.components.selectors.CurrencySelector
 import ru.pavkin.ihavemoney.frontend.gravatar.GravatarAPI
 import ru.pavkin.utils.date._
 
 object ExchangeC {
 
   case class State(
-      fromAmount: String,
-      fromCurrency: Currency,
-      toAmount: String,
-      toCurrency: Currency,
-      comment: String,
-      loading: Boolean = false)
+    fromAmount: String,
+    fromCurrency: Currency,
+    toAmount: String,
+    toCurrency: Currency,
+    comment: String,
+    loading: Boolean = false)
 
   case class Props(log: ModelProxy[Pot[List[Event]]])
 
@@ -40,7 +40,7 @@ object ExchangeC {
       AppCircuit.dispatch(LoadEventLog())
     }
 
-    def onExchangeSubmit(state: State): Callback = genSubmit(state)(api.exchange(
+    private def onExchangeSubmit(state: State): Callback = genSubmit(state)(api.exchange(
       BigDecimal(state.fromAmount),
       state.fromCurrency,
       BigDecimal(state.toAmount),
@@ -48,47 +48,45 @@ object ExchangeC {
       notEmpty(state.comment)
     ))
 
-    def onTextChange(change: (State, String) ⇒ State)(e: ReactEventI) = {
+    private def onTextChange(change: (State, String) ⇒ State)(e: ReactEventI) = {
       val newValue = e.target.value
       applyStateChange(change)(newValue)
     }
 
-    def amountCurrencyHelper(newAmount: String): (String, Option[Currency]) = newAmount match {
+    private def amountCurrencyHelper(newAmount: String): (String, Option[Currency]) = newAmount match {
       case s if s.endsWith("e") || s.endsWith("€") ⇒ s.init → Some(Currency.EUR)
       case s if s.endsWith("$") || s.endsWith("d") ⇒ s.init → Some(Currency.USD)
       case s if s.endsWith("r") ⇒ s.init → Some(Currency.RUR)
       case _ ⇒ newAmount → None
     }
 
-    def applyStateChange[T](change: (State, T) ⇒ State)(newValue: T): Callback =
+    private def applyStateChange[T](change: (State, T) ⇒ State)(newValue: T): Callback =
       $.modState(change(_, newValue))
 
-    def onFormSubmit(e: ReactEventI) = e.preventDefaultCB
-
-    def genSubmit[T](st: State)(req: ⇒ Future[T]): Callback =
+    private def genSubmit[T](st: State)(req: ⇒ Future[T]): Callback =
       if (!isValid(st))
         Callback.alert("Invalid data")
       else
         $.modState(_.copy(loading = true)) >>
-            Callback.future(req.map {
-              case Left(error) ⇒ Callback.alert(s"Error: $error")
-              case _ ⇒ $.modState(_.copy(
-                fromAmount = "",
-                toAmount = "",
-                comment = "",
-                fromCurrency = Currency.EUR,
-                toCurrency = Currency.EUR,
-                loading = false
-              ))
-            }) >>
-            $.props.flatMap(loadData).delayMs(500).void
+          Callback.future(req.map {
+            case Left(error) ⇒ Callback.alert(s"Error: $error")
+            case _ ⇒ $.modState(_.copy(
+              fromAmount = "",
+              toAmount = "",
+              comment = "",
+              fromCurrency = Currency.EUR,
+              toCurrency = Currency.EUR,
+              loading = false
+            ))
+          }) >>
+          $.props.flatMap(loadData).delayMs(500).void
 
-    def isValid(s: State) =
+    private def isValid(s: State) =
       Try(BigDecimal(s.fromAmount)).isSuccess &&
-          Try(BigDecimal(s.toAmount)).isSuccess &&
-          s.fromCurrency != s.toCurrency
+        Try(BigDecimal(s.toAmount)).isSuccess &&
+        s.fromCurrency != s.toCurrency
 
-    def renderExchangeRate(s: State) = div(
+    private def renderExchangeRate(s: State) = div(
       div(grid.columnAll(2), div(className := "alert alert-info", textAlign := "center", lineHeight := "30px",
         f"${BigDecimal(s.fromAmount) / BigDecimal(s.toAmount)}%1.3f ${s.fromCurrency.sign}/${s.toCurrency.sign}")),
       div(grid.columnAll(2), div(className := "alert alert-info", textAlign := "center", lineHeight := "30px",
@@ -98,7 +96,7 @@ object ExchangeC {
     def render(pr: Props, state: State) = div(
       form(
         common.formHorizontal,
-        onSubmit ==> onFormSubmit,
+        onSubmit ==> dontSubmit,
         FormGroup(
           div(grid.columnAll(5),
             div(className := "input-group",
@@ -112,14 +110,16 @@ object ExchangeC {
                 onChange ==> onTextChange { (s, v) ⇒
                   val (am, copt) = amountCurrencyHelper(v)
                   copt.map(c ⇒ s.copy(fromCurrency = c))
-                      .getOrElse(s).copy(fromAmount = am)
+                    .getOrElse(s).copy(fromAmount = am)
                 }
               ),
               div(className := "input-group-btn",
                 CurrencySelector(
                   state.fromCurrency,
                   c ⇒ applyStateChange[Currency]((st, v) ⇒ st.copy(fromCurrency = v))(c),
-                  addStyles = Seq(increasedFontSize, inputCurrencyAddon))
+                  Currency.values.toList,
+                  style = common.context.info,
+                  addAttributes = Seq(increasedFontSize, inputCurrencyAddon))
               )
             )
           ),
@@ -136,14 +136,16 @@ object ExchangeC {
                 onChange ==> onTextChange { (s, v) ⇒
                   val (am, copt) = amountCurrencyHelper(v)
                   copt.map(c ⇒ s.copy(toCurrency = c))
-                      .getOrElse(s).copy(toAmount = am)
+                    .getOrElse(s).copy(toAmount = am)
                 }
               ),
               div(className := "input-group-btn",
                 CurrencySelector(
                   state.toCurrency,
                   c ⇒ applyStateChange[Currency]((st, v) ⇒ st.copy(toCurrency = v))(c),
-                  addStyles = Seq(increasedFontSize, inputCurrencyAddon))
+                  Currency.values.toList,
+                  style = common.context.info,
+                  addAttributes = Seq(increasedFontSize, inputCurrencyAddon))
               )
             )
           )
@@ -203,10 +205,10 @@ object ExchangeC {
   }
 
   val component = ReactComponentB[Props]("CurrencyExchangeComponent")
-      .initialState(State("", Currency.EUR, "", Currency.RUR, ""))
-      .renderBackend[Backend]
-      .componentDidMount(s ⇒ s.backend.loadData(s.props))
-      .build
+    .initialState(State("", Currency.EUR, "", Currency.RUR, ""))
+    .renderBackend[Backend]
+    .componentDidMount(s ⇒ s.backend.loadData(s.props))
+    .build
 
   def apply(log: ModelProxy[Pot[List[Event]]]) = component(Props(log))
 }

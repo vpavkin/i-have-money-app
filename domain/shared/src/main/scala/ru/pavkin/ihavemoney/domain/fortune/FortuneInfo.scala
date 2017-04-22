@@ -10,10 +10,10 @@ case class FortuneInfo(
 
   private def limitsWithTotal(limits: Map[ExpenseCategory, Worth]) =
     limits + (
-        ExpenseCategory(ExpenseCategory.total) ->
+        ExpenseCategory.Total ->
             Worth(limits.values.map(_.amount).sum, limits.values.headOption.map(_.currency).getOrElse(Currency.EUR))
         )
 
-  def weeklyLimitsWithTotal = limitsWithTotal(weeklyLimits)
-  def monthlyLimitsWithTotal = limitsWithTotal(monthlyLimits)
+  def weeklyLimitsWithTotal: Map[ExpenseCategory, Worth] = limitsWithTotal(weeklyLimits)
+  def monthlyLimitsWithTotal: Map[ExpenseCategory, Worth] = limitsWithTotal(monthlyLimits)
 }

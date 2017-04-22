@@ -2,7 +2,6 @@ package ru.pavkin.ihavemoney.frontend.components
 
 import java.time.LocalDate
 
-
 import diode.data.Pot
 import diode.react.ModelProxy
 import diode.react.ReactPot._
@@ -11,34 +10,38 @@ import japgolly.scalajs.react.{Callback, _}
 import ru.pavkin.ihavemoney.domain.fortune.Currency
 import ru.pavkin.ihavemoney.frontend.bootstrap.attributes._
 import ru.pavkin.ihavemoney.frontend.bootstrap.{Checkbox, FormGroup}
+import ru.pavkin.ihavemoney.frontend.components.selectors.CurrencySelector
 import ru.pavkin.ihavemoney.frontend.redux.AppCircuit
 import ru.pavkin.ihavemoney.frontend.redux.actions.LoadCategories
 import ru.pavkin.ihavemoney.frontend.redux.model.Categories
-import ru.pavkin.ihavemoney.frontend.styles.Global.{style => _, _}
+import ru.pavkin.ihavemoney.frontend.styles.Global._
 import ru.pavkin.utils.date._
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 import scalacss.ScalaCssReact._
+import ReactHelpers._
+import ru.pavkin.ihavemoney.domain.Named
+import Named.ops._
 
-abstract class CommonTransactionC(implicit ec: ExecutionContext) {
+abstract class CommonTransactionC[Cat: Named](implicit ec: ExecutionContext) {
 
   case class State(
-      currency: Currency,
-      amount: String,
-      category: String,
-      comment: String,
-      transactionDate: String = LocalDate.now.yyyymmdd,
-      initializer: Boolean = false,
-      loading: Boolean = false)
+    currency: Currency,
+    amount: String,
+    category: Cat,
+    comment: String,
+    transactionDate: String = LocalDate.now.yyyymmdd,
+    initializer: Boolean = false,
+    loading: Boolean = false)
 
   case class Props(categories: ModelProxy[Pot[Categories]])
 
-  def defaultCategories: Set[String]
-  def enrich(real: List[String]): Set[String] = defaultCategories ++ real
+  def defaultCategories: Set[Cat]
+  def enrich(real: List[Cat]): Set[Cat] = defaultCategories ++ real
 
   abstract class CommonTransactionBackend($: BackendScope[Props, State]) {
-    def onTextChange(change: (State, String) ⇒ State)(e: ReactEventI) = {
+    def onTextChange(change: (State, String) ⇒ State)(e: ReactEventI): Callback = {
       val newValue = e.target.value
       applyStateChange(change)(newValue)
     }
@@ -53,29 +56,27 @@ abstract class CommonTransactionC(implicit ec: ExecutionContext) {
     def applyStateChange[T](change: (State, T) ⇒ State)(newValue: T): Callback =
       $.modState(change(_, newValue))
 
-    def onFormSubmit(e: ReactEventI) = e.preventDefaultCB
-
     def genSubmit[T](st: State)(req: ⇒ Future[T]): Callback =
       if (!isValid(st))
         Callback.alert("Invalid data")
       else
         $.modState(_.copy(loading = true)) >>
-            Callback.future(req.map {
-              case Left(error) ⇒ Callback.alert(s"Error: $error")
-              case _ ⇒ $.modState(_.copy(
-                currency = Currency.EUR,
-                amount = "",
-                comment = "",
-                initializer = false,
-                loading = false
-              ))
-            })
+          Callback.future(req.map {
+            case Left(error) ⇒ Callback.alert(s"Error: $error")
+            case _ ⇒ $.modState(_.copy(
+              currency = Currency.EUR,
+              amount = "",
+              comment = "",
+              initializer = false,
+              loading = false
+            ))
+          })
 
 
-    def isValid(s: State) =
+    def isValid(s: State): Boolean =
       Try(BigDecimal(s.amount)).isSuccess &&
-          s.category.nonEmpty &&
-          LocalDateParser.fromYYYYMMDD(s.transactionDate).isSuccess
+        s.category.name.nonEmpty &&
+        LocalDateParser.fromYYYYMMDD(s.transactionDate).isSuccess
 
     def init: Callback = Callback {
       AppCircuit.dispatch(LoadCategories())
@@ -88,7 +89,7 @@ abstract class CommonTransactionC(implicit ec: ExecutionContext) {
     def renderForm(pr: Props, state: State) = div(
       form(
         common.formHorizontal,
-        onSubmit ==> onFormSubmit,
+        onSubmit ==> dontSubmit,
         FormGroup(
           HorizontalForm.Label("Amount", "amountInput"),
           div(grid.columnAll(8),
@@ -107,12 +108,14 @@ abstract class CommonTransactionC(implicit ec: ExecutionContext) {
                 CurrencySelector(
                   state.currency,
                   c ⇒ applyStateChange[Currency]((st, v) ⇒ st.copy(currency = v))(c),
-                  addStyles = Seq(increasedFontSize, inputCurrencyAddon))
+                  Currency.values.toList,
+                  style = common.context.info,
+                  addAttributes = Seq(increasedFontSize, inputCurrencyAddon))
               )
             )
           ),
           pr.categories().renderReady(categories ⇒
-            renderCategoriesSelector(pr, state)(categories)
+            div(grid.columnAll(2), renderCategoriesSelector(pr, state)(categories))
           )
         ),
         FormGroup(
