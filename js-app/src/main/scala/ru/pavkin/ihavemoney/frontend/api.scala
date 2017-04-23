@@ -1,8 +1,7 @@
 package ru.pavkin.ihavemoney.frontend
 
-import java.time.LocalDate
+import java.time.{LocalDate, Year}
 import java.util.UUID
-
 
 import io.circe.Decoder
 import io.circe.syntax._
@@ -46,7 +45,7 @@ object api {
     def readFortune: BaseUrl = readFrontBaseUrl / "fortune"
     def getFortunes: BaseUrl = readFrontBaseUrl / "fortunes"
     def getBalances(fortuneId: String): BaseUrl = readFortune / fortuneId / "balance"
-    def getEventLog(fortuneId: String): BaseUrl = readFortune / fortuneId / "log"
+    def getEventLog(fortuneId: String, year: Year): BaseUrl = readFortune / fortuneId / "log" / year.getValue.toString
     def getAssets(fortuneId: String): BaseUrl = readFortune / fortuneId / "assets"
     def getLiabilities(fortuneId: String): BaseUrl = readFortune / fortuneId / "liabilities"
     def getCategories(fortuneId: String): BaseUrl = readFortune / fortuneId / "categories"
@@ -184,8 +183,8 @@ object api {
       case FrontendLiabilities(_, liabilities) ⇒ liabilities
     })
 
-  def getEventLog(implicit ec: ExecutionContext): Future[RequestError Either List[Event]] =
-    query(routes.getEventLog(AppCircuit.fortuneId), {
+  def getEventLog(year: Year)(implicit ec: ExecutionContext): Future[RequestError Either List[Event]] =
+    query(routes.getEventLog(AppCircuit.fortuneId, year), {
       case FrontendEvents(_, transactions) ⇒ transactions
     })
 }

@@ -1,5 +1,7 @@
 package ru.pavkin.ihavemoney.readback
 
+import java.time.Year
+
 import akka.actor.Actor
 import io.funcqrs.akka.EventsSourceProvider
 import ru.pavkin.ihavemoney.domain.fortune.FortuneId
@@ -13,13 +15,13 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
 class InterfaceActor(
-    fortuneEventsProvider: EventsSourceProvider,
-    moneyRepo: MoneyViewRepository,
-    assetsRepo: AssetsViewRepository,
-    liabRepo: LiabilitiesViewRepository,
-    categoriesRepo: CategoriesViewProjection.Repo,
-    userRegistryRepo: FortunesPerUserProjection.Repo,
-    fortuneInfoRepo: FortuneInfoProjection.Repo) extends Actor {
+  fortuneEventsProvider: EventsSourceProvider,
+  moneyRepo: MoneyViewRepository,
+  assetsRepo: AssetsViewRepository,
+  liabRepo: LiabilitiesViewRepository,
+  categoriesRepo: CategoriesViewProjection.Repo,
+  userRegistryRepo: FortunesPerUserProjection.Repo,
+  fortuneInfoRepo: FortuneInfoProjection.Repo) extends Actor {
   implicit val dispatcher: ExecutionContext = context.system.dispatcher
 
   def hasAccess(user: UserId, toFortune: FortuneId): Future[Boolean] =
@@ -31,8 +33,8 @@ class InterfaceActor(
       case false ⇒ Future.successful(AccessDenied(q.id, s"User ${q.user} doesn't have access to fortune ${q.fortuneId}"))
     }
 
-  def log(id: FortuneId): Future[List[FortuneEvent]] =
-    new FortuneLogProjection(id, fortuneEventsProvider).run.map { all =>
+  def log(id: FortuneId, year: Year): Future[List[FortuneEvent]] =
+    new FortuneLogProjection(id, fortuneEventsProvider, year).run.map { all =>
       val cancelled = all.collect { case e: TransactionCancelled => e.transactionId }
       all.filter {
         case e: TransactionCancelled => false
@@ -49,12 +51,12 @@ class InterfaceActor(
             case m if !m.exists(_.nonEmpty) ⇒ Future.successful(FortunesQueryResult(userId, Nil))
             case Some(fortunes) ⇒
               Future.sequence(fortunes.map(fortuneInfoRepo.byId))
-                  .map(_.flatten.toList)
-                  .map(FortunesQueryResult(userId, _))
+                .map(_.flatten.toList)
+                .map(FortunesQueryResult(userId, _))
           }
 
-        case q@TransactionLog(_, uid, fortuneId) ⇒ checkAccess(q,
-          log(fortuneId).map(EventLogQueryResult(fortuneId, _))
+        case q@TransactionLog(_, uid, fortuneId, year) ⇒ checkAccess(q,
+          log(fortuneId, year).map(EventLogQueryResult(fortuneId, _))
         )
         case q@Categories(_, uid, fortuneId) ⇒ checkAccess(q,
           categoriesRepo.byId(fortuneId).map {
@@ -70,13 +72,13 @@ class InterfaceActor(
         )
         case q@Assets(id, uid, fortuneId) => checkAccess(q,
           assetsRepo.findAll(fortuneId)
-              .map(_.map { case (k, v) ⇒ k.value.toString -> v })
-              .map(AssetsQueryResult(fortuneId, _))
+            .map(_.map { case (k, v) ⇒ k.value.toString -> v })
+            .map(AssetsQueryResult(fortuneId, _))
         )
         case q@Liabilities(id, uid, fortuneId) => checkAccess(q,
           liabRepo.findAll(fortuneId)
-              .map(_.map { case (k, v) ⇒ k.value.toString -> v })
-              .map(LiabilitiesQueryResult(fortuneId, _))
+            .map(_.map { case (k, v) ⇒ k.value.toString -> v })
+            .map(LiabilitiesQueryResult(fortuneId, _))
         )
       }
       queryFuture.onComplete {

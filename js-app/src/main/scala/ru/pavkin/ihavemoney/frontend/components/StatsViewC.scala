@@ -41,7 +41,7 @@ object StatsViewC {
   class Backend($: BackendScope[Props, State]) {
 
     def loadData(pr: Props) = Callback {
-      AppCircuit.dispatch(LoadEventLog())
+      AppCircuit.dispatch(LoadEventLog(Year.now))
       AppCircuit.dispatch(LoadCategories())
     }
 

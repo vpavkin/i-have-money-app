@@ -1,6 +1,6 @@
 package ru.pavkin.ihavemoney.frontend.components
 
-import java.time.YearMonth
+import java.time.{Year, YearMonth}
 
 import diode.data.Pot
 import diode.react.ModelProxy
@@ -14,47 +14,54 @@ import ru.pavkin.ihavemoney.frontend.bootstrap.{Checkbox, Icon, Panel}
 import ru.pavkin.ihavemoney.frontend.components.selectors.ExpenseCategorySelector
 import ru.pavkin.ihavemoney.frontend.gravatar.GravatarAPI
 import ru.pavkin.ihavemoney.frontend.redux.AppCircuit
-import ru.pavkin.ihavemoney.frontend.redux.actions.{LoadCategories, LoadEventLog}
+import ru.pavkin.ihavemoney.frontend.redux.actions.{LoadCategories, LoadEventLog, SetTransactionLogUIState}
 import ru.pavkin.ihavemoney.frontend.redux.model.Categories
 import ru.pavkin.ihavemoney.frontend.styles.Global._
-import ru.pavkin.ihavemoney.protocol.{Event, Transaction, Expense}
+import ru.pavkin.ihavemoney.protocol.{Event, Expense, Transaction}
 import ru.pavkin.utils.date._
 import cats.syntax.eq._
+import cats.instances.int._
 import cats.Order.catsKernelOrderingForOrder
+import diode.ActionBatch
+import ru.pavkin.ihavemoney.frontend.components.state.TransactionLogUIState
 
 import scala.scalajs.concurrent.JSExecutionContext.Implicits.queue
 import scalacss.ScalaCssReact._
+import ReactHelpers._
 
-object TransactionLogC {
+object TransactionLogPage {
 
   case class Props(
+    year: Year,
     log: ModelProxy[Pot[List[Event]]],
-    categories: ModelProxy[Pot[Categories]])
+    categories: ModelProxy[Pot[Categories]],
+    uiStatePx: ModelProxy[TransactionLogUIState])
+    extends RemoteDataProps[Props] with ResetableUIStateProps {
 
-  case class State(
-    filterByCategory: Boolean = false,
-    category: ExpenseCategory = ExpenseCategory("Groceries"),
-    filterByMonth: Boolean = false,
-    month: YearMonth = YearMonth.now(),
-    textFilter: String = "")
+    def loadData: Callback = Callback(AppCircuit.dispatch(ActionBatch(
+      LoadEventLog(year),
+      LoadCategories()
+    )))
 
-  class Backend($: BackendScope[Props, State]) {
 
-    def loadData(pr: Props) = Callback {
-      AppCircuit.dispatch(LoadEventLog())
-      AppCircuit.dispatch(LoadCategories())
-    }
+    def resetUIState: Callback = dispatchStateChange(TransactionLogUIState.Default)
 
-    def amountStyle(amount: BigDecimal) =
-      if (amount >= 0) logPosAmount
-      else logNegAmount
+    def shouldReload(nextProps: Props): Boolean = year =!= nextProps.year
 
-    def onTextChange(change: (State, String) ⇒ State)(e: ReactEventI) = {
-      val newValue = e.target.value
-      applyStateChange(change)(newValue)
-    }
+    def state: TransactionLogUIState = uiStatePx()
 
-    def onCancelClick(t: Transaction[_]) = Callback {
+    def transactionFilter(t: Expense): Boolean =
+      (!state.filterByCategory || t.category === state.category) &&
+        (!state.filterByMonth || (t.date.getMonth == state.month.getMonth && t.date.getYear === state.month.getYear)) &&
+        (state.textFilter.isEmpty || t.comment.exists(_.toLowerCase.contains(state.textFilter.toLowerCase)))
+
+    def dispatchStateChange(newState: TransactionLogUIState): Callback =
+      AppCircuit.dispatchCB(SetTransactionLogUIState(newState))
+  }
+
+  class Backend($: BackendScope[Props, Unit]) {
+
+    private def onCancelClick(t: Transaction[_]) = Callback {
       val response = window.confirm(s"Are you sure to cancel transaction ${t.amount.toString}${t.currency.sign}, ${t.category} from ${t.date.ddmmyyyy}?")
       if (response)
         api.cancelTransaction(t.id).map {
@@ -63,23 +70,37 @@ object TransactionLogC {
         }
     }
 
-    def applyStateChange[T](change: (State, T) ⇒ State)(newValue: T): Callback =
-      $.modState(change(_, newValue))
-
-    def render(pr: Props, st: State) = div(common.container,
+    def render(pr: Props) = div(common.container,
       div(grid.columnAll(2),
         Panel(Some(h3(common.panelTitle, "Filters")),
           common.context.info,
-          Checkbox(isChecked ⇒ $.modState(_.copy(filterByCategory = isChecked)), st.filterByCategory, "By category"),
+          Checkbox(
+            isChecked ⇒ pr.dispatchStateChange(pr.state.copy(filterByCategory = isChecked)),
+            pr.state.filterByCategory,
+            "By category"),
           pr.categories().renderReady(cats =>
-            ExpenseCategorySelector(st.category, s => $.modState(_.copy(category = s)), cats.expense.sorted, common.context.info)
+            ExpenseCategorySelector(
+              pr.state.category,
+              s => pr.dispatchStateChange(pr.state.copy(category = s)),
+              cats.expense.sorted,
+              common.context.info)
           ),
           hr(),
-          Checkbox(isChecked ⇒ $.modState(_.copy(filterByMonth = isChecked)), st.filterByMonth, "By month"),
-          YearMonthSelector(st.month, onChange = ym => $.modState(_.copy(month = ym))),
+          Checkbox(
+            isChecked ⇒ pr.dispatchStateChange(pr.state.copy(filterByMonth = isChecked)),
+            pr.state.filterByMonth,
+            "By month"),
+          YearMonthSelector(
+            pr.state.month,
+            onChange = ym => pr.dispatchStateChange(pr.state.copy(month = ym))
+          ),
           hr(),
           label("Text search:"),
-          input.text(common.formControl, value := st.textFilter, onChange ==> onTextChange((s, v) => s.copy(textFilter = v)))
+          input.text(common.formControl,
+            value := pr.state.textFilter,
+            onChange ==> onInputChange { textFilter =>
+              pr.dispatchStateChange(pr.state.copy(textFilter = textFilter))
+            })
         )
       ),
       div(grid.columnAll(10),
@@ -88,13 +109,7 @@ object TransactionLogC {
           pr.log().renderEmpty(PreloaderC()),
           pr.log().renderPending(_ => PreloaderC()),
           pr.log().renderReady { log ⇒
-            val transactions = log.collect { case t: Expense => t }
-              .filter(t =>
-                (!st.filterByCategory || t.category === st.category)
-                  && (!st.filterByMonth || (t.date.getMonth == st.month.getMonth && t.date.getYear == st.month.getYear))
-                  && (st.textFilter.isEmpty || t.comment.exists(_.toLowerCase.contains(st.textFilter.toLowerCase)))
-              )
-
+            val transactions = log.collect { case t: Expense => t }.filter(pr.transactionFilter)
             div(
               table(className := "table table-striped table-hover table-condensed",
                 thead(tr(th(""), th("Date"), th("Category"), th("Amount"), th("Comment"), th(""))),
@@ -121,8 +136,10 @@ object TransactionLogC {
   }
 
   val component = ReactComponentB[Props]("LogComponent")
-    .initialState(State())
     .renderBackend[Backend]
-    .componentDidMount(s ⇒ s.backend.loadData(s.props))
+    .componentDidMount(scope => scope.props.resetUIState >> scope.props.loadData)
+    .componentWillReceiveProps(scope => Callback.when(scope.currentProps.shouldReload(scope.nextProps))(
+      scope.nextProps.loadData
+    ))
     .build
 }

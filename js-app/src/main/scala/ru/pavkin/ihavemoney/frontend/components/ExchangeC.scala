@@ -1,5 +1,7 @@
 package ru.pavkin.ihavemoney.frontend.components
 
+import java.time.Year
+
 import diode.data.Pot
 import diode.react.ModelProxy
 import japgolly.scalajs.react._
@@ -13,6 +15,7 @@ import ru.pavkin.ihavemoney.frontend.styles.Global._
 import ru.pavkin.ihavemoney.protocol.{CurrencyExchanged, Event, Transaction}
 import ru.pavkin.utils.option._
 import ReactHelpers._
+
 import scala.concurrent.Future
 import scala.scalajs.concurrent.JSExecutionContext.Implicits.queue
 import scala.util.Try
@@ -37,7 +40,7 @@ object ExchangeC {
   class Backend($: BackendScope[Props, State]) {
 
     def loadData(pr: Props) = Callback {
-      AppCircuit.dispatch(LoadEventLog())
+      AppCircuit.dispatch(LoadEventLog(Year.now))
     }
 
     private def onExchangeSubmit(state: State): Callback = genSubmit(state)(api.exchange(
