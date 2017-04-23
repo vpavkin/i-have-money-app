@@ -175,7 +175,10 @@ object FortuneProtocol extends ProtocolLike {
     overrideDate: Option[LocalDate] = None,
     initializer: Boolean = false,
     metadata: FortuneMetadata,
-    comment: Option[String] = None) extends FortuneEvent
+    comment: Option[String] = None) extends FortuneEvent {
+    def expenseDate: LocalDate = overrideDate.getOrElse(date.toLocalDate)
+  }
+
 
   case class CurrencyExchanged(
     user: UserId,

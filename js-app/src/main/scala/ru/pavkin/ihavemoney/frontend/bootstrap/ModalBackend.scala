@@ -27,18 +27,16 @@ abstract class ModalBackend[Props, State]($: BackendScope[Props, State]) {
     BootstrapJQuery.showModal($.getDOMNode(), close, backdrop, keyboard)
   }
 
-  def render(pr: Props, st: State) = {
+  def render(props: Props, state: State) = {
     val m = common.modal
     div(m.modal, m.fade, role := "dialog", aria.hidden := true,
       div(m.dialog,
         div(m.content,
-          div(m.header, renderHeader(pr, st)(hide)),
-          div(m.body, renderBody(pr, st)(hide)),
-          div(m.footer, renderFooter(pr, st)(hide))
+          div(m.header, renderHeader(props, state)(hide)),
+          div(m.body, renderBody(props, state)(hide)),
+          div(m.footer, renderFooter(props, state)(hide))
         )
       )
     )
   }
-
-
 }

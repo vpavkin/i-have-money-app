@@ -63,19 +63,13 @@ object StatsViewC {
 
         val yearExpensesAggregated =
           yearExpensesByCategory
-            .mapValues(_.map {
-              case e if e.currency === st.yearCurAgg => -e.amount
-              case e if e.currency =!= st.yearCurAgg => AppCircuit.exchange(-e.amount, e.currency, st.yearCurAgg)
-            }.sum)
+            .mapValues(_.map(e => AppCircuit.exchange(-e.amount, e.currency, st.yearCurAgg)).sum)
 
         val yearWithTotal = yearExpensesAggregated.toList.sortBy(_._1) :+ (ExpenseCategory.Total -> yearExpensesAggregated.values.sum)
 
         val yearIncomeAggregated = yearTransactions
           .collect { case t: Income => t }
-          .map {
-            case e if e.currency === st.yearCurAgg => e.amount
-            case e if e.currency =!= st.yearCurAgg => AppCircuit.exchange(e.amount, e.currency, st.yearCurAgg)
-          }.sum
+          .map(e => AppCircuit.exchange(e.amount, e.currency, st.yearCurAgg)).sum
 
         // month data
 
@@ -88,19 +82,13 @@ object StatsViewC {
 
         val monthlyExpensesAggregated =
           monthlyExpensesByCategory
-            .mapValues(_.map {
-              case e if e.currency === st.monthCurAgg => -e.amount
-              case e if e.currency =!= st.monthCurAgg => AppCircuit.exchange(-e.amount, e.currency, st.monthCurAgg)
-            }.sum)
+            .mapValues(_.map(e => AppCircuit.exchange(-e.amount, e.currency, st.monthCurAgg)).sum)
 
         val monthlyWithTotal = monthlyExpensesAggregated.toList.sortBy(_._1) :+ (ExpenseCategory.Total -> monthlyExpensesAggregated.values.sum)
 
         val monthlyIncomeAggregated = monthlyTransactions
           .collect { case t: Income => t }
-          .map {
-            case e if e.currency === st.monthCurAgg => e.amount
-            case e if e.currency =!= st.monthCurAgg => AppCircuit.exchange(e.amount, e.currency, st.monthCurAgg)
-          }.sum
+          .map(e => AppCircuit.exchange(e.amount, e.currency, st.monthCurAgg)).sum
 
         val weeklyExpensesByCategory = log
           .filter(e => e.date.toEpochDay >= st.week.toEpochDay && e.date.toEpochDay <= st.week.plusDays(6).toEpochDay)
@@ -109,10 +97,7 @@ object StatsViewC {
 
         val weeklyExpensesAggregated =
           weeklyExpensesByCategory
-            .mapValues(_.map {
-              case e if e.currency === st.weekCurAgg => -e.amount
-              case e if e.currency =!= st.weekCurAgg => AppCircuit.exchange(-e.amount, e.currency, st.weekCurAgg)
-            }.sum)
+            .mapValues(_.map(e => AppCircuit.exchange(-e.amount, e.currency, st.weekCurAgg)).sum)
 
         val weeklyWithTotal = weeklyExpensesAggregated.toList.sortBy(_._1) :+ (ExpenseCategory.Total -> weeklyExpensesAggregated.values.sum)
 

@@ -47,6 +47,8 @@ case class LoadCategories(potResult: Pot[Categories] = Pot.empty)
 
 case class SetTransactionLogUIState(uiState: TransactionLogUIState) extends Action
 
+case class DownloadYearlyReport(year: Year) extends Action
+
 case class LoggedIn(auth: Auth) extends Action
 case object LoggedOut extends Action
 

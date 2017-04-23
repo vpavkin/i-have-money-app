@@ -18,3 +18,4 @@ project/plugins/project/
 
 sbt-*.sh
 .DS_Store
+reports
