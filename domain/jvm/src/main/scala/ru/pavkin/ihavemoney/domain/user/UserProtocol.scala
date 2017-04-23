@@ -5,6 +5,7 @@ import java.time.OffsetDateTime
 import cats.Eq
 import io.funcqrs._
 
+@SerialVersionUID(3284781466947235051L)
 case class UserId(email: String) extends AggregateId {
   val value: String = email
 }
