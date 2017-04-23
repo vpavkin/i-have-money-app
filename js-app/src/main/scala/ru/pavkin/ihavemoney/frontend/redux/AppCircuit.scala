@@ -6,7 +6,7 @@ import diode.react.ReactConnector
 import io.circe.parser._
 import io.circe.syntax._
 import org.scalajs.dom
-import ru.pavkin.ihavemoney.domain.fortune.{Currency, ExchangeRate, FortuneInfo}
+import ru.pavkin.ihavemoney.domain.fortune.{Currency, ExchangeRate, ExchangeRates, FortuneInfo}
 import ru.pavkin.ihavemoney.frontend.redux.handlers._
 import ru.pavkin.ihavemoney.frontend.redux.model.RootModel
 import ru.pavkin.ihavemoney.protocol.Auth
@@ -46,13 +46,9 @@ object AppCircuit extends Circuit[RootModel] with ReactConnector[RootModel] with
   def fortunes: List[FortuneInfo] = state.fortunes.get
   def fortune: FortuneInfo = fortunes.head
   def fortuneId: String = fortune.id
-  def exchangeRates: List[ExchangeRate] = state.exchangeRates.get
+  def exchangeRates: ExchangeRates = state.exchangeRates.get
 
   def exchange(amount: BigDecimal, from: Currency, to: Currency): BigDecimal =
-    if (from === to) amount else
-      exchangeRates
-        .find(r => r.from === from && r.to === to).map(_.rate * amount)
-        .orElse(exchangeRates.find(r => r.from === to && r.to === from).map(amount / _.rate))
-        .get
+    exchangeRates.exchange(amount, from, to).get
 
 }
