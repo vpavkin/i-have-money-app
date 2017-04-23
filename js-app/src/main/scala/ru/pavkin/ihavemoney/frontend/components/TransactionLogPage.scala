@@ -8,7 +8,7 @@ import diode.react.ReactPot._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.all._
 import org.scalajs.dom.window
-import ru.pavkin.ihavemoney.domain.fortune.ExpenseCategory
+import ru.pavkin.ihavemoney.domain.fortune.{Currency, ExpenseCategory}
 import ru.pavkin.ihavemoney.frontend.api
 import ru.pavkin.ihavemoney.frontend.bootstrap.{Checkbox, Icon, Panel}
 import ru.pavkin.ihavemoney.frontend.components.selectors.ExpenseCategorySelector
@@ -110,6 +110,7 @@ object TransactionLogPage {
           pr.log().renderPending(_ => PreloaderC()),
           pr.log().renderReady { log ⇒
             val transactions = log.collect { case t: Expense => t }.filter(pr.transactionFilter)
+            val total = transactions.groupBy(_.currency).mapValues(_.map(_.amount).sum)
             div(
               table(className := "table table-striped table-hover table-condensed",
                 thead(tr(th(""), th("Date"), th("Category"), th("Amount"), th("Comment"), th(""))),
@@ -127,6 +128,15 @@ object TransactionLogPage {
                     )
                   }
                 )
+              ),
+              hr(),
+              h4("Totals by currency: "),
+              total.map { case (currency, amount) => h4(logNegAmount, renderAmount(amount) + currency.sign) },
+
+              hr(),
+              h4("Total in eur: ", span(logNegAmount, renderAmount(total.map {
+                case (currency, amount) => AppCircuit.exchange(amount, currency, Currency.EUR)
+              }.sum) + Currency.EUR.sign)
               )
             )
           }

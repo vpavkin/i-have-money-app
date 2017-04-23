@@ -1,6 +1,6 @@
 package ru.pavkin.utils
 
-import java.time.{LocalDate, Year, YearMonth}
+import java.time.{LocalDate, Month, Year, YearMonth}
 
 import cats.Eq
 import strings.syntax._
@@ -10,6 +10,8 @@ import scala.util.{Failure, Try}
 object date {
 
   implicit val eqYear: Eq[Year] = Eq.fromUniversalEquals
+  implicit val eqYearMonth: Eq[YearMonth] = Eq.fromUniversalEquals
+  implicit val eqMonth: Eq[Month] = Eq.fromUniversalEquals
 
   private def p(i: Int): String = i.toString.padLeft(2, '0')
 

@@ -49,9 +49,10 @@ object AppCircuit extends Circuit[RootModel] with ReactConnector[RootModel] with
   def exchangeRates: List[ExchangeRate] = state.exchangeRates.get
 
   def exchange(amount: BigDecimal, from: Currency, to: Currency): BigDecimal =
-    exchangeRates.find(r => r.from === from && r.to === to).map(_.rate * amount)
-      .orElse(exchangeRates.find(r =>
-        r.from === to && r.to === from
-      ).map(amount / _.rate)).get
+    if (from === to) amount else
+      exchangeRates
+        .find(r => r.from === from && r.to === to).map(_.rate * amount)
+        .orElse(exchangeRates.find(r => r.from === to && r.to === from).map(amount / _.rate))
+        .get
 
 }
