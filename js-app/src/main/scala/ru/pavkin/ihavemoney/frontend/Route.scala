@@ -1,5 +1,7 @@
 package ru.pavkin.ihavemoney.frontend
 
+import java.time.Year
+
 sealed trait Route
 
 object Route {
@@ -11,6 +13,6 @@ object Route {
   case object Exchange extends Route
   case object BalanceView extends Route
   case object StatsView extends Route
-  case object TransactionLogView extends Route
+  case class TransactionLog(year: Year) extends Route
   case object FortuneSettingsView extends Route
 }

@@ -41,16 +41,9 @@ object StatsViewC {
   class Backend($: BackendScope[Props, State]) {
 
     def loadData(pr: Props) = Callback {
-      AppCircuit.dispatch(LoadEventLog())
+      AppCircuit.dispatch(LoadEventLog(Year.now))
       AppCircuit.dispatch(LoadCategories())
     }
-
-    private def amountStyle(amount: BigDecimal) =
-      if (amount >= 0) logPosAmount
-      else logNegAmount
-
-    private def renderAmount(a: BigDecimal): String =
-      a.setScale(2, RoundingMode.HALF_UP).toString()
 
     private def convertLimit(l: Worth, currency: Currency): BigDecimal =
       if (l.currency === currency) l.amount
@@ -86,7 +79,7 @@ object StatsViewC {
 
         // month data
 
-        val monthlyTransactions = log.filter(e => e.date.getMonth == st.month.getMonth && e.date.getYear === st.month.getYear)
+        val monthlyTransactions = log.filter(e => e.date.getMonth === st.month.getMonth && e.date.getYear === st.month.getYear)
 
         val monthlyExpensesByCategory =
           monthlyTransactions

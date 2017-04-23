@@ -1,5 +1,8 @@
+import java.time.{LocalDate, Year}
+
 import diode.data._
 import japgolly.scalajs.react._
+import japgolly.scalajs.react.extra.router.StaticDsl.RouteB
 import japgolly.scalajs.react.extra.router.{Redirect, Resolution, Router, RouterConfigDsl, RouterCtl}
 import japgolly.scalajs.react.vdom.all._
 import org.scalajs.dom
@@ -9,9 +12,11 @@ import ru.pavkin.ihavemoney.frontend.redux.actions.{LoggedIn, SetInitializerRedi
 import ru.pavkin.ihavemoney.frontend.styles.Global
 import ru.pavkin.ihavemoney.frontend.styles.Global._
 import ru.pavkin.ihavemoney.frontend.{Route, api}
+import ru.pavkin.utils.date._
 
 import scala.scalajs.js.JSApp
 import scala.scalajs.js.annotation.JSExport
+import scala.util.Try
 import scalacss.Defaults._
 import scalacss.ScalaCssReact._
 
@@ -20,15 +25,27 @@ object IHaveMoneyApp extends JSApp {
   val routerConfig = RouterConfigDsl[Route].buildConfig { dsl ⇒
     import dsl._
 
+    val localDate: RouteB[LocalDate] = new RouteB[LocalDate](
+      "([0-9]{1,2}\\.[0-9]{1,2}\\.[0-9]{4})",
+      1, g => LocalDateParser.fromDDMMYYY(g(0)).toOption, _.ddmmyyyy
+    )
+
+    val year: RouteB[Year] = new RouteB[Year](
+      "([0-9]{4})",
+      1, g => Try(Year.of(g(0).toInt)).toOption, _.getValue.toString
+    )
+
     def renderExchange = render(connectors.log(l ⇒ ExchangeC(l)))
     def renderStats = render(connectors.log(b ⇒
       connectors.categories(c =>
         StatsViewC.component(StatsViewC.Props(AppCircuit.fortune, c, b))
       )
     ))
-    def renderLog = render(connectors.log(b ⇒
+    def renderLog(route: Route.TransactionLog) = render(connectors.log(b ⇒
       connectors.categories(c =>
-        TransactionLogC.component(TransactionLogC.Props(b, c))
+        connectors.transactionLogUIState(uiState =>
+          TransactionLogPage.component(TransactionLogPage.Props(route.year, b, c, uiState))
+        )
       )
     ))
     def renderExpenses = render(connectors.categories(c ⇒ ExpensesC(c)))
@@ -52,17 +69,17 @@ object IHaveMoneyApp extends JSApp {
       case _ ⇒ ()
     }
 
-    (trimSlashes
-      | staticRoute(root, Route.Initializer) ~> renderInitializer
-      | staticRoute("#nofortune", Route.NoFortunes) ~> renderR(ctl ⇒ NoFortuneC.component(ctl))
-      | staticRoute("#expenses", Route.Expenses) ~> renderExpenses
-      | staticRoute("#income", Route.Income) ~> renderIncome
-      | staticRoute("#exchange", Route.Exchange) ~> renderExchange
-      | staticRoute("#balance", Route.BalanceView) ~> renderBalance
-      | staticRoute("#stats", Route.StatsView) ~> renderStats
-      | staticRoute("#settings", Route.FortuneSettingsView) ~> renderFortuneSettings
-      | staticRoute("#log", Route.TransactionLogView) ~> renderLog
-      | staticRoute("#login", Route.Login) ~> renderR(ctl ⇒ LoginC.component(ctl)))
+    (trimSlashes |
+      staticRoute(root, Route.Initializer) ~> renderInitializer |
+      staticRoute("#nofortune", Route.NoFortunes) ~> renderR(ctl ⇒ NoFortuneC.component(ctl)) |
+      staticRoute("#expenses", Route.Expenses) ~> renderExpenses |
+      staticRoute("#income", Route.Income) ~> renderIncome |
+      staticRoute("#exchange", Route.Exchange) ~> renderExchange |
+      staticRoute("#balance", Route.BalanceView) ~> renderBalance |
+      staticRoute("#stats", Route.StatsView) ~> renderStats |
+      staticRoute("#settings", Route.FortuneSettingsView) ~> renderFortuneSettings |
+      dynamicRouteCT[Route.TransactionLog](("#log" / year).caseClass[Route.TransactionLog]) ~> renderLog |
+      staticRoute("#login", Route.Login) ~> renderR(ctl ⇒ LoginC.component(ctl)))
       .notFound(redirectToPage(Route.Expenses)(Redirect.Replace))
       .renderWith(layout)
       .onPostRender((prev, next) => Callback {

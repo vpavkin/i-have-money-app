@@ -1,5 +1,7 @@
 package ru.pavkin.ihavemoney.frontend.components
 
+import java.time.Year
+
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra.router.RouterCtl
 import japgolly.scalajs.react.vdom.all._
@@ -21,8 +23,8 @@ object NavigationBar {
   class Backend($: BackendScope[RouterCtl[Route], State]) {
 
     def logOut(router: RouterCtl[Route])(e: ReactEventI) = e.preventDefaultCB >>
-        Callback(AppCircuit.dispatch(LoggedOut)) >>
-        router.set(Route.Login)
+      Callback(AppCircuit.dispatch(LoggedOut)) >>
+      router.set(Route.Login)
 
     def render(ctl: RouterCtl[Route], s: State) = {
       def routeLink(name: String, target: Route) =
@@ -51,7 +53,7 @@ object NavigationBar {
               routeLink("Income", Income),
               routeLink("Exchange", Exchange),
               routeLink("Balance View", BalanceView),
-              routeLink("TransactionLog", TransactionLogView),
+              routeLink("TransactionLog", TransactionLog(Year.now())),
               routeLink("Stats", StatsView),
               routeLink("Settings", FortuneSettingsView)
             ),
@@ -72,7 +74,7 @@ object NavigationBar {
   }
 
   val component = ReactComponentB[RouterCtl[Route]]("Menu")
-      .initialState(State(""))
-      .renderBackend[Backend]
-      .build
+    .initialState(State(""))
+    .renderBackend[Backend]
+    .build
 }

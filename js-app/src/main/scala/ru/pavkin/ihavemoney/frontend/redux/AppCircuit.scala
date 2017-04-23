@@ -13,9 +13,7 @@ import ru.pavkin.ihavemoney.frontend.redux.model.RootModel
 import ru.pavkin.ihavemoney.protocol.Auth
 import cats.syntax.eq._
 
-object AppCircuit extends Circuit[RootModel] with ReactConnector[RootModel] {
-
-  type Unsubscriber = () ⇒ Unit
+object AppCircuit extends Circuit[RootModel] with ReactConnector[RootModel] with CircuitHelpers[RootModel] {
 
   val LS_KEY: String = "i-have-money-auth"
   def tryGetAuthFromLocalStorage: Option[Auth] =
@@ -37,31 +35,24 @@ object AppCircuit extends Circuit[RootModel] with ReactConnector[RootModel] {
     new LoadCategoriesHandler(zoomRW(_.categories)((m, v) => m.copy(categories = v))),
     new ModalHandler(zoomRW(_.modal)((m, v) => m.copy(modal = v))),
     new SendRequestHandler(zoomRW(_.activeRequest)((m, v) => m.copy(activeRequest = v))),
-    new InitializerRedirectsToHandler(zoomRW(_.initializerRedirectsTo)((m, v) => m.copy(initializerRedirectsTo = v)))
+    new InitializerRedirectsToHandler(zoomRW(_.initializerRedirectsTo)((m, v) => m.copy(initializerRedirectsTo = v))),
+
+    new TransactionLogUIStateHandler(zoomRW(_.transactionLogUIState)((m, v) => m.copy(transactionLogUIState = v)))
   )
 
   override def initialModel = RootModel(None)
 
-  def subscribeU[T](cursor: ModelR[RootModel, T])(listener: (Unsubscriber, ModelRO[T]) => Unit): Unit = {
-    var unsubscribe: () ⇒ Unit = () ⇒ ()
-    unsubscribe = subscribe(cursor)(m ⇒ listener(unsubscribe, m))
-  }
-
-  def state: RootModel = zoom(identity).value
-  def stateCursor: ModelR[RootModel, RootModel] = zoom(identity(_))
   def auth: Option[Auth] = state.auth
   def fortunes: List[FortuneInfo] = state.fortunes.get
   def fortune: FortuneInfo = fortunes.head
   def fortuneId: String = fortune.id
   def exchangeRates: List[ExchangeRate] = state.exchangeRates.get
 
-  def showModal(modal: ReactElement): Unit = dispatch(ShowModal(modal))
-  def hideModal(): Unit = dispatch(HideModal)
-
   def exchange(amount: BigDecimal, from: Currency, to: Currency): BigDecimal =
-    exchangeRates.find(r => r.from === from && r.to === to).map(_.rate * amount)
-        .orElse(exchangeRates.find(r =>
-          r.from === to && r.to === from
-        ).map(amount / _.rate)).get
+    if (from === to) amount else
+      exchangeRates
+        .find(r => r.from === from && r.to === to).map(_.rate * amount)
+        .orElse(exchangeRates.find(r => r.from === to && r.to === from).map(amount / _.rate))
+        .get
 
 }

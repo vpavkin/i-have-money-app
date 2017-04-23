@@ -71,10 +71,6 @@ object BalanceViewC {
     private def isValid(s: State) =
       Try(BigDecimal(s.correctionAmount)).toOption.exists(_ >= 0)
 
-    private def amountStyle(amount: BigDecimal) =
-      if (amount >= 0) logPosAmount
-      else logNegAmount
-
     def render(pr: Props, state: State) = div(
       div(common.container,
         div(grid.columnAll(2),
@@ -84,7 +80,7 @@ object BalanceViewC {
             pr.balances().renderPending(_ => PreloaderC()),
             pr.balances().renderReady(balances ⇒
               div(
-                table(className := "table table-striped table-hover table-condensed",
+                table(common.table, common.tableStriped, common.tableCondensed, common.tableHover,
                   tbody(
                     balances.map {
                       case (currency, amount) ⇒ tr(td(currency.code), td(amount.toString))

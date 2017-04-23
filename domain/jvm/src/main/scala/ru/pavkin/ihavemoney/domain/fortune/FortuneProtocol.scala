@@ -3,14 +3,18 @@ package ru.pavkin.ihavemoney.domain.fortune
 import java.time.{LocalDate, OffsetDateTime}
 import java.util.UUID
 
+import cats.Eq
 import io.funcqrs._
 import ru.pavkin.ihavemoney.domain.user.UserId
 import cats.syntax.eq._
 
 case class FortuneId(value: String) extends AggregateId
+
 object FortuneId {
   def fromString(aggregateId: String): FortuneId = FortuneId(aggregateId)
   def generate: FortuneId = FortuneId(UUID.randomUUID().toString)
+
+  implicit val eqInstance: Eq[FortuneId] = Eq.fromUniversalEquals
 }
 
 object FortuneProtocol extends ProtocolLike {

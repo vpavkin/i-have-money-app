@@ -164,6 +164,7 @@ class Base(implicit r: StyleSheet.Register) extends StyleSheet.Inline()(r) {
   val tableBordered: StyleA = classNamesStyle("table-bordered")
   val tableStriped: StyleA = classNamesStyle("table-striped")
   val tableCondensed: StyleA = classNamesStyle("table-condensed")
+  val tableHover: StyleA = classNamesStyle("table-hover")
 
   val navbarOpt: context => StyleA = commonStyle(commonDomain, "navbar")
   val navbar: StyleA = navbarOpt(default)
