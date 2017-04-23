@@ -394,7 +394,8 @@ lazy val readFrontend = project.in(file("read-frontend"))
       "io.circe" %% "circe-core" % circeVersion,
       "io.circe" %% "circe-generic" % circeVersion,
       "io.circe" %% "circe-parser" % circeVersion,
-      "de.heikoseeberger" %% "akka-http-circe" % akkaHttpCirceVersion
+      "de.heikoseeberger" %% "akka-http-circe" % akkaHttpCirceVersion,
+      "com.norbitltd" %% "spoiwo" % "1.2.0"
     ),
     testDependencies
   )

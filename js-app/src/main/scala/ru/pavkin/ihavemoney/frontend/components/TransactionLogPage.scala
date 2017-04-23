@@ -10,11 +10,11 @@ import japgolly.scalajs.react.vdom.all._
 import org.scalajs.dom.window
 import ru.pavkin.ihavemoney.domain.fortune.{Currency, ExpenseCategory}
 import ru.pavkin.ihavemoney.frontend.api
-import ru.pavkin.ihavemoney.frontend.bootstrap.{Checkbox, Icon, Panel}
+import ru.pavkin.ihavemoney.frontend.bootstrap.{Button, Checkbox, Icon, Panel}
 import ru.pavkin.ihavemoney.frontend.components.selectors.ExpenseCategorySelector
 import ru.pavkin.ihavemoney.frontend.gravatar.GravatarAPI
 import ru.pavkin.ihavemoney.frontend.redux.AppCircuit
-import ru.pavkin.ihavemoney.frontend.redux.actions.{LoadCategories, LoadEventLog, SetTransactionLogUIState}
+import ru.pavkin.ihavemoney.frontend.redux.actions.{DownloadYearlyReport, LoadCategories, LoadEventLog, SetTransactionLogUIState}
 import ru.pavkin.ihavemoney.frontend.redux.model.Categories
 import ru.pavkin.ihavemoney.frontend.styles.Global._
 import ru.pavkin.ihavemoney.protocol.{Event, Expense, Transaction}
@@ -100,7 +100,9 @@ object TransactionLogPage {
             value := pr.state.textFilter,
             onChange ==> onInputChange { textFilter =>
               pr.dispatchStateChange(pr.state.copy(textFilter = textFilter))
-            })
+            }),
+          hr(),
+          Button(AppCircuit.dispatchCB(DownloadYearlyReport(pr.year)))(s"${pr.year.getValue} report")
         )
       ),
       div(grid.columnAll(10),

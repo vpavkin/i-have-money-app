@@ -1,17 +1,15 @@
 package ru.pavkin.ihavemoney.frontend.redux
 
+import cats.syntax.eq._
+import diode.Circuit
 import diode.react.ReactConnector
-import diode.{Circuit, ModelR, ModelRO}
 import io.circe.parser._
 import io.circe.syntax._
-import japgolly.scalajs.react.ReactElement
 import org.scalajs.dom
 import ru.pavkin.ihavemoney.domain.fortune.{Currency, ExchangeRate, FortuneInfo}
-import ru.pavkin.ihavemoney.frontend.redux.actions.{HideModal, ShowModal}
 import ru.pavkin.ihavemoney.frontend.redux.handlers._
 import ru.pavkin.ihavemoney.frontend.redux.model.RootModel
 import ru.pavkin.ihavemoney.protocol.Auth
-import cats.syntax.eq._
 
 object AppCircuit extends Circuit[RootModel] with ReactConnector[RootModel] with CircuitHelpers[RootModel] {
 
@@ -31,13 +29,15 @@ object AppCircuit extends Circuit[RootModel] with ReactConnector[RootModel] with
     new LoadBalancesHandler(zoomRW(_.balances)((m, v) => m.copy(balances = v))),
     new LoadAssetsHandler(zoomRW(_.assets)((m, v) => m.copy(assets = v))),
     new LoadLiabilitiesHandler(zoomRW(_.liabilities)((m, v) => m.copy(liabilities = v))),
-    new LoadTransactionLogHandler(zoomRW(_.log)((m, v) => m.copy(log = v))),
+    new TransactionLogHandler(zoomRW(_.log)((m, v) => m.copy(log = v))),
     new LoadCategoriesHandler(zoomRW(_.categories)((m, v) => m.copy(categories = v))),
     new ModalHandler(zoomRW(_.modal)((m, v) => m.copy(modal = v))),
     new SendRequestHandler(zoomRW(_.activeRequest)((m, v) => m.copy(activeRequest = v))),
     new InitializerRedirectsToHandler(zoomRW(_.initializerRedirectsTo)((m, v) => m.copy(initializerRedirectsTo = v))),
 
-    new TransactionLogUIStateHandler(zoomRW(_.transactionLogUIState)((m, v) => m.copy(transactionLogUIState = v)))
+    new TransactionLogUIStateHandler(zoomRW(_.transactionLogUIState)((m, v) => m.copy(transactionLogUIState = v))),
+
+    new YearlyReportsHandler(zoomRW(_ => ())((m, v) => m))
   )
 
   override def initialModel = RootModel(None)

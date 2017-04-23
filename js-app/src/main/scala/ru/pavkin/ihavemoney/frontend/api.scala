@@ -49,6 +49,8 @@ object api {
     def getAssets(fortuneId: String): BaseUrl = readFortune / fortuneId / "assets"
     def getLiabilities(fortuneId: String): BaseUrl = readFortune / fortuneId / "liabilities"
     def getCategories(fortuneId: String): BaseUrl = readFortune / fortuneId / "categories"
+
+    def generateReport(fortuneId: String, year: Year): BaseUrl = readFortune / fortuneId / "reports" / "yearly" / year.toString
   }
 
   def authHeader: (String, String) = "Authorization" → s"Bearer ${AppCircuit.auth.map(_.token).getOrElse("")}"
@@ -152,8 +154,10 @@ object api {
 
   // queries
 
-  def query[A](route: BaseUrl, extractor: PartialFunction[FrontendQueryResult, A])
-    (implicit ec: ExecutionContext): Future[Either[RequestError, A]] = expect[FrontendQueryResult](
+  def query[A](
+    route: BaseUrl,
+    extractor: PartialFunction[FrontendQueryResult, A])(
+    implicit ec: ExecutionContext): Future[Either[RequestError, A]] = expect[FrontendQueryResult](
     get(route.value, headers = Map(authHeader))
   ).map(_.flatMap { res ⇒
     extractor.andThen(Right(_)).applyOrElse(res, (_: FrontendQueryResult) ⇒ Left(OtherError("Unexpected response")))
@@ -187,4 +191,10 @@ object api {
     query(routes.getEventLog(AppCircuit.fortuneId, year), {
       case FrontendEvents(_, transactions) ⇒ transactions
     })
+
+  // reports
+
+  def generateYearlyReport(year: Year)(implicit ec: ExecutionContext): Future[RequestError Either String] =
+    get(routes.generateReport(AppCircuit.fortuneId, year).value, headers = Map(authHeader))
+
 }

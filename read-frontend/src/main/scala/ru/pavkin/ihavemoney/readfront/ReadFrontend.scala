@@ -2,6 +2,8 @@ package ru.pavkin.ihavemoney.readfront
 
 import java.time.Year
 import java.util.UUID
+import java.nio.file.Files
+import java.nio.file.Paths
 
 import io.circe.syntax._
 import akka.actor.ActorSystem
@@ -26,6 +28,7 @@ import ru.pavkin.ihavemoney.protocol
 import ru.pavkin.ihavemoney.protocol.readfront._
 import ru.pavkin.ihavemoney.auth.JWTTokenFactory
 import ru.pavkin.ihavemoney.domain.fortune.FortuneProtocol.{CurrencyExchanged, FortuneIncreased, FortuneSpent}
+import ru.pavkin.ihavemoney.readfront.reporting.YearlyReportBuilder
 
 import scala.concurrent.Future
 
@@ -44,6 +47,9 @@ object ReadFrontend extends App with FailFastCirceSupport {
   val writeFrontURL = s"http://${config.getString("write-frontend.host")}:${config.getString("write-frontend.port")}"
 
   val tokenFactory: JWTTokenFactory = new JWTTokenFactory(config.getString("app.secret-key"))
+
+  val reportsDirectory = config.getString("app.reports-directory")
+  val yearlyReportBuilder = new YearlyReportBuilder(reportsDirectory)
 
   val authenticator: (Option[HttpCredentials]) ⇒ Future[AuthenticationResult[UserId]] = (credentials: Option[HttpCredentials]) ⇒ Future {
     credentials.flatMap {
@@ -138,8 +144,15 @@ object ReadFrontend extends App with FailFastCirceSupport {
                     complete {
                       sendQuery(TransactionLog(QueryId(UUID.randomUUID.toString), userId, fortuneId, Year.of(year)))
                     }
+                  } ~
+                  pathPrefix("reports") {
+                    path("yearly" / IntNumber) { year =>
+                      complete {
+                        HttpResponse(entity = HttpEntity(ContentType(MediaTypes.`text/plain`, HttpCharsets.`UTF-8`),
+                          yearlyReportBuilder.build))
+                      }
+                    }
                   }
-
               }
             }
         } ~
@@ -147,8 +160,14 @@ object ReadFrontend extends App with FailFastCirceSupport {
           pathSingleSlash {
             getFromResource("index.html")
           }
+        } ~
+        pathPrefix("reports") {
+          getFromDirectory(reportsDirectory)
         }
     } ~ getFromResourceDirectory("")
   }
+
+  Files.createDirectories(Paths.get(reportsDirectory))
+
   Http().bindAndHandle(routes, config.getString("app.host"), config.getInt("app.http-port"))
 }

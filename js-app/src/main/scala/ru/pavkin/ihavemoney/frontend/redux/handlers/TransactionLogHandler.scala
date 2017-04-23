@@ -8,7 +8,7 @@ import ru.pavkin.ihavemoney.protocol.Event
 
 import scala.scalajs.concurrent.JSExecutionContext.Implicits.queue
 
-class LoadTransactionLogHandler[M](modelRW: ModelRW[M, Pot[List[Event]]]) extends ActionHandler(modelRW) {
+class TransactionLogHandler[M](modelRW: ModelRW[M, Pot[List[Event]]]) extends ActionHandler(modelRW) {
 
   override def handle = {
     case a: LoadEventLog =>
