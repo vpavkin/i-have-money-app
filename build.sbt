@@ -201,7 +201,7 @@ lazy val writeBackend = project.in(file("write-backend"))
         artifactTargetPath
       )
       new Dockerfile {
-        from("java:8u92-jre-alpine")
+        from("openjdk:8-jre")
         env(
           "ihavemoney_writeback_host" → "127.0.0.1",
           "ihavemoney_writeback_port" → "9101",
@@ -264,7 +264,7 @@ lazy val writeFrontend = project.in(file("write-frontend"))
         artifactTargetPath
       )
       new Dockerfile {
-        from("java:8u92-jre-alpine")
+        from("openjdk:8-jre")
         env(
           "ihavemoney_writeback_host" → "127.0.0.1",
           "ihavemoney_writeback_port" → "9101",
@@ -334,7 +334,7 @@ lazy val readBackend = project.in(file("read-backend"))
         artifactTargetPath
       )
       new Dockerfile {
-        from("java:8u92-jre-alpine")
+        from("openjdk:8-jre")
         env(
           "ihavemoney_writeback_db_user" → "admin",
           "ihavemoney_writeback_db_password" → "changeit",
@@ -417,7 +417,7 @@ lazy val readFrontend = project.in(file("read-frontend"))
         artifactTargetPath
       )
       new Dockerfile {
-        from("java:8u92-jre-alpine")
+        from("openjdk:8-jre")
         env(
           "ihavemoney_readback_host" → "127.0.0.1",
           "ihavemoney_readback_port" → "9201",
