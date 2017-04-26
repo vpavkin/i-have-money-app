@@ -10,5 +10,5 @@ object ExpenseCategory {
   val Total: ExpenseCategory = ExpenseCategory("Total")
 
   implicit val identified: Identified[ExpenseCategory] = _.name
-  implicit val orderInstance: Order[ExpenseCategory] = catsKernelStdOrderForString.on(_.name)
+  implicit val orderInstance: Order[ExpenseCategory] = catsKernelStdOrderForString.on(_.name.toLowerCase)
 }
