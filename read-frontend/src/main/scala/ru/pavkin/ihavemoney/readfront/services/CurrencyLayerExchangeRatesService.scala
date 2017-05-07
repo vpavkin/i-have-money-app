@@ -32,7 +32,6 @@ class CurrencyLayerExchangeRatesService(
 
   def queryRates(currencies: List[Currency]): Future[Either[Throwable, ExchangeRates]] = {
     val url = s"http://apilayer.net/api/live?access_key=$accessKey&currencies=${currencies.map(adaptCurrency).mkString(",")}"
-    println(url)
     Http().singleRequest(HttpRequest(uri = Uri(url)))
       .flatMap(response => response.status match {
         case OK => Unmarshal(response.entity).to[ExchangeRates].map(Right(_))
