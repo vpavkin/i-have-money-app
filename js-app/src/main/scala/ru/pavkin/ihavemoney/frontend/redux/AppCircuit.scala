@@ -24,18 +24,19 @@ object AppCircuit extends Circuit[RootModel] with ReactConnector[RootModel] with
     dom.window.localStorage.removeItem(LS_KEY)
 
   protected def actionHandler: HandlerFunction = composeHandlers(
-    new AuthHandler(zoomRW(_.auth)((m, v) => m.copy(auth = v))),
-    new UpdateFortuneIdHandler(zoomRW(_.fortunes)((m, v) => m.copy(fortunes = v))),
-    new LoadBalancesHandler(zoomRW(_.balances)((m, v) => m.copy(balances = v))),
-    new LoadAssetsHandler(zoomRW(_.assets)((m, v) => m.copy(assets = v))),
-    new LoadLiabilitiesHandler(zoomRW(_.liabilities)((m, v) => m.copy(liabilities = v))),
-    new TransactionLogHandler(zoomRW(_.log)((m, v) => m.copy(log = v))),
-    new LoadCategoriesHandler(zoomRW(_.categories)((m, v) => m.copy(categories = v))),
-    new ModalHandler(zoomRW(_.modal)((m, v) => m.copy(modal = v))),
-    new SendRequestHandler(zoomRW(_.activeRequest)((m, v) => m.copy(activeRequest = v))),
-    new InitializerRedirectsToHandler(zoomRW(_.initializerRedirectsTo)((m, v) => m.copy(initializerRedirectsTo = v))),
+    new AuthHandler(zoomTo(_.auth)),
+    new UpdateFortuneIdHandler(zoomTo(_.fortunes)),
+    new LoadBalancesHandler(zoomTo(_.balances)),
+    new LoadAssetsHandler(zoomTo(_.assets)),
+    new LoadLiabilitiesHandler(zoomTo(_.liabilities)),
+    new TransactionLogHandler(zoomTo(_.log)),
+    new LoadCategoriesHandler(zoomTo(_.categories)),
+    new LoadExchangeRatesHandler(zoomTo(_.exchangeRates)),
+    new ModalHandler(zoomTo(_.modal)),
+    new SendRequestHandler(zoomTo(_.activeRequest)),
+    new InitializerRedirectsToHandler(zoomTo(_.initializerRedirectsTo)),
 
-    new TransactionLogUIStateHandler(zoomRW(_.transactionLogUIState)((m, v) => m.copy(transactionLogUIState = v))),
+    new TransactionLogUIStateHandler(zoomTo(_.transactionLogUIState)),
 
     new YearlyReportsHandler(zoomRW(_ => ())((m, v) => m))
   )
@@ -46,9 +47,4 @@ object AppCircuit extends Circuit[RootModel] with ReactConnector[RootModel] with
   def fortunes: List[FortuneInfo] = state.fortunes.get
   def fortune: FortuneInfo = fortunes.head
   def fortuneId: String = fortune.id
-  def exchangeRates: ExchangeRates = state.exchangeRates.get
-
-  def exchange(amount: BigDecimal, from: Currency, to: Currency): BigDecimal =
-    exchangeRates.exchange(amount, from, to).get
-
 }

@@ -21,7 +21,7 @@ object IncomeC extends CommonTransactionC[IncomeCategory] {
 
   class Backend($: BackendScope[Props, State]) extends CommonTransactionBackend($) {
 
-    def onIncomeSubmit(state: State) = genSubmit(state)(api.addIncome(
+    def onFormSubmit(state: State): Callback = genSubmit(state)(api.addIncome(
       BigDecimal(state.amount),
       state.currency,
       state.category,
@@ -30,9 +30,9 @@ object IncomeC extends CommonTransactionC[IncomeCategory] {
     ))
 
     def renderSubmitButton(pr: Props, state: State): ReactElement =
-      Button(onIncomeSubmit(state),
+      Button(Callback.empty,
         style = common.context.success,
-        addAttributes = Seq(disabled := (!isValid(state) || state.loading)),
+        addAttributes = Seq(`type` := "submit", disabled := (!isValid(state) || state.loading)),
         addStyles = Seq(increasedFontSize)
       )("Add Income")
 

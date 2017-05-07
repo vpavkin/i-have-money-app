@@ -17,7 +17,7 @@ case class RootModel(
   liabilities: Pot[Map[String, Liability]] = Pot.empty,
   log: Pot[List[Event]] = Pot.empty,
 
-  exchangeRates: Pot[ExchangeRates] = Ready(ExchangeRates.Default),
+  exchangeRates: Pot[ExchangeRates] = Pot.empty,
 
   transactionLogUIState: TransactionLogUIState = TransactionLogUIState.Default,
 

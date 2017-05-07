@@ -6,12 +6,12 @@ import java.nio.file.Files
 import java.nio.file.Paths
 
 import io.circe.syntax._
-import akka.actor.ActorSystem
+import akka.actor.{ActorSystem, Props}
 import akka.event.Logging
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives._
-import akka.pattern.AskTimeoutException
+import akka.pattern.{AskTimeoutException, BackoffSupervisor}
 import akka.stream.ActorMaterializer
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
@@ -21,15 +21,17 @@ import akka.http.scaladsl.model.headers.{HttpChallenge, HttpCredentials, OAuth2B
 import io.circe.Json
 
 import scala.concurrent.duration._
-import ru.pavkin.ihavemoney.domain.fortune.{FortuneId, FortuneProtocol}
+import ru.pavkin.ihavemoney.domain.fortune.{ExchangeRates, FortuneId, FortuneProtocol}
 import ru.pavkin.ihavemoney.domain.query._
 import ru.pavkin.ihavemoney.domain.user.UserId
 import ru.pavkin.ihavemoney.protocol.{Expense, FailedRequest, Income}
 import ru.pavkin.ihavemoney.protocol
 import ru.pavkin.ihavemoney.protocol.readfront._
 import ru.pavkin.ihavemoney.auth.JWTTokenFactory
+import ru.pavkin.ihavemoney.domain.cache.MutableCache
 import ru.pavkin.ihavemoney.domain.fortune.FortuneProtocol.{CurrencyExchanged, FortuneEvent, FortuneIncreased, FortuneSpent}
 import ru.pavkin.ihavemoney.readfront.reporting.YearlyReportBuilder
+import ru.pavkin.ihavemoney.readfront.services.{CurrencyLayerExchangeRatesService, ExchangeRatesCacheActor}
 
 import scala.concurrent.Future
 
@@ -51,6 +53,22 @@ object ReadFrontend extends App with FailFastCirceSupport {
 
   val reportsDirectory = config.getString("app.reports-directory")
   val yearlyReportBuilder = new YearlyReportBuilder(reportsDirectory)
+
+  val exchangeRatesCache: MutableCache[ExchangeRates] = new MutableCache[ExchangeRates](ExchangeRates.Empty)
+
+  val exchangeRatesServiceAccessKey = config.getString("app.exchange-rates.access-key")
+  val exchangeRatesService = new CurrencyLayerExchangeRatesService(exchangeRatesServiceAccessKey)
+
+  lazy val exchangeRatesCacheActor = system.actorOf(BackoffSupervisor.props(
+    childProps = Props(new ExchangeRatesCacheActor(exchangeRatesService, exchangeRatesCache)),
+    childName = "exchange-rates-cache-actor",
+    minBackoff = 1.minute,
+    maxBackoff = 1.minute,
+    randomFactor = 0.0
+  ))
+
+  // refresh rates once in 2 hours
+  system.scheduler.schedule(1.second, 2.hours, exchangeRatesCacheActor, ExchangeRatesCacheActor.ReloadRates)
 
   val authenticator: (Option[HttpCredentials]) ⇒ Future[AuthenticationResult[UserId]] = (credentials: Option[HttpCredentials]) ⇒ Future {
     credentials.flatMap {
@@ -130,11 +148,16 @@ object ReadFrontend extends App with FailFastCirceSupport {
           } ~
             pathPrefix("fortune" / JavaUUID.map(i ⇒ FortuneId(i.toString))) { fortuneId: FortuneId ⇒
               get {
-                path("categories") {
+                path("exchange-rates") {
                   complete {
-                    sendQuery(Categories(QueryId(UUID.randomUUID.toString), userId, fortuneId))
+                    (FrontendExchangeRates(fortuneId.value, exchangeRatesCache.state): FrontendQueryResult).asJson
                   }
                 } ~
+                  path("categories") {
+                    complete {
+                      sendQuery(Categories(QueryId(UUID.randomUUID.toString), userId, fortuneId))
+                    }
+                  } ~
                   path("balance") {
                     complete {
                       sendQuery(MoneyBalance(QueryId(UUID.randomUUID.toString), userId, fortuneId))
@@ -160,7 +183,7 @@ object ReadFrontend extends App with FailFastCirceSupport {
                       complete {
                         queryEventLogForYear(userId, fortuneId, Year.of(year)).map(events =>
                           HttpResponse(entity = HttpEntity(ContentType(MediaTypes.`text/plain`, HttpCharsets.`UTF-8`),
-                            yearlyReportBuilder.build(events)))
+                            yearlyReportBuilder.build(exchangeRatesCache.state, events)))
                         )
                       }
                     }

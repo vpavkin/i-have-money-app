@@ -3,8 +3,6 @@ package ru.pavkin.ihavemoney.frontend
 import java.time.{LocalDate, Year}
 import java.util.UUID
 
-import io.circe.Decoder
-import io.circe.syntax._
 import japgolly.scalajs.react.Callback
 import japgolly.scalajs.react.extra.router.BaseUrl
 import ru.pavkin.ihavemoney.domain.fortune._
@@ -49,6 +47,7 @@ object api {
     def getAssets(fortuneId: String): BaseUrl = readFortune / fortuneId / "assets"
     def getLiabilities(fortuneId: String): BaseUrl = readFortune / fortuneId / "liabilities"
     def getCategories(fortuneId: String): BaseUrl = readFortune / fortuneId / "categories"
+    def getExchangeRates(fortuneId: String): BaseUrl = readFortune / fortuneId / "exchange-rates"
 
     def generateReport(fortuneId: String, year: Year): BaseUrl = readFortune / fortuneId / "reports" / "yearly" / year.toString
   }
@@ -170,6 +169,11 @@ object api {
   def getCategories(implicit ec: ExecutionContext): Future[RequestError Either Categories] =
     query(routes.getCategories(AppCircuit.fortuneId), {
       case FrontendCategories(_, income, expenses) ⇒ Categories(income, expenses)
+    })
+
+  def getExchangeRates(implicit ec: ExecutionContext): Future[RequestError Either ExchangeRates] =
+    query(routes.getExchangeRates(AppCircuit.fortuneId), {
+      case FrontendExchangeRates(_, rates) ⇒ rates
     })
 
   def getBalances(implicit ec: ExecutionContext): Future[RequestError Either Map[Currency, BigDecimal]] =

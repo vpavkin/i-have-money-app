@@ -5,7 +5,7 @@ import java.time.Year
 
 import diode.data.{Empty, Pot, PotAction}
 import japgolly.scalajs.react.ReactElement
-import ru.pavkin.ihavemoney.domain.fortune.{Asset, Currency, FortuneInfo, Liability}
+import ru.pavkin.ihavemoney.domain.fortune._
 import ru.pavkin.ihavemoney.frontend.Route
 import ru.pavkin.ihavemoney.frontend.components.state.TransactionLogUIState
 import ru.pavkin.ihavemoney.frontend.redux.model.Categories
@@ -43,6 +43,11 @@ case class LoadEventLog(year: Year, potResult: Pot[List[Event]] = Pot.empty)
 case class LoadCategories(potResult: Pot[Categories] = Pot.empty)
   extends Action with PotAction[Categories, LoadCategories] {
   def next(newResult: Pot[Categories]): LoadCategories = copy(potResult = newResult)
+}
+
+case class LoadExchangeRates(potResult: Pot[ExchangeRates] = Pot.empty)
+  extends Action with PotAction[ExchangeRates, LoadExchangeRates] {
+  def next(newResult: Pot[ExchangeRates]): LoadExchangeRates = copy(potResult = newResult)
 }
 
 case class SetTransactionLogUIState(uiState: TransactionLogUIState) extends Action

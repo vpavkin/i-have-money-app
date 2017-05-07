@@ -4,6 +4,7 @@ import ru.pavkin.ihavemoney.domain.fortune.FortuneProtocol._
 import ru.pavkin.ihavemoney.domain.fortune.{Currency, ExchangeRates}
 
 case class YearlyPerformance(
+  exchangeRates: ExchangeRates,
   baseCurrency: Currency,
   totalIncome: BigDecimal,
   totalExpenses: BigDecimal,
@@ -17,7 +18,7 @@ case class YearlyPerformance(
   def averageExpensesPerMonth: BigDecimal = totalExpenses / BigDecimal(12.0)
 
   def convertTo(other: Currency): YearlyPerformance = {
-    def exchange(i: BigDecimal) = ExchangeRates.Default.exchange(i, baseCurrency, other).get
+    def exchange(i: BigDecimal) = exchangeRates.exchange(i, baseCurrency, other).get
     copy(
       baseCurrency = other,
       totalIncome = exchange(totalIncome),
@@ -60,20 +61,21 @@ case class YearlyPerformance(
   }
 
   private def normalize(currency: Currency, amount: BigDecimal): BigDecimal =
-    ExchangeRates.Default.exchange(amount, currency, baseCurrency).getOrElse(0)
+    exchangeRates.exchange(amount, currency, baseCurrency).getOrElse(0)
 }
 
 
 object YearlyPerformance {
 
-  def Initial(baseCurrency: Currency) = YearlyPerformance(baseCurrency, 0, 0,
+  def Initial(exchangeRates: ExchangeRates, baseCurrency: Currency) = YearlyPerformance(exchangeRates, baseCurrency,
+    0, 0,
     CategorizedExpenses.empty,
     List.fill(12)(CategorizedExpenses.empty),
     List.fill(52)(CategorizedExpenses.empty),
     Currency.values.map(_ -> BigDecimal(0.0)).toMap)
 
-  def fold(baseCurrency: Currency, events: List[FortuneEvent]): YearlyPerformance =
-    events.foldLeft(YearlyPerformance.Initial(baseCurrency)) {
+  def fold(exchangeRates: ExchangeRates, baseCurrency: Currency, events: List[FortuneEvent]): YearlyPerformance =
+    events.foldLeft(YearlyPerformance.Initial(exchangeRates, baseCurrency)) {
       case (performance, event) => event match {
         case e: FortuneIncreased => performance.addIncome(e.currency, e.amount)
         case e: FortuneSpent => performance.addExpense(e)

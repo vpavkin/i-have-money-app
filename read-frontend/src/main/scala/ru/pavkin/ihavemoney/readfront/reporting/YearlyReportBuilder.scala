@@ -15,11 +15,10 @@ import ru.pavkin.utils.strings.syntax._
 
 class YearlyReportBuilder(reportsDir: String) {
 
-
-  def build(transactions: List[FortuneEvent]): String = {
+  def build(exchangeRates: ExchangeRates, transactions: List[FortuneEvent]): String = {
 
     val filePath = s"$reportsDir${UUID.randomUUID()}.xlsx"
-    YearlyReportBuilder.Case(transactions, Currency.USD).workbook.saveAsXlsx(filePath)
+    YearlyReportBuilder.Case(exchangeRates, transactions, Currency.USD).workbook.saveAsXlsx(filePath)
     filePath
   }
 }
@@ -46,7 +45,7 @@ object YearlyReportBuilder {
     if (amount < 0) expenseStyle(currency)
     else incomeStyle(currency)
 
-  case class Case(transactions: List[FortuneEvent], baseCurrency: Currency) {
+  case class Case(exchangeRates: ExchangeRates, transactions: List[FortuneEvent], baseCurrency: Currency) {
 
     private def transactionsToRows: List[Row] = transactions
       .sortBy(_.date.toLocalDate.toEpochDay)
@@ -73,7 +72,7 @@ object YearlyReportBuilder {
       Row().withCells(
         Cell(c.code),
         Cell(
-          ExchangeRates.Default.findRate(baseCurrency, c).get,
+          exchangeRates.findRate(baseCurrency, c).get,
           style = CellStyle(dataFormat = moneyFormat(c)))
       )
     ).toList
@@ -167,7 +166,7 @@ object YearlyReportBuilder {
         )
     }
 
-    val performance: YearlyPerformance = YearlyPerformance.fold(baseCurrency, transactions)
+    val performance: YearlyPerformance = YearlyPerformance.fold(exchangeRates, baseCurrency, transactions)
 
     val transactionsSheet: Sheet = Sheet(name = "Transactions", style = defaultStyle)
       .withRows(

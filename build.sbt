@@ -385,6 +385,7 @@ lazy val readFrontend = project.in(file("read-frontend"))
     name := "read-frontend"
   )
   .settings(allSettings: _*)
+  .settings(addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.3"))
   .settings(
     libraryDependencies ++= Seq(
       "com.typesafe.akka" %% "akka-actor" % akkaVersion,

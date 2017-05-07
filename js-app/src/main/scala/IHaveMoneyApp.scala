@@ -35,16 +35,24 @@ object IHaveMoneyApp extends JSApp {
       1, g => Try(Year.of(g(0).toInt)).toOption, _.getValue.toString
     )
 
-    def renderExchange = render(connectors.log(l ⇒ ExchangeC(l)))
+    def renderExchange = render(connectors.log(l ⇒
+      connectors.exchangeRates(er ⇒
+        ExchangeC(l, er)
+      )
+    ))
     def renderStats = render(connectors.log(b ⇒
       connectors.categories(c =>
-        StatsViewC.component(StatsViewC.Props(AppCircuit.fortune, c, b))
+        connectors.exchangeRates(er =>
+          StatsViewC.component(StatsViewC.Props(AppCircuit.fortune, er, c, b))
+        )
       )
     ))
     def renderLog(route: Route.TransactionLog) = render(connectors.log(b ⇒
       connectors.categories(c =>
         connectors.transactionLogUIState(uiState =>
-          TransactionLogPage.component(TransactionLogPage.Props(route.year, b, c, uiState))
+          connectors.exchangeRates(er =>
+            TransactionLogPage.component(TransactionLogPage.Props(route.year, b, c, er, uiState))
+          )
         )
       )
     ))

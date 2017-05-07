@@ -8,13 +8,13 @@ import diode.react.ReactPot._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.all._
 import org.scalajs.dom.window
-import ru.pavkin.ihavemoney.domain.fortune.{Currency, ExpenseCategory}
+import ru.pavkin.ihavemoney.domain.fortune.{Currency, ExchangeRates, ExpenseCategory}
 import ru.pavkin.ihavemoney.frontend.api
 import ru.pavkin.ihavemoney.frontend.bootstrap.{Button, Checkbox, Icon, Panel}
 import ru.pavkin.ihavemoney.frontend.components.selectors.ExpenseCategorySelector
 import ru.pavkin.ihavemoney.frontend.gravatar.GravatarAPI
 import ru.pavkin.ihavemoney.frontend.redux.AppCircuit
-import ru.pavkin.ihavemoney.frontend.redux.actions.{DownloadYearlyReport, LoadCategories, LoadEventLog, SetTransactionLogUIState}
+import ru.pavkin.ihavemoney.frontend.redux.actions._
 import ru.pavkin.ihavemoney.frontend.redux.model.Categories
 import ru.pavkin.ihavemoney.frontend.styles.Global._
 import ru.pavkin.ihavemoney.protocol.{Event, Expense, Transaction}
@@ -35,12 +35,14 @@ object TransactionLogPage {
     year: Year,
     log: ModelProxy[Pot[List[Event]]],
     categories: ModelProxy[Pot[Categories]],
+    exchangeRates: ModelProxy[Pot[ExchangeRates]],
     uiStatePx: ModelProxy[TransactionLogUIState])
     extends RemoteDataProps[Props] with ResetableUIStateProps {
 
     def loadData: Callback = Callback(AppCircuit.dispatch(ActionBatch(
       LoadEventLog(year),
-      LoadCategories()
+      LoadCategories(),
+      LoadExchangeRates()
     )))
 
 
@@ -136,9 +138,11 @@ object TransactionLogPage {
               total.map { case (currency, amount) => h4(logNegAmount, renderAmount(amount) + currency.sign) },
 
               hr(),
-              h4("Total in eur: ", span(logNegAmount, renderAmount(total.map {
-                case (currency, amount) => AppCircuit.exchange(amount, currency, Currency.EUR)
-              }.sum) + Currency.EUR.sign)
+              pr.exchangeRates().renderReady(rates =>
+                h4("Total in eur: ", span(logNegAmount, renderAmount(total.map {
+                  case (currency, amount) => rates.exchangeUnsafe(amount, currency, Currency.EUR)
+                }.sum) + Currency.EUR.sign)
+                )
               )
             )
           }
