@@ -6,15 +6,16 @@ import diode.data.Pot
 import diode.react.ModelProxy
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.all._
-import ru.pavkin.ihavemoney.domain.fortune.{Currency, Worth}
+import ru.pavkin.ihavemoney.domain.fortune.{Currency, ExchangeRates, Worth}
 import ru.pavkin.ihavemoney.frontend.api
 import ru.pavkin.ihavemoney.frontend.bootstrap.{Button, FormGroup, Icon}
 import ru.pavkin.ihavemoney.frontend.redux.AppCircuit
-import ru.pavkin.ihavemoney.frontend.redux.actions.{LoadCategories, LoadEventLog}
+import ru.pavkin.ihavemoney.frontend.redux.actions.{LoadCategories, LoadEventLog, LoadExchangeRates}
 import ru.pavkin.ihavemoney.frontend.styles.Global._
 import ru.pavkin.ihavemoney.protocol.{CurrencyExchanged, Event, Transaction}
 import ru.pavkin.utils.option._
 import ReactHelpers._
+import diode.ActionBatch
 
 import scala.concurrent.Future
 import scala.scalajs.concurrent.JSExecutionContext.Implicits.queue
@@ -35,13 +36,14 @@ object ExchangeC {
     comment: String,
     loading: Boolean = false)
 
-  case class Props(log: ModelProxy[Pot[List[Event]]])
+  case class Props(log: ModelProxy[Pot[List[Event]]], realRates: ModelProxy[Pot[ExchangeRates]])
 
   class Backend($: BackendScope[Props, State]) {
 
-    def loadData(pr: Props) = Callback {
-      AppCircuit.dispatch(LoadEventLog(Year.now))
-    }
+    def loadData(pr: Props) = AppCircuit.dispatchCB(ActionBatch(
+      LoadEventLog(Year.now),
+      LoadExchangeRates()
+    ))
 
     private def onExchangeSubmit(state: State): Callback = genSubmit(state)(api.exchange(
       BigDecimal(state.fromAmount),
@@ -89,12 +91,20 @@ object ExchangeC {
         Try(BigDecimal(s.toAmount)).isSuccess &&
         s.fromCurrency != s.toCurrency
 
+    private def renderExchangeRatePanel(clsName: String, rate: BigDecimal, from: Currency, to: Currency) =
+      div(grid.columnAll(2), div(className := s"alert alert-$clsName", textAlign := "center", lineHeight := "30px",
+        f"$rate%1.3f ${from.sign}/${to.sign}"))
+
     private def renderExchangeRate(s: State) = div(
-      div(grid.columnAll(2), div(className := "alert alert-info", textAlign := "center", lineHeight := "30px",
-        f"${BigDecimal(s.fromAmount) / BigDecimal(s.toAmount)}%1.3f ${s.fromCurrency.sign}/${s.toCurrency.sign}")),
-      div(grid.columnAll(2), div(className := "alert alert-info", textAlign := "center", lineHeight := "30px",
-        f"${BigDecimal(s.toAmount) / BigDecimal(s.fromAmount)}%1.3f ${s.toCurrency.sign}/${s.fromCurrency.sign}"))
+      renderExchangeRatePanel("info", BigDecimal(s.fromAmount) / BigDecimal(s.toAmount), s.fromCurrency, s.toCurrency),
+      renderExchangeRatePanel("info", BigDecimal(s.toAmount) / BigDecimal(s.fromAmount), s.toCurrency, s.fromCurrency)
     )
+
+    private def renderRealExchangeRates(pr: Props) = pr.realRates().renderReady(rates => div(
+      renderExchangeRatePanel("warning", rates.findRate(Currency.USD, Currency.RUR).getOrElse(0), Currency.USD, Currency.RUR),
+      renderExchangeRatePanel("warning", rates.findRate(Currency.EUR, Currency.RUR).getOrElse(0), Currency.EUR, Currency.RUR),
+      renderExchangeRatePanel("warning", rates.findRate(Currency.EUR, Currency.USD).getOrElse(0), Currency.EUR, Currency.USD)
+    ))
 
     def render(pr: Props, state: State) = div(
       form(
@@ -174,6 +184,10 @@ object ExchangeC {
           if (isValid(state))
             renderExchangeRate(state)
           else EmptyTag
+        ),
+        FormGroup(
+          div(grid.columnAll(2), h4("Real rates")),
+          renderRealExchangeRates(pr)
         )
       ),
       if (state.loading)
@@ -213,5 +227,7 @@ object ExchangeC {
     .componentDidMount(s ⇒ s.backend.loadData(s.props))
     .build
 
-  def apply(log: ModelProxy[Pot[List[Event]]]) = component(Props(log))
+  def apply(
+    log: ModelProxy[Pot[List[Event]]],
+    realRates: ModelProxy[Pot[ExchangeRates]]) = component(Props(log, realRates))
 }

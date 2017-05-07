@@ -57,6 +57,9 @@ trait SharedProtocol {
   implicit val decoderIncomeCategory: Decoder[IncomeCategory] = Decoder.decodeString.map(IncomeCategory(_))
   implicit val encoderIncomeCategory: Encoder[IncomeCategory] = Encoder.encodeString.contramap(_.name)
 
+  implicit val decoderExchangeRates = Decoder[ExchangeRates]
+  implicit val encoderExchangeRates = Encoder[ExchangeRates]
+
   implicit val decoderFortuneInfo = Decoder[FortuneInfo]
   implicit val encoderFortuneInfo = Encoder[FortuneInfo]
 }

@@ -3,7 +3,7 @@ package ru.pavkin.ihavemoney.frontend.redux
 import diode.data.Pot
 import diode.react.ReactConnectProxy
 import japgolly.scalajs.react.ReactElement
-import ru.pavkin.ihavemoney.domain.fortune.{Asset, Currency, FortuneInfo, Liability}
+import ru.pavkin.ihavemoney.domain.fortune._
 import ru.pavkin.ihavemoney.frontend.components.state.TransactionLogUIState
 import ru.pavkin.ihavemoney.frontend.redux.model.Categories
 import ru.pavkin.ihavemoney.protocol.Event
@@ -21,6 +21,7 @@ object connectors {
   val assets: PotProxy[Map[String, Asset]] = AppCircuit.connect(_.assets)
   val liabilities: PotProxy[Map[String, Liability]] = AppCircuit.connect(_.liabilities)
   val categories: PotProxy[Categories] = AppCircuit.connect(_.categories)
+  val exchangeRates: PotProxy[ExchangeRates] = AppCircuit.connect(_.exchangeRates)
   val log: PotProxy[List[Event]] = AppCircuit.connect(_.log)
 
   val transactionLogUIState: ReactConnectProxy[TransactionLogUIState] = AppCircuit.connect(_.transactionLogUIState)
