@@ -72,6 +72,7 @@ abstract class CommonTransactionC[Cat: Named](implicit ec: ExecutionContext) {
             ))
           })
 
+    def onFormSubmit(s: State): Callback
 
     def isValid(s: State): Boolean =
       Try(BigDecimal(s.amount)).isSuccess &&
@@ -89,13 +90,14 @@ abstract class CommonTransactionC[Cat: Named](implicit ec: ExecutionContext) {
     def renderForm(pr: Props, state: State) = div(
       form(
         common.formHorizontal,
-        onSubmit ==> dontSubmit,
+        onSubmit ==> ((e: ReactEventI) => dontSubmit(e) >> onFormSubmit(state)),
         FormGroup(
           HorizontalForm.Label("Amount", "amountInput"),
           div(grid.columnAll(8),
             div(className := "input-group",
               input.text(
                 id := "amountInput",
+                name := "amount",
                 required := true,
                 common.formControl,
                 addonMainInput,
@@ -123,6 +125,7 @@ abstract class CommonTransactionC[Cat: Named](implicit ec: ExecutionContext) {
           div(HorizontalForm.input, input.text(
             common.formControl,
             id := "commentInput",
+            name := "comment",
             increasedFontSize, addonMainInput,
             placeholder := "Comment",
             value := state.comment,

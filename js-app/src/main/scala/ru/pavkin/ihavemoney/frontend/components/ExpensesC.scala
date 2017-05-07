@@ -26,7 +26,7 @@ object ExpensesC extends CommonTransactionC[ExpenseCategory] {
 
   class Backend($: BackendScope[Props, State]) extends CommonTransactionBackend($) {
 
-    def onExpenseSubmit(state: State): Callback = genSubmit(state)(api.addExpense(
+    def onFormSubmit(state: State): Callback = genSubmit(state)(api.addExpense(
       BigDecimal(state.amount),
       state.currency,
       state.category,
@@ -36,9 +36,9 @@ object ExpensesC extends CommonTransactionC[ExpenseCategory] {
     ))
 
     def renderSubmitButton(pr: Props, state: State): ReactElement =
-      Button(onExpenseSubmit(state),
+      Button(Callback.empty,
         style = common.context.danger,
-        addAttributes = Seq(disabled := (!isValid(state) || state.loading)),
+        addAttributes = Seq(`type` := "submit", disabled := (!isValid(state) || state.loading)),
         addStyles = Seq(increasedFontSize)
       )("Add Expense")
 
