@@ -16,5 +16,3 @@ class TransactionLogHandler[M](modelRW: ModelRW[M, Pot[List[Event]]]) extends Ac
       a.handleWith(this, reloadF)(PotAction.handler())
   }
 }
-
-

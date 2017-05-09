@@ -17,7 +17,7 @@ import ru.pavkin.ihavemoney.frontend.redux.AppCircuit
 import ru.pavkin.ihavemoney.frontend.redux.actions._
 import ru.pavkin.ihavemoney.frontend.redux.model.Categories
 import ru.pavkin.ihavemoney.frontend.styles.Global._
-import ru.pavkin.ihavemoney.protocol.{Event, Expense, Transaction}
+import ru.pavkin.ihavemoney.protocol.{Event, Expense, Income, Transaction}
 import ru.pavkin.utils.date._
 import cats.syntax.eq._
 import cats.instances.int._
@@ -52,10 +52,15 @@ object TransactionLogPage {
 
     def state: TransactionLogUIState = uiStatePx()
 
-    def transactionFilter(t: Expense): Boolean =
-      (!state.filterByCategory || t.category === state.category) &&
+    def transactionFilter(t: Transaction[_]): Boolean = {
+      val commonFilter =
         (!state.filterByMonth || (t.date.getMonth == state.month.getMonth && t.date.getYear === state.month.getYear)) &&
-        (state.textFilter.isEmpty || t.comment.exists(_.toLowerCase.contains(state.textFilter.toLowerCase)))
+          (state.textFilter.isEmpty || t.comment.exists(_.toLowerCase.contains(state.textFilter.toLowerCase)))
+      commonFilter && (t match {
+        case tr: Expense => !state.filterByCategory || tr.category === state.category
+        case _: Income => !state.filterByCategory
+      })
+    }
 
     def dispatchStateChange(newState: TransactionLogUIState): Callback =
       AppCircuit.dispatchCB(SetTransactionLogUIState(newState))
@@ -113,7 +118,7 @@ object TransactionLogPage {
           pr.log().renderEmpty(PreloaderC()),
           pr.log().renderPending(_ => PreloaderC()),
           pr.log().renderReady { log ⇒
-            val transactions = log.collect { case t: Expense => t }.filter(pr.transactionFilter)
+            val transactions = log.collect { case t: Transaction[_] => t }.filter(pr.transactionFilter)
             val total = transactions.groupBy(_.currency).mapValues(_.map(_.amount).sum)
             div(
               table(className := "table table-striped table-hover table-condensed",
@@ -125,7 +130,7 @@ object TransactionLogPage {
                       td(width := "30px", paddingTop := "0px", paddingBottom := "0px", verticalAlign := "middle",
                         img(src := GravatarAPI.img(t.user, 20), className := "img-circle", title := t.user)),
                       td(t.date.ddmmyyyy),
-                      td(t.category.name),
+                      td(t.categoryName),
                       td(amountStyle(t.amount), t.amount.toString + t.currency.sign),
                       td(t.comment.getOrElse(""): String),
                       td(textAlign.right, span(Icon.timesCircle, color := "#E74C3C", onClick --> onCancelClick(t)))
@@ -135,15 +140,13 @@ object TransactionLogPage {
               ),
               hr(),
               h4("Totals by currency: "),
-              total.map { case (currency, amount) => h4(logNegAmount, renderAmount(amount) + currency.sign) },
+              total.map { case (currency, amount) => h4(amountStyle(amount), renderAmount(amount) + currency.sign) },
 
               hr(),
-              pr.exchangeRates().renderReady(rates =>
-                h4("Total in eur: ", span(logNegAmount, renderAmount(total.map {
-                  case (currency, amount) => rates.exchangeUnsafe(amount, currency, Currency.EUR)
-                }.sum) + Currency.EUR.sign)
-                )
-              )
+              pr.exchangeRates().renderReady { rates =>
+                val amount = total.map { case (currency, a) => rates.exchangeUnsafe(a, currency, Currency.EUR) }.sum
+                h4("Total in eur: ", span(amountStyle(amount), renderAmount(amount) + Currency.EUR.sign))
+              }
             )
           }
         )

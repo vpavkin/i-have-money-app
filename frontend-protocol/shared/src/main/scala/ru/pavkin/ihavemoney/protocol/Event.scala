@@ -5,6 +5,7 @@ import java.util.UUID
 
 import ru.pavkin.ihavemoney.domain.Named
 import ru.pavkin.ihavemoney.domain.fortune.{Currency, ExpenseCategory, IncomeCategory}
+import Named.ops._
 
 sealed trait Event {
   def id: UUID
@@ -16,6 +17,7 @@ sealed abstract class Transaction[Cat: Named] extends Event {
   def amount: BigDecimal
   def currency: Currency
   def category: Cat
+  def categoryName:String = category.name
   def comment: Option[String]
 }
 
